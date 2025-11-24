@@ -1,4 +1,5 @@
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 
 interface ProjectCardProps {
   title: string;
@@ -6,6 +7,7 @@ interface ProjectCardProps {
   image?: string;
   link: string;
   tags?: string[];
+  detailPath?: string;
 }
 
 export default function ProjectCard({
@@ -14,14 +16,13 @@ export default function ProjectCard({
   image,
   link,
   tags = [],
+  detailPath,
 }: ProjectCardProps) {
+  const projectSlug = title.toLowerCase().replace(/\s+/g, "-").replace(/\+/g, "plus");
+  const internalLink = detailPath || `/project/${projectSlug}`;
+
   return (
-    <a
-      href={link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex flex-col h-full bg-card border border-border rounded-2xl overflow-hidden transition-all duration-300 hover:border-accent hover:shadow-lg hover:shadow-accent/10 hover:-translate-y-1"
-    >
+    <div className="group flex flex-col h-full bg-card border border-border rounded-2xl overflow-hidden transition-all duration-300 hover:border-accent hover:shadow-lg hover:shadow-accent/10 hover:-translate-y-1">
       {image && (
         <div className="relative w-full h-56 overflow-hidden bg-muted">
           <img
@@ -55,11 +56,22 @@ export default function ProjectCard({
           </div>
         )}
         
-        <div className="flex items-center gap-2 text-accent font-medium text-sm group-hover:gap-3 transition-all">
-          View Project
-          <ExternalLink className="w-4 h-4" />
+        <div className="flex items-center gap-4 pt-4 border-t border-border/50">
+          <Link href={internalLink} className="flex items-center gap-2 text-accent font-medium text-sm hover:gap-3 transition-all">
+            View Details
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-foreground/60 hover:text-accent font-medium text-sm transition-colors"
+            title="View on Behance"
+          >
+            <ExternalLink className="w-4 h-4" />
+          </a>
         </div>
       </div>
-    </a>
+    </div>
   );
 }

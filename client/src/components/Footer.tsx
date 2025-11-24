@@ -1,4 +1,4 @@
-import { Mail, Linkedin, ExternalLink } from "lucide-react";
+import { Mail, Linkedin, ExternalLink, Phone } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -45,24 +45,37 @@ export default function Footer() {
           </div>
           
           <div>
-            <h4 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">Connect</h4>
-            <div className="flex gap-3">
-              <a
-                href="https://www.linkedin.com/in/ukahue/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-3 bg-muted hover:bg-accent hover:text-accent-foreground rounded-full transition-colors shadow-sm hover:shadow-md"
-                aria-label="LinkedIn"
-              >
-                <Linkedin className="w-5 h-5" />
-              </a>
-              <a
-                href="mailto:contact@example.com"
-                className="p-3 bg-muted hover:bg-accent hover:text-accent-foreground rounded-full transition-colors shadow-sm hover:shadow-md"
-                aria-label="Email"
-              >
-                <Mail className="w-5 h-5" />
-              </a>
+            <h4 className="text-sm font-semibold text-foreground mb-4 uppercase tracking-wider">Contact</h4>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-accent" />
+                <a
+                  href="mailto:kahuemorais@gmail.com"
+                  className="text-foreground/70 hover:text-accent transition-colors text-sm font-medium"
+                >
+                  kahuemorais@gmail.com
+                </a>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-accent" />
+                <a
+                  href="tel:+5511910612191"
+                  className="text-foreground/70 hover:text-accent transition-colors text-sm font-medium"
+                >
+                  +55 11 91061-2191
+                </a>
+              </div>
+              <div className="flex items-center gap-2">
+                <Linkedin className="w-4 h-4 text-accent" />
+                <a
+                  href="https://www.linkedin.com/in/ukahue/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground/70 hover:text-accent transition-colors text-sm font-medium"
+                >
+                  linkedin.com/in/ukahue
+                </a>
+              </div>
             </div>
           </div>
         </div>

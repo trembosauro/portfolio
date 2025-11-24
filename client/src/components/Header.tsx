@@ -1,5 +1,6 @@
 import { APP_LOGO } from "@/const";
 import { Link } from "wouter";
+import { Mail, Phone, Linkedin } from "lucide-react";
 
 export default function Header() {
   return (
@@ -28,14 +29,42 @@ export default function Header() {
           </li>
         </ul>
 
-        <a
-          href="https://www.linkedin.com/in/ukahue/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-6 py-2.5 bg-accent text-accent-foreground rounded-full font-medium text-sm hover:opacity-90 transition-opacity shadow-sm hover:shadow-md"
-        >
-          LinkedIn
-        </a>
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2">
+            <a
+              href="https://www.linkedin.com/in/ukahue/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2.5 text-foreground/70 hover:text-accent transition-colors"
+              title="LinkedIn"
+            >
+              <Linkedin className="w-5 h-5" />
+            </a>
+            <a
+              href="mailto:kahuemorais@gmail.com"
+              className="p-2.5 text-foreground/70 hover:text-accent transition-colors"
+              title="Email"
+            >
+              <Mail className="w-5 h-5" />
+            </a>
+            <a
+              href="tel:+5511910612191"
+              className="p-2.5 text-foreground/70 hover:text-accent transition-colors"
+              title="Phone"
+            >
+              <Phone className="w-5 h-5" />
+            </a>
+          </div>
+
+          <a
+            href="https://www.linkedin.com/in/ukahue/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-2.5 bg-accent text-accent-foreground rounded-full font-medium text-sm hover:opacity-90 transition-opacity shadow-sm hover:shadow-md"
+          >
+            LinkedIn
+          </a>
+        </div>
       </nav>
     </header>
   );

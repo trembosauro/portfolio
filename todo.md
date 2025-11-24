@@ -58,3 +58,20 @@
 - [x] Update About Me section with LinkedIn bio
 - [x] Add comprehensive skills list from LinkedIn
 - [x] Include research, design, prototyping, data, AI, development, and collaboration skills
+
+## Project Detail Pages
+- [x] Create Picpay project detail page
+- [x] Create C6 Bank project detail page
+- [x] Create BTG+ project detail page
+- [x] Create Bell App project detail page
+- [x] Create Le Biscuit project detail page
+- [x] Add routing for project pages
+- [x] Add back navigation to project detail pages
+
+## Contact Information
+- [x] Add LinkedIn link (linkedin.com/in/ukahue/)
+- [x] Add email link (kahuemorais@gmail.com)
+- [x] Add phone link (55 11 91061 2191)
+- [x] Update Header with contact links
+- [x] Update Footer with contact information
+- [x] Create contact section with all contact methods
