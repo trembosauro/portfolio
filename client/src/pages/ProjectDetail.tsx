@@ -204,7 +204,7 @@ export default function ProjectDetail() {
             <img
               src={data.image}
               alt={data.title}
-              className="w-full rounded-2xl mb-12 border border-border"
+              className="w-full rounded-[var(--radius-card)] mb-12 border border-border"
             />
           )}
 
