@@ -12,6 +12,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { useLocation } from "wouter";
 import api from "../api";
 
 const highlights = [
@@ -34,15 +35,25 @@ const plans = [
 ];
 
 export default function Login() {
+  const [, setLocation] = useLocation();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [signupName, setSignupName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signupConfirm, setSignupConfirm] = useState("");
   const [loginError, setLoginError] = useState("");
   const [signupError, setSignupError] = useState("");
+
+  const getErrorDetails = (
+    error: unknown
+  ): { status?: number; code?: string } => {
+    const response = (error as { response?: { status?: number; data?: { error?: string } } })
+      ?.response;
+    return { status: response?.status, code: response?.data?.error };
+  };
 
   const handleLogin = async () => {
     setLoginError("");
@@ -56,7 +67,15 @@ export default function Login() {
         password: loginPassword,
       });
       window.dispatchEvent(new Event("auth-change"));
-    } catch {
+      setLocation("/profile");
+    } catch (error) {
+      const { code } = getErrorDetails(error);
+      if (code === "session_conflict") {
+        setLoginError(
+          "Sua conta foi usada em outro lugar. Todas as sessoes foram encerradas. Entre novamente ou redefina a senha."
+        );
+        return;
+      }
       setLoginError("Email ou senha invalidos.");
     }
   };
@@ -78,10 +97,29 @@ export default function Login() {
         password: signupPassword,
       });
       window.dispatchEvent(new Event("auth-change"));
+      setLocation("/profile");
     } catch (error) {
-      if ((error as { response?: { status?: number } })?.response?.status === 409) {
-        setSignupError("Email ja cadastrado.");
-        return;
+      const { status } = getErrorDetails(error);
+      if (status === 409) {
+        try {
+          await api.post("/api/auth/login", {
+            email: signupEmail,
+            password: signupPassword,
+          });
+          window.dispatchEvent(new Event("auth-change"));
+          setLocation("/profile");
+          return;
+        } catch (loginError) {
+          const { code } = getErrorDetails(loginError);
+          if (code === "session_conflict") {
+            setSignupError(
+              "Sua conta foi usada em outro lugar. Todas as sessoes foram encerradas. Entre novamente ou redefina a senha."
+            );
+            return;
+          }
+          setSignupError("Email ja cadastrado.");
+          return;
+        }
       }
       setSignupError("Nao foi possivel criar a conta.");
     }
@@ -200,7 +238,18 @@ export default function Login() {
           backdropFilter: "blur(18px)",
         }}
       >
-        <Stack spacing={3}>
+        <Stack
+          spacing={3}
+          component="form"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (mode === "login") {
+              void handleLogin();
+              return;
+            }
+            void handleSignup();
+          }}
+        >
           <Tabs
             value={mode}
             onChange={(_, value) => {
@@ -247,7 +296,13 @@ export default function Login() {
                   justifyContent="space-between"
                 >
                   <FormControlLabel
-                    control={<Checkbox size="small" />}
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={rememberMe}
+                        onChange={(event) => setRememberMe(event.target.checked)}
+                      />
+                    }
                     label="Manter conectado"
                   />
                   <Typography variant="caption" sx={{ color: "text.secondary" }}>
@@ -256,13 +311,20 @@ export default function Login() {
                 </Stack>
               </Stack>
 
-              <Button variant="contained" size="large" fullWidth onClick={handleLogin}>
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                fullWidth
+                onClick={handleLogin}
+              >
                 Entrar
               </Button>
 
               <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
 
               <Button
+                type="button"
                 variant="outlined"
                 size="large"
                 fullWidth
@@ -273,6 +335,7 @@ export default function Login() {
               </Button>
 
               <Button
+                type="button"
                 variant="outlined"
                 size="large"
                 fullWidth
@@ -288,6 +351,7 @@ export default function Login() {
               ) : null}
 
               <Button
+                type="button"
                 variant="text"
                 size="large"
                 onClick={() => setMode("signup")}
@@ -336,7 +400,13 @@ export default function Login() {
                 />
               </Stack>
 
-              <Button variant="contained" size="large" fullWidth onClick={handleSignup}>
+              <Button
+                type="submit"
+                variant="contained"
+                size="large"
+                fullWidth
+                onClick={handleSignup}
+              >
                 Criar conta
               </Button>
 
@@ -349,6 +419,7 @@ export default function Login() {
               <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
 
               <Button
+                type="button"
                 variant="outlined"
                 size="large"
                 fullWidth

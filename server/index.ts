@@ -141,6 +141,17 @@ const issueSession = (userId: number) => {
   return { token, expires };
 };
 
+const hasActiveSession = (userId: number) => {
+  const row = db
+    .prepare("SELECT COUNT(*) as count FROM sessions WHERE user_id = ?")
+    .get(userId) as { count: number };
+  return row.count > 0;
+};
+
+const clearUserSessions = (userId: number) => {
+  db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId);
+};
+
 const setSessionCookie = (res: Response, token: string, expires: Date) => {
   const isProd = process.env.NODE_ENV === "production";
   res.cookie("sc_session", token, {
@@ -248,6 +259,12 @@ app.post("/api/auth/login", (req, res) => {
     | undefined;
   if (!user || !bcrypt.compareSync(password, user.password_hash)) {
     res.status(401).json({ error: "invalid_credentials" });
+    return;
+  }
+
+  if (hasActiveSession(user.id)) {
+    clearUserSessions(user.id);
+    res.status(409).json({ error: "session_conflict" });
     return;
   }
 

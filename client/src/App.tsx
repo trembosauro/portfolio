@@ -4,6 +4,10 @@ import {
   Box,
   Button,
   CssBaseline,
+  Breadcrumbs,
+  Dialog,
+  DialogContent,
+  Link,
   Stack,
   Typography,
 } from "@mui/material";
@@ -14,16 +18,19 @@ import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import AccessManagement from "./pages/AccessManagement";
 import NotFound from "./pages/NotFound";
+import Support from "./pages/Support";
 
 const navItems = [
   { label: "Home", href: "/login" },
   { label: "Gestao", href: "/access" },
   { label: "Perfil", href: "/profile" },
+  { label: "Suporte", href: "/support" },
 ];
 
 function App() {
   const [location, setLocation] = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [logoutOpen, setLogoutOpen] = useState(false);
 
   useEffect(() => {
     const syncAuth = async () => {
@@ -53,6 +60,21 @@ function App() {
   const visibleNavItems = isLoggedIn
     ? navItems.filter((item) => item.href !== "/login")
     : navItems.filter((item) => item.href === "/login");
+
+  const breadcrumbMap: Record<string, string> = {
+    "/profile": "Perfil",
+    "/access": "Gestao",
+    "/support": "Suporte",
+  };
+  const showBreadcrumbs = !["/", "/login", "/signup"].includes(location);
+  const currentLabel = breadcrumbMap[location] ?? "Pagina";
+
+  const handleLogout = () => {
+    void api.post("/api/auth/logout").finally(() => {
+      window.dispatchEvent(new Event("auth-change"));
+      setLocation("/login");
+    });
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -143,12 +165,7 @@ function App() {
                   <Button
                     variant="text"
                     color="inherit"
-                    onClick={() => {
-                      void api.post("/api/auth/logout").finally(() => {
-                        window.dispatchEvent(new Event("auth-change"));
-                        setLocation("/login");
-                      });
-                    }}
+                    onClick={() => setLogoutOpen(true)}
                     sx={{
                       textTransform: "none",
                       fontWeight: 600,
@@ -163,12 +180,29 @@ function App() {
           </Box>
 
           <Box component="main" sx={{ flex: 1, px: { xs: 2, md: 6 }, py: 6 }}>
+            {showBreadcrumbs ? (
+              <Breadcrumbs
+                aria-label="breadcrumb"
+                sx={{ mb: 3, color: "text.secondary" }}
+              >
+                <Link
+                  component={RouterLink}
+                  href="/login"
+                  underline="hover"
+                  color="inherit"
+                >
+                  Home
+                </Link>
+                <Typography color="text.primary">{currentLabel}</Typography>
+              </Breadcrumbs>
+            ) : null}
             <Switch>
               <Route path="/" component={Login} />
               <Route path="/login" component={Login} />
               <Route path="/signup" component={Login} />
               <Route path="/profile" component={Profile} />
               <Route path="/access" component={AccessManagement} />
+              <Route path="/support" component={Support} />
               <Route>
                 <NotFound />
               </Route>
@@ -176,6 +210,56 @@ function App() {
           </Box>
         </Box>
       </Box>
+
+      <Dialog
+        open={logoutOpen}
+        onClose={() => setLogoutOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogContent>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              mb: 2,
+            }}
+          >
+            <Typography variant="h6">Confirmar logout</Typography>
+            <Button
+              type="button"
+              variant="text"
+              onClick={() => setLogoutOpen(false)}
+              sx={{ minWidth: 0, px: 1, fontWeight: 700 }}
+            >
+              X
+            </Button>
+          </Box>
+          <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
+            Voce quer sair da sua conta agora?
+          </Typography>
+          <Stack direction="row" spacing={2} justifyContent="space-between">
+            <Button
+              color="error"
+              variant="contained"
+              onClick={() => {
+                setLogoutOpen(false);
+                handleLogout();
+              }}
+            >
+              Logout
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setLogoutOpen(false)}
+              sx={{ textTransform: "none", fontWeight: 600 }}
+            >
+              Manter conectado
+            </Button>
+          </Stack>
+        </DialogContent>
+      </Dialog>
     </ThemeProvider>
   );
 }
