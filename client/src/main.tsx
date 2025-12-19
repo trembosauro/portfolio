@@ -1,10 +1,15 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { Router } from "wouter";
+import App from "./App.tsx";
+import "./index.css";
+
+const base = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <Router base={base === "" ? "/" : base}>
+      <App />
+    </Router>
   </React.StrictMode>,
 )
