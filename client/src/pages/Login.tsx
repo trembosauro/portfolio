@@ -141,6 +141,7 @@ export default function Login() {
               background:
                 "linear-gradient(120deg, rgba(34, 201, 166, 0.16), rgba(245, 158, 11, 0.12))",
               border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "var(--radius-card)",
             }}
           >
             <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
