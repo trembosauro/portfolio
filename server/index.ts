@@ -23,6 +23,7 @@ declare global {
 
 const app = express();
 const port = Number(process.env.PORT || 3001);
+const isProduction = process.env.NODE_ENV === "production";
 
 const allowlist = (process.env.CORS_ORIGIN || "http://localhost:3000")
   .split(",")
@@ -32,7 +33,7 @@ const allowlist = (process.env.CORS_ORIGIN || "http://localhost:3000")
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowlist.includes(origin)) {
+      if (!origin || allowlist.includes(origin) || !isProduction) {
         callback(null, true);
         return;
       }
@@ -91,6 +92,41 @@ db.exec(`
     name TEXT NOT NULL UNIQUE,
     description TEXT NOT NULL,
     enabled INTEGER NOT NULL DEFAULT 1
+  );
+  CREATE TABLE IF NOT EXISTS user_profiles (
+    user_id INTEGER PRIMARY KEY,
+    phone TEXT,
+    team TEXT,
+    role TEXT,
+    timezone TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
+  CREATE TABLE IF NOT EXISTS user_preferences (
+    user_id INTEGER PRIMARY KEY,
+    email_notifications INTEGER NOT NULL DEFAULT 1,
+    single_session INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
+  CREATE TABLE IF NOT EXISTS pipeline_data (
+    user_id INTEGER PRIMARY KEY,
+    data_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
+  CREATE TABLE IF NOT EXISTS pipeline_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    data_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS finance_data (
+    user_id INTEGER PRIMARY KEY,
+    data_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY(user_id) REFERENCES users(id)
   );
   CREATE TABLE IF NOT EXISTS invites (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -153,11 +189,10 @@ const clearUserSessions = (userId: number) => {
 };
 
 const setSessionCookie = (res: Response, token: string, expires: Date) => {
-  const isProd = process.env.NODE_ENV === "production";
   res.cookie("sc_session", token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: isProd,
+    secure: isProduction,
     expires,
   });
 };
@@ -313,6 +348,101 @@ app.patch("/api/auth/me", requireAuth, (req, res) => {
   res.json({ user: updated });
 });
 
+app.get("/api/profile", requireAuth, (req, res) => {
+  const userId = req.user?.id;
+  const user = db
+    .prepare("SELECT id, email, name FROM users WHERE id = ?")
+    .get(userId) as AuthUser;
+
+  const profile = db
+    .prepare("SELECT phone, team, role, timezone FROM user_profiles WHERE user_id = ?")
+    .get(userId) as
+    | { phone: string | null; team: string | null; role: string | null; timezone: string | null }
+    | undefined;
+
+  const preferences = db
+    .prepare(
+      "SELECT email_notifications, single_session FROM user_preferences WHERE user_id = ?"
+    )
+    .get(userId) as
+    | { email_notifications: number; single_session: number }
+    | undefined;
+
+  res.json({
+    user,
+    profile: profile || { phone: "", team: "", role: "", timezone: "" },
+    preferences: {
+      emailNotifications: preferences ? Boolean(preferences.email_notifications) : true,
+      singleSession: preferences ? Boolean(preferences.single_session) : false,
+    },
+  });
+});
+
+app.put("/api/profile", requireAuth, (req, res) => {
+  const userId = req.user?.id;
+  const name = typeof req.body.name === "string" ? req.body.name.trim() : null;
+  const email =
+    typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
+
+  if (!email) {
+    res.status(400).json({ error: "email_required" });
+    return;
+  }
+
+  const existing = db
+    .prepare("SELECT id FROM users WHERE email = ? AND id != ?")
+    .get(email, userId) as { id: number } | undefined;
+  if (existing) {
+    res.status(409).json({ error: "email_in_use" });
+    return;
+  }
+
+  db.prepare("UPDATE users SET name = ?, email = ? WHERE id = ?").run(
+    name,
+    email,
+    userId
+  );
+
+  const phone = typeof req.body.phone === "string" ? req.body.phone.trim() : "";
+  const team = typeof req.body.team === "string" ? req.body.team.trim() : "";
+  const role = typeof req.body.role === "string" ? req.body.role.trim() : "";
+  const timezone =
+    typeof req.body.timezone === "string" ? req.body.timezone.trim() : "";
+  const emailNotifications = Boolean(req.body.preferences?.emailNotifications);
+  const singleSession = Boolean(req.body.preferences?.singleSession);
+  const now = new Date().toISOString();
+
+  db.prepare(
+    `INSERT INTO user_profiles (user_id, phone, team, role, timezone, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       phone = excluded.phone,
+       team = excluded.team,
+       role = excluded.role,
+       timezone = excluded.timezone,
+       updated_at = excluded.updated_at`
+  ).run(userId, phone, team, role, timezone, now, now);
+
+  db.prepare(
+    `INSERT INTO user_preferences (user_id, email_notifications, single_session, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       email_notifications = excluded.email_notifications,
+       single_session = excluded.single_session,
+       updated_at = excluded.updated_at`
+  ).run(userId, emailNotifications ? 1 : 0, singleSession ? 1 : 0, now, now);
+
+  const updated = db
+    .prepare("SELECT id, email, name FROM users WHERE id = ?")
+    .get(userId) as AuthUser;
+
+  res.json({
+    user: updated,
+    profile: { phone, team, role, timezone },
+    preferences: { emailNotifications, singleSession },
+  });
+});
+
 app.post("/api/auth/forgot-password", (req, res) => {
   const email =
     typeof req.body.email === "string" ? req.body.email.trim().toLowerCase() : "";
@@ -443,6 +573,90 @@ app.patch("/api/access/modules/:id", requireAuth, (req, res) => {
     .prepare("SELECT id, name, description, enabled FROM modules WHERE id = ?")
     .get(id) as { id: number; name: string; description: string; enabled: number };
   res.json({ module: { ...updated, enabled: Boolean(updated.enabled) } });
+});
+
+app.get("/api/pipeline/board", requireAuth, (req, res) => {
+  const row = db
+    .prepare("SELECT data_json FROM pipeline_state WHERE id = 1")
+    .get() as { data_json: string } | undefined;
+  if (!row) {
+    res.json({ pipeline: null });
+    return;
+  }
+  try {
+    res.json({ pipeline: JSON.parse(row.data_json) });
+  } catch {
+    res.json({ pipeline: null });
+  }
+});
+
+app.put("/api/pipeline/board", requireAuth, (req, res) => {
+  const pipeline = req.body?.columns ?? req.body;
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO pipeline_state (id, data_json, updated_at)
+     VALUES (1, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       data_json = excluded.data_json,
+       updated_at = excluded.updated_at`
+  ).run(JSON.stringify(pipeline ?? []), now);
+  res.json({ ok: true });
+});
+
+app.get("/api/pipeline/data", requireAuth, (req, res) => {
+  const row = db
+    .prepare("SELECT data_json FROM pipeline_data WHERE user_id = ?")
+    .get(req.user?.id) as { data_json: string } | undefined;
+  if (!row) {
+    res.json({ data: null });
+    return;
+  }
+  try {
+    res.json({ data: JSON.parse(row.data_json) });
+  } catch {
+    res.json({ data: null });
+  }
+});
+
+app.put("/api/pipeline/data", requireAuth, (req, res) => {
+  const data = req.body?.data ?? req.body;
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO pipeline_data (user_id, data_json, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       data_json = excluded.data_json,
+       updated_at = excluded.updated_at`
+  ).run(req.user?.id, JSON.stringify(data ?? {}), now);
+  res.json({ ok: true });
+});
+
+app.get("/api/finance/data", requireAuth, (req, res) => {
+  const row = db
+    .prepare("SELECT data_json FROM finance_data WHERE user_id = ?")
+    .get(req.user?.id) as { data_json: string } | undefined;
+  if (!row) {
+    res.json({ data: null });
+    return;
+  }
+  try {
+    res.json({ data: JSON.parse(row.data_json) });
+  } catch {
+    res.json({ data: null });
+  }
+});
+
+app.put("/api/finance/data", requireAuth, (req, res) => {
+  const data = req.body?.data ?? req.body;
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO finance_data (user_id, data_json, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       data_json = excluded.data_json,
+       updated_at = excluded.updated_at`
+  ).run(req.user?.id, JSON.stringify(data ?? {}), now);
+  res.json({ ok: true });
 });
 
 app.get("/api/access/invites", requireAuth, (req, res) => {

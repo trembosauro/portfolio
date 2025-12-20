@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -9,12 +9,130 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { useLocation } from "wouter";
+import api from "../api";
 
 export default function Profile() {
+  const [, setLocation] = useLocation();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [team, setTeam] = useState("");
+  const [role, setRole] = useState("");
+  const [timezone, setTimezone] = useState("");
   const [preferences, setPreferences] = useState({
     email: true,
     singleSession: false,
   });
+  const isLoadedRef = useRef(false);
+  const saveTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem("sc_user");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as { name?: string; email?: string };
+        if (parsed?.name) {
+          setName(parsed.name);
+        }
+        if (parsed?.email) {
+          setEmail(parsed.email);
+        }
+      } catch {
+        window.localStorage.removeItem("sc_user");
+      }
+    }
+    const syncProfile = async () => {
+      try {
+        const response = await api.get("/api/profile");
+        const user = response?.data?.user;
+        const profile = response?.data?.profile;
+        const prefs = response?.data?.preferences;
+        setName(user?.name || "");
+        setEmail(user?.email || "");
+        setPhone(profile?.phone || "");
+        setTeam(profile?.team || "");
+        setRole(profile?.role || "");
+        setTimezone(profile?.timezone || "");
+        setPreferences({
+          email: Boolean(prefs?.emailNotifications),
+          singleSession: Boolean(prefs?.singleSession),
+        });
+        if (user?.email) {
+          window.localStorage.setItem(
+            "sc_user",
+            JSON.stringify({ name: user.name || "", email: user.email })
+          );
+        }
+      } catch {
+        // Keep local values if the session is unavailable.
+      } finally {
+        isLoadedRef.current = true;
+      }
+    };
+    void syncProfile();
+  }, []);
+
+  const handleLogout = () => {
+    void api.post("/api/auth/logout").finally(() => {
+      window.localStorage.removeItem("sc_user");
+      window.dispatchEvent(new Event("auth-change"));
+      setLocation("/login");
+    });
+  };
+
+  const handleSwitchAccount = () => {
+    void api.post("/api/auth/logout").finally(() => {
+      window.localStorage.removeItem("sc_user");
+      window.dispatchEvent(new Event("auth-change"));
+      setLocation("/login");
+    });
+  };
+
+  const saveProfile = () => {
+    void api
+      .put("/api/profile", {
+        name,
+        email,
+        phone,
+        team,
+        role,
+        timezone,
+        preferences: {
+          emailNotifications: preferences.email,
+          singleSession: preferences.singleSession,
+        },
+      })
+      .then((response) => {
+        const user = response?.data?.user;
+        if (user?.email) {
+          window.localStorage.setItem(
+            "sc_user",
+            JSON.stringify({ name: user.name || "", email: user.email })
+          );
+        }
+      })
+      .catch(() => {
+        // No-op for now.
+      });
+  };
+
+  useEffect(() => {
+    if (!isLoadedRef.current) {
+      return;
+    }
+    if (saveTimeoutRef.current) {
+      window.clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = window.setTimeout(() => {
+      saveProfile();
+    }, 600);
+    return () => {
+      if (saveTimeoutRef.current) {
+        window.clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [name, email, phone, team, role, timezone, preferences]);
 
   return (
     <Box sx={{ maxWidth: 980, mx: "auto" }}>
@@ -43,44 +161,123 @@ export default function Profile() {
                 gap: 2,
               }}
             >
-              <TextField label="Nome completo" fullWidth defaultValue="Ana Lima" />
-              <TextField label="Email" fullWidth defaultValue="ana@empresa.com" />
-              <TextField label="Telefone" fullWidth defaultValue="+55 11 99999-1234" />
-              <TextField label="Time" fullWidth defaultValue="Operacoes" />
-              <TextField label="Cargo" fullWidth defaultValue="Gerente de Conta" />
-              <TextField label="Fuso horario" fullWidth defaultValue="America/Sao_Paulo" />
+              <TextField
+                label="Nome completo"
+                fullWidth
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+              <TextField
+                label="Email"
+                fullWidth
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+              <TextField
+                label="Telefone"
+                fullWidth
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+              />
+              <TextField
+                label="Time"
+                fullWidth
+                value={team}
+                onChange={(event) => setTeam(event.target.value)}
+              />
+              <TextField
+                label="Cargo"
+                fullWidth
+                value={role}
+                onChange={(event) => setRole(event.target.value)}
+              />
+              <TextField
+                label="Fuso horario"
+                fullWidth
+                value={timezone}
+                onChange={(event) => setTimezone(event.target.value)}
+              />
             </Box>
-            <Button variant="outlined" size="large" sx={{ alignSelf: "flex-start" }}>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={saveProfile}
+              sx={{ alignSelf: "flex-start" }}
+            >
               Salvar alteracoes
             </Button>
           </Stack>
         </Paper>
 
-        <Paper
-          elevation={0}
+        <Box
           sx={{
-            p: { xs: 3, md: 4 },
-            border: "1px solid rgba(255,255,255,0.1)",
-            backgroundColor: "rgba(15, 23, 32, 0.9)",
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+            gap: 3,
           }}
         >
-          <Stack spacing={3}>
-            <Typography variant="h6">Seguranca</Typography>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                gap: 2,
-              }}
-            >
-              <TextField label="Senha atual" type="password" fullWidth />
-              <TextField label="Nova senha" type="password" fullWidth />
-            </Box>
-            <Button variant="outlined" size="large" sx={{ alignSelf: "flex-start" }}>
-              Atualizar senha
-            </Button>
-          </Stack>
-        </Paper>
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 3, md: 4 },
+              border: "1px solid rgba(255,255,255,0.1)",
+              backgroundColor: "rgba(15, 23, 32, 0.9)",
+            }}
+          >
+            <Stack spacing={3}>
+              <Typography variant="h6">Seguranca</Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                  gap: 2,
+                }}
+              >
+                <TextField label="Senha atual" type="password" fullWidth />
+                <TextField label="Nova senha" type="password" fullWidth />
+              </Box>
+              <Button
+                variant="outlined"
+                size="large"
+                sx={{ alignSelf: "flex-start" }}
+              >
+                Atualizar senha
+              </Button>
+            </Stack>
+          </Paper>
+
+          <Paper
+            elevation={0}
+            sx={{
+              p: { xs: 3, md: 4 },
+              border: "1px solid rgba(255,255,255,0.1)",
+              backgroundColor: "rgba(15, 23, 32, 0.9)",
+            }}
+          >
+            <Stack spacing={2}>
+              <Typography variant="h6">Conta</Typography>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <Button
+                  color="error"
+                  variant="contained"
+                  size="large"
+                  onClick={handleLogout}
+                  sx={{ textTransform: "none", fontWeight: 600 }}
+                >
+                  Sair
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={handleSwitchAccount}
+                  sx={{ textTransform: "none", fontWeight: 600 }}
+                >
+                  Trocar de conta
+                </Button>
+              </Stack>
+            </Stack>
+          </Paper>
+        </Box>
 
         <Paper
           elevation={0}
@@ -187,6 +384,7 @@ export default function Profile() {
             </Box>
           </Stack>
         </Paper>
+
       </Stack>
     </Box>
   );

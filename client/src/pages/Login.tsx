@@ -47,6 +47,16 @@ export default function Login() {
   const [loginError, setLoginError] = useState("");
   const [signupError, setSignupError] = useState("");
 
+  const persistUser = (user?: { name?: string | null; email?: string }) => {
+    if (!user?.email) {
+      return;
+    }
+    window.localStorage.setItem(
+      "sc_user",
+      JSON.stringify({ name: user.name || "", email: user.email })
+    );
+  };
+
   const getErrorDetails = (
     error: unknown
   ): { status?: number; code?: string } => {
@@ -62,10 +72,11 @@ export default function Login() {
       return;
     }
     try {
-      await api.post("/api/auth/login", {
+      const response = await api.post("/api/auth/login", {
         email: loginEmail,
         password: loginPassword,
       });
+      persistUser(response?.data?.user);
       window.dispatchEvent(new Event("auth-change"));
       setLocation("/profile");
     } catch (error) {
@@ -91,21 +102,23 @@ export default function Login() {
       return;
     }
     try {
-      await api.post("/api/auth/signup", {
+      const response = await api.post("/api/auth/signup", {
         name: signupName,
         email: signupEmail,
         password: signupPassword,
       });
+      persistUser(response?.data?.user);
       window.dispatchEvent(new Event("auth-change"));
       setLocation("/profile");
     } catch (error) {
       const { status } = getErrorDetails(error);
       if (status === 409) {
         try {
-          await api.post("/api/auth/login", {
+          const response = await api.post("/api/auth/login", {
             email: signupEmail,
             password: signupPassword,
           });
+          persistUser(response?.data?.user);
           window.dispatchEvent(new Event("auth-change"));
           setLocation("/profile");
           return;

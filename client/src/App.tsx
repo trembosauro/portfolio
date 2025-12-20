@@ -1,18 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { MouseEvent } from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import {
+  Avatar,
   Box,
   Button,
   CssBaseline,
   Breadcrumbs,
-  Dialog,
-  DialogContent,
-  IconButton,
   Link,
+  ClickAwayListener,
+  MenuItem,
+  MenuList,
+  Paper,
+  Popper,
   Stack,
   Typography,
 } from "@mui/material";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { Link as RouterLink, Route, Switch, useLocation } from "wouter";
 import theme from "./theme";
 import api from "./api";
@@ -21,26 +24,55 @@ import Profile from "./pages/Profile";
 import AccessManagement from "./pages/AccessManagement";
 import NotFound from "./pages/NotFound";
 import Support from "./pages/Support";
+import PipelineData from "./pages/PipelineData";
+import Pipeline from "./pages/Pipeline";
+import Financas from "./pages/Financas";
 
 const navItems = [
   { label: "Home", href: "/login" },
-  { label: "Gestao", href: "/access" },
-  { label: "Perfil", href: "/profile" },
   { label: "Suporte", href: "/support" },
+  { label: "Pipeline", href: "/pipeline" },
+  { label: "Financas", href: "/financas" },
+  { label: "Gestao", href: "/access" },
 ];
 
 function App() {
   const [location, setLocation] = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [logoutOpen, setLogoutOpen] = useState(false);
+  const [pipelineAnchor, setPipelineAnchor] = useState<null | HTMLElement>(null);
+  const [userName, setUserName] = useState<string>("");
+  const closeTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     const syncAuth = async () => {
       try {
-        await api.get("/api/auth/me");
+        const response = await api.get("/api/auth/me");
+        const name = response?.data?.user?.name;
         setIsLoggedIn(true);
+        setUserName(typeof name === "string" ? name : "");
+        if (response?.data?.user?.email) {
+          window.localStorage.setItem(
+            "sc_user",
+            JSON.stringify({
+              name: response.data.user.name || "",
+              email: response.data.user.email,
+            })
+          );
+        }
       } catch {
+        const stored = window.localStorage.getItem("sc_user");
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored) as { name?: string };
+            setIsLoggedIn(true);
+            setUserName(parsed?.name || "");
+            return;
+          } catch {
+            window.localStorage.removeItem("sc_user");
+          }
+        }
         setIsLoggedIn(false);
+        setUserName("");
       }
     };
 
@@ -52,9 +84,24 @@ function App() {
       window.removeEventListener("auth-change", handleAuthChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (isLoggedIn && ["/", "/login", "/signup"].includes(location)) {
+      setLocation("/pipeline");
+    }
+  }, [isLoggedIn, location, setLocation]);
+
+  useEffect(() => {
+    if (pipelineAnchor) {
+      setPipelineAnchor(null);
+    }
+  }, [location]);
   const isActive = (href: string) => {
     if (href === "/login") {
       return location === "/" || location === "/login" || location === "/signup";
+    }
+    if (href === "/pipeline") {
+      return location === "/pipeline" || location === "/pipeline/dados";
     }
     return location === href;
   };
@@ -67,16 +114,43 @@ function App() {
     "/profile": "Perfil",
     "/access": "Gestao",
     "/support": "Suporte",
+    "/pipeline": "Pipeline",
+    "/pipeline/dados": "Dados",
+    "/financas": "Financas",
   };
   const showBreadcrumbs = !["/", "/login", "/signup"].includes(location);
   const currentLabel = breadcrumbMap[location] ?? "Pagina";
+  const pipelineOpen = Boolean(pipelineAnchor);
+  const avatarInitial = userName.trim().charAt(0).toUpperCase() || "U";
 
-  const handleLogout = () => {
-    void api.post("/api/auth/logout").finally(() => {
-      window.dispatchEvent(new Event("auth-change"));
-      setLocation("/login");
-    });
+  const handlePipelineOpen = (event: MouseEvent<HTMLElement>) => {
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setPipelineAnchor(event.currentTarget);
   };
+
+  const handlePipelineKeepOpen = () => {
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  };
+
+  const handlePipelineClose = () => {
+    setPipelineAnchor(null);
+  };
+
+  const scheduleCrmClose = () => {
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+    }
+    closeTimerRef.current = window.setTimeout(() => {
+      setPipelineAnchor(null);
+    }, 150);
+  };
+
 
   return (
     <ThemeProvider theme={theme}>
@@ -140,41 +214,94 @@ function App() {
                 spacing={1}
                 sx={{ display: { xs: "none", md: "flex" }, flexWrap: "wrap" }}
               >
-                {visibleNavItems.map((item) => (
-                  <Button
-                    key={item.href}
-                    component={RouterLink}
-                    href={item.href}
-                    variant="text"
-                    color="inherit"
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 600,
-                      color: isActive(item.href) ? "primary.main" : "text.secondary",
-                      backgroundColor: isActive(item.href)
-                        ? "rgba(34, 201, 166, 0.12)"
-                        : "transparent",
-                      "&:hover": {
-                        color: "primary.main",
-                        backgroundColor: "rgba(34, 201, 166, 0.08)",
-                      },
-                    }}
-                  >
-                    {item.label}
-                  </Button>
-                ))}
+                {visibleNavItems.map((item) => {
+                  if (item.href === "/pipeline" && isLoggedIn) {
+                    return (
+                      <Box key={item.href} sx={{ display: "flex", alignItems: "center" }}>
+                        <Button
+                          component={RouterLink}
+                          href="/pipeline"
+                          variant="text"
+                          color="inherit"
+                          onMouseEnter={handlePipelineOpen}
+                          onFocus={handlePipelineOpen}
+                          sx={{
+                            textTransform: "none",
+                            fontWeight: 600,
+                            color:
+                              pipelineOpen || isActive(item.href)
+                                ? "primary.main"
+                                : "text.secondary",
+                            backgroundColor:
+                              pipelineOpen || isActive(item.href)
+                                ? "rgba(34, 201, 166, 0.12)"
+                                : "transparent",
+                            "&:hover": {
+                              color: "primary.main",
+                              backgroundColor: "rgba(34, 201, 166, 0.08)",
+                            },
+                          }}
+                        >
+                          {item.label}
+                        </Button>
+                      </Box>
+                    );
+                  }
+
+                  return (
+                    <Box key={item.href} sx={{ display: "flex", alignItems: "center" }}>
+                      <Button
+                        component={RouterLink}
+                        href={item.href}
+                        variant="text"
+                        color="inherit"
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 600,
+                          color: isActive(item.href) ? "primary.main" : "text.secondary",
+                          backgroundColor: isActive(item.href)
+                            ? "rgba(34, 201, 166, 0.12)"
+                            : "transparent",
+                          "&:hover": {
+                            color: "primary.main",
+                            backgroundColor: "rgba(34, 201, 166, 0.08)",
+                          },
+                        }}
+                      >
+                        {item.label}
+                      </Button>
+                    </Box>
+                  );
+                })}
                 {isLoggedIn ? (
                   <Button
+                    component={RouterLink}
+                    href="/profile"
                     variant="text"
                     color="inherit"
-                    onClick={() => setLogoutOpen(true)}
                     sx={{
-                      textTransform: "none",
-                      fontWeight: 600,
-                      color: "text.secondary",
+                      minWidth: 0,
+                      p: 0,
+                      borderRadius: "999px",
+                      border: isActive("/profile")
+                        ? "1px solid rgba(34, 201, 166, 0.6)"
+                        : "1px solid transparent",
+                      backgroundColor: isActive("/profile")
+                        ? "rgba(34, 201, 166, 0.12)"
+                        : "transparent",
                     }}
                   >
-                    Sair
+                    <Avatar
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        fontSize: 14,
+                        bgcolor: "rgba(34, 201, 166, 0.18)",
+                        color: "text.primary",
+                      }}
+                    >
+                      {avatarInitial}
+                    </Avatar>
                   </Button>
                 ) : null}
               </Stack>
@@ -205,6 +332,9 @@ function App() {
               <Route path="/profile" component={Profile} />
               <Route path="/access" component={AccessManagement} />
               <Route path="/support" component={Support} />
+              <Route path="/pipeline/dados" component={PipelineData} />
+              <Route path="/pipeline" component={Pipeline} />
+              <Route path="/financas" component={Financas} />
               <Route>
                 <NotFound />
               </Route>
@@ -213,55 +343,47 @@ function App() {
         </Box>
       </Box>
 
-      <Dialog
-        open={logoutOpen}
-        onClose={() => setLogoutOpen(false)}
-        maxWidth="xs"
-        fullWidth
+      <Popper
+        open={pipelineOpen}
+        anchorEl={pipelineAnchor}
+        placement="bottom-start"
+        sx={{ zIndex: 20 }}
+        disablePortal
       >
-        <DialogContent>
-          <Box
+        <ClickAwayListener onClickAway={handlePipelineClose}>
+          <Paper
+            onMouseEnter={handlePipelineKeepOpen}
+            onMouseLeave={scheduleCrmClose}
             sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              mb: 2,
+              mt: 1,
+              minWidth: 220,
+              borderRadius: 2,
+              border: "1px solid rgba(255,255,255,0.08)",
+              backgroundColor: "rgba(15, 23, 32, 0.98)",
             }}
           >
-            <Typography variant="h6">Confirmar logout</Typography>
-            <IconButton
-              type="button"
-              onClick={() => setLogoutOpen(false)}
-              aria-label="Fechar"
-              sx={{ color: "text.secondary" }}
-            >
-              <CloseRoundedIcon fontSize="small" />
-            </IconButton>
-          </Box>
-          <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
-            Voce quer sair da sua conta agora?
-          </Typography>
-          <Stack direction="row" spacing={2} justifyContent="space-between">
-            <Button
-              color="error"
-              variant="contained"
-              onClick={() => {
-                setLogoutOpen(false);
-                handleLogout();
-              }}
-            >
-              Logout
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => setLogoutOpen(false)}
-              sx={{ textTransform: "none", fontWeight: 600 }}
-            >
-              Manter conectado
-            </Button>
-          </Stack>
-        </DialogContent>
-      </Dialog>
+            <MenuList>
+              <MenuItem
+                component={RouterLink}
+                href="/pipeline"
+                onClick={handlePipelineClose}
+                sx={{ color: "text.secondary" }}
+              >
+                Pipeline
+              </MenuItem>
+              <MenuItem
+                component={RouterLink}
+                href="/pipeline/dados"
+                onClick={handlePipelineClose}
+                sx={{ color: "text.secondary" }}
+              >
+                Dados
+              </MenuItem>
+            </MenuList>
+          </Paper>
+        </ClickAwayListener>
+      </Popper>
+
     </ThemeProvider>
   );
 }

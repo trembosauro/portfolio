@@ -9,6 +9,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import { useMemo, useState } from "react";
 
 const faqItems = [
@@ -39,6 +40,7 @@ const whatsappUrl =
 
 export default function Support() {
   const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<string | false>(false);
   const filteredItems = useMemo(() => {
     const term = query.trim().toLowerCase();
     if (!term) {
@@ -86,6 +88,10 @@ export default function Support() {
                     key={item.title}
                     elevation={0}
                     disableGutters
+                    expanded={expanded === item.title}
+                    onChange={(_, isExpanded) =>
+                      setExpanded(isExpanded ? item.title : false)
+                    }
                     sx={{
                       backgroundColor: "transparent",
                       borderBottom: "1px solid rgba(255,255,255,0.08)",
@@ -93,11 +99,7 @@ export default function Support() {
                     }}
                   >
                     <AccordionSummary
-                      expandIcon={
-                        <Box component="span" sx={{ fontWeight: 700 }}>
-                          +
-                        </Box>
-                      }
+                      expandIcon={<ExpandMoreRoundedIcon />}
                       sx={{
                         px: 0,
                         "& .MuiAccordionSummary-content": { my: 0.5 },
