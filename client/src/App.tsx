@@ -6,10 +6,14 @@ import {
   Button,
   CssBaseline,
   Breadcrumbs,
+  IconButton,
   Link,
+  Menu,
+  MenuItem,
   Stack,
   Typography,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 import { Link as RouterLink, Route, Switch, useLocation } from "wouter";
 import theme from "./theme";
 import api from "./api";
@@ -33,6 +37,11 @@ function App() {
   const [location, setLocation] = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>("");
+  const [mobileAnchorEl, setMobileAnchorEl] = useState<null | HTMLElement>(null);
+  const [moduleAccess, setModuleAccess] = useState({
+    pipeline: true,
+    finance: true,
+  });
 
   useEffect(() => {
     const syncAuth = async () => {
@@ -50,6 +59,23 @@ function App() {
             })
           );
         }
+        try {
+          const prefsResponse = await api.get("/api/profile");
+          const prefs = prefsResponse?.data?.preferences;
+          if (prefs) {
+            const nextPrefs = {
+              modulePipeline: Boolean(prefs.modulePipeline ?? true),
+              moduleFinance: Boolean(prefs.moduleFinance ?? true),
+            };
+            window.localStorage.setItem("sc_prefs", JSON.stringify(nextPrefs));
+            setModuleAccess({
+              pipeline: nextPrefs.modulePipeline,
+              finance: nextPrefs.moduleFinance,
+            });
+          }
+        } catch {
+          // Keep stored preferences if profile fetch fails.
+        }
       } catch {
         const stored = window.localStorage.getItem("sc_user");
         if (stored) {
@@ -64,15 +90,37 @@ function App() {
         }
         setIsLoggedIn(false);
         setUserName("");
+        setModuleAccess({ pipeline: true, finance: true });
       }
     };
 
     void syncAuth();
     const handleAuthChange = () => void syncAuth();
     window.addEventListener("auth-change", handleAuthChange);
+    const handlePrefsChange = () => {
+      const storedPrefs = window.localStorage.getItem("sc_prefs");
+      if (!storedPrefs) {
+        return;
+      }
+      try {
+        const parsed = JSON.parse(storedPrefs) as {
+          modulePipeline?: boolean;
+          moduleFinance?: boolean;
+        };
+        setModuleAccess({
+          pipeline: Boolean(parsed.modulePipeline ?? true),
+          finance: Boolean(parsed.moduleFinance ?? true),
+        });
+      } catch {
+        window.localStorage.removeItem("sc_prefs");
+      }
+    };
+    window.addEventListener("prefs-change", handlePrefsChange);
+    handlePrefsChange();
 
     return () => {
       window.removeEventListener("auth-change", handleAuthChange);
+      window.removeEventListener("prefs-change", handlePrefsChange);
     };
   }, []);
 
@@ -81,6 +129,22 @@ function App() {
       setLocation("/pipeline");
     }
   }, [isLoggedIn, location, setLocation]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      return;
+    }
+    if (
+      !moduleAccess.pipeline &&
+      (location === "/pipeline" || location === "/pipeline/dados")
+    ) {
+      setLocation("/profile");
+      return;
+    }
+    if (!moduleAccess.finance && location === "/financas") {
+      setLocation("/profile");
+    }
+  }, [isLoggedIn, location, moduleAccess, setLocation]);
 
   const isActive = (href: string) => {
     if (href === "/login") {
@@ -93,7 +157,17 @@ function App() {
   };
 
   const visibleNavItems = isLoggedIn
-    ? navItems.filter((item) => item.href !== "/login")
+    ? navItems
+        .filter((item) => item.href !== "/login")
+        .filter((item) => {
+          if (item.href === "/pipeline") {
+            return moduleAccess.pipeline;
+          }
+          if (item.href === "/financas") {
+            return moduleAccess.finance;
+          }
+          return true;
+        })
     : navItems.filter((item) => item.href === "/login");
 
   const breadcrumbMap: Record<string, string> = {
@@ -107,7 +181,15 @@ function App() {
   const showBreadcrumbs = !["/", "/login", "/signup"].includes(location);
   const currentLabel = breadcrumbMap[location] ?? "Pagina";
   const avatarInitial = userName.trim().charAt(0).toUpperCase() || "U";
+  const mobileMenuOpen = Boolean(mobileAnchorEl);
 
+  const handleMobileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMobileAnchorEl(event.currentTarget);
+  };
+
+  const handleMobileMenuClose = () => {
+    setMobileAnchorEl(null);
+  };
 
   return (
     <ThemeProvider theme={theme}>
@@ -227,6 +309,59 @@ function App() {
                   </Button>
                 ) : null}
               </Stack>
+              <Box sx={{ display: { xs: "flex", md: "none" } }}>
+                <IconButton
+                  aria-label="Abrir menu"
+                  onClick={handleMobileMenuOpen}
+                  sx={{
+                    color: "text.primary",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    backgroundColor: "rgba(7, 9, 13, 0.45)",
+                    "&:hover": {
+                      backgroundColor: "rgba(7, 9, 13, 0.6)",
+                    },
+                  }}
+                >
+                  <MenuIcon fontSize="small" />
+                </IconButton>
+                <Menu
+                  anchorEl={mobileAnchorEl}
+                  open={mobileMenuOpen}
+                  onClose={handleMobileMenuClose}
+                  PaperProps={{
+                    sx: {
+                      mt: 1,
+                      minWidth: 200,
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      backgroundColor: "rgba(12, 18, 26, 0.98)",
+                    },
+                  }}
+                >
+                  {visibleNavItems.map((item) => (
+                    <MenuItem
+                      key={item.href}
+                      component={RouterLink}
+                      href={item.href}
+                      selected={isActive(item.href)}
+                      onClick={handleMobileMenuClose}
+                      sx={{ fontWeight: 600 }}
+                    >
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                  {isLoggedIn ? (
+                    <MenuItem
+                      component={RouterLink}
+                      href="/profile"
+                      selected={isActive("/profile")}
+                      onClick={handleMobileMenuClose}
+                      sx={{ fontWeight: 600 }}
+                    >
+                      Perfil
+                    </MenuItem>
+                  ) : null}
+                </Menu>
+              </Box>
             </Box>
           </Box>
 

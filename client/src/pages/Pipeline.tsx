@@ -22,6 +22,8 @@ import { nanoid } from "nanoid";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
+import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import api from "../api";
 import {
   DndContext,
@@ -96,8 +98,8 @@ const defaultCategories: Category[] = [
 
 const defaultColumns: Column[] = [
   {
-    id: "leads",
-    title: "Leads",
+    id: "pendente",
+    title: "Pendente",
     deals: [
       {
         id: "orbit",
@@ -116,8 +118,8 @@ const defaultColumns: Column[] = [
     ],
   },
   {
-    id: "qualified",
-    title: "Qualificados",
+    id: "execucao",
+    title: "Em execucao",
     deals: [
       {
         id: "argo",
@@ -136,8 +138,8 @@ const defaultColumns: Column[] = [
     ],
   },
   {
-    id: "proposal",
-    title: "Proposta",
+    id: "teste",
+    title: "Em teste",
     deals: [
       {
         id: "prisma",
@@ -156,8 +158,8 @@ const defaultColumns: Column[] = [
     ],
   },
   {
-    id: "closing",
-    title: "Fechamento",
+    id: "finalizado",
+    title: "Finalizado",
     deals: [
       {
         id: "caravel",
@@ -174,6 +176,11 @@ const defaultColumns: Column[] = [
         categoryId: defaultCategories[3]?.id,
       },
     ],
+  },
+  {
+    id: "arquivado",
+    title: "Arquivado",
+    deals: [],
   },
 ];
 
@@ -786,6 +793,18 @@ export default function Pipeline() {
     container.releasePointerCapture(event.pointerId);
   };
 
+  const scrollColumnsBy = (direction: "left" | "right") => {
+    const container = scrollRef.current;
+    if (!container) {
+      return;
+    }
+    const amount = Math.max(320, Math.round(container.clientWidth * 0.7));
+    container.scrollBy({
+      left: direction === "left" ? -amount : amount,
+      behavior: "smooth",
+    });
+  };
+
   return (
     <Box sx={{ maxWidth: 1200 }}>
       <Stack spacing={3}>
@@ -834,13 +853,6 @@ export default function Pipeline() {
             >
               Categorias
             </Button>
-            <Button
-              variant="outlined"
-              onClick={handleAddColumn}
-              sx={{ textTransform: "none", fontWeight: 600 }}
-            >
-              Adicionar coluna
-            </Button>
           </Stack>
         </Box>
 
@@ -854,24 +866,63 @@ export default function Pipeline() {
           autoScroll
         >
           <SortableContext items={columnItems} strategy={horizontalListSortingStrategy}>
-            <Box
-              ref={scrollRef}
-              onPointerDown={handleScrollPointerDown}
-              onPointerMove={handleScrollPointerMove}
-              onPointerUp={handleScrollPointerUp}
-              onPointerLeave={handleScrollPointerUp}
-              sx={{
-                overflowX: "auto",
-                pb: 1,
-                cursor: "grab",
-                "&:active": { cursor: "grabbing" },
-              }}
-            >
-              <Stack
-                direction="row"
-                spacing={2}
-                sx={{ width: "max-content", minWidth: "100%" }}
+            <Box sx={{ position: "relative" }}>
+              <IconButton
+                onClick={() => scrollColumnsBy("left")}
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  left: 0,
+                  transform: "translate(-35%, -50%)",
+                  zIndex: 2,
+                  width: 56,
+                  height: 56,
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(7, 9, 13, 0.85)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  "&:hover": { backgroundColor: "rgba(7, 9, 13, 0.95)" },
+                }}
+                aria-label="Voltar colunas"
               >
+                <ArrowBackRoundedIcon fontSize="large" />
+              </IconButton>
+              <IconButton
+                onClick={() => scrollColumnsBy("right")}
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  right: 0,
+                  transform: "translate(35%, -50%)",
+                  zIndex: 2,
+                  width: 56,
+                  height: 56,
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(7, 9, 13, 0.85)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  "&:hover": { backgroundColor: "rgba(7, 9, 13, 0.95)" },
+                }}
+                aria-label="Avancar colunas"
+              >
+                <ArrowForwardRoundedIcon fontSize="large" />
+              </IconButton>
+              <Box
+                ref={scrollRef}
+                onPointerDown={handleScrollPointerDown}
+                onPointerMove={handleScrollPointerMove}
+                onPointerUp={handleScrollPointerUp}
+                onPointerLeave={handleScrollPointerUp}
+                sx={{
+                  overflowX: "auto",
+                  pb: 4,
+                  cursor: "grab",
+                  "&:active": { cursor: "grabbing" },
+                }}
+              >
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  sx={{ width: "max-content", minWidth: "100%" }}
+                >
                 {columns.map((column) => (
                   <SortableColumn
                     key={column.id}
@@ -883,7 +934,29 @@ export default function Pipeline() {
                     taskQuery={normalizedQuery}
                   />
                 ))}
+                <Paper
+                  elevation={0}
+                  onClick={handleAddColumn}
+                  sx={{
+                    p: 2.5,
+                    minWidth: 280,
+                    border: "1px dashed rgba(255,255,255,0.2)",
+                    backgroundColor: "rgba(15, 23, 32, 0.6)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Stack spacing={1} alignItems="center">
+                    <AddRoundedIcon />
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Adicionar coluna
+                    </Typography>
+                  </Stack>
+                </Paper>
               </Stack>
+            </Box>
             </Box>
           </SortableContext>
           <DragOverlay>

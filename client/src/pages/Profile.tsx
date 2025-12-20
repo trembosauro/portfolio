@@ -20,9 +20,6 @@ export default function Profile() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [team, setTeam] = useState("");
-  const [role, setRole] = useState("");
-  const [timezone, setTimezone] = useState("");
   const [preferences, setPreferences] = useState({
     email: true,
     singleSession: false,
@@ -60,15 +57,20 @@ export default function Profile() {
         setName(user?.name || "");
         setEmail(user?.email || "");
         setPhone(profile?.phone || "");
-        setTeam(profile?.team || "");
-        setRole(profile?.role || "");
-        setTimezone(profile?.timezone || "");
         setPreferences({
           email: Boolean(prefs?.emailNotifications),
           singleSession: Boolean(prefs?.singleSession),
           modulePipeline: Boolean(prefs?.modulePipeline ?? true),
           moduleFinance: Boolean(prefs?.moduleFinance ?? true),
         });
+        window.localStorage.setItem(
+          "sc_prefs",
+          JSON.stringify({
+            modulePipeline: Boolean(prefs?.modulePipeline ?? true),
+            moduleFinance: Boolean(prefs?.moduleFinance ?? true),
+          })
+        );
+        window.dispatchEvent(new Event("prefs-change"));
         if (user?.email) {
           window.localStorage.setItem(
             "sc_user",
@@ -106,9 +108,6 @@ export default function Profile() {
         name,
         email,
         phone,
-        team,
-        role,
-        timezone,
         preferences: {
           emailNotifications: preferences.email,
           singleSession: preferences.singleSession,
@@ -138,6 +137,14 @@ export default function Profile() {
       window.clearTimeout(saveTimeoutRef.current);
     }
     saveTimeoutRef.current = window.setTimeout(() => {
+      window.localStorage.setItem(
+        "sc_prefs",
+        JSON.stringify({
+          modulePipeline: preferences.modulePipeline,
+          moduleFinance: preferences.moduleFinance,
+        })
+      );
+      window.dispatchEvent(new Event("prefs-change"));
       saveProfile();
     }, 600);
     return () => {
@@ -145,7 +152,7 @@ export default function Profile() {
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [name, email, phone, team, role, timezone, preferences]);
+  }, [name, email, phone, preferences]);
 
   const requestModuleToggle = (
     key: "modulePipeline" | "moduleFinance",
@@ -219,24 +226,6 @@ export default function Profile() {
                 fullWidth
                 value={phone}
                 onChange={(event) => setPhone(event.target.value)}
-              />
-              <TextField
-                label="Time"
-                fullWidth
-                value={team}
-                onChange={(event) => setTeam(event.target.value)}
-              />
-              <TextField
-                label="Cargo"
-                fullWidth
-                value={role}
-                onChange={(event) => setRole(event.target.value)}
-              />
-              <TextField
-                label="Fuso horario"
-                fullWidth
-                value={timezone}
-                onChange={(event) => setTimezone(event.target.value)}
               />
             </Box>
             <Button
@@ -345,8 +334,7 @@ export default function Profile() {
                 sx={{
                   p: 2.5,
                   border: "1px solid rgba(255,255,255,0.08)",
-                  background:
-                    "linear-gradient(135deg, rgba(15, 23, 32, 0.9), rgba(34, 201, 166, 0.08))",
+                  backgroundColor: "rgba(15, 23, 32, 0.9)",
                   cursor: "pointer",
                 }}
               >
@@ -389,8 +377,7 @@ export default function Profile() {
                 sx={{
                   p: 2.5,
                   border: "1px solid rgba(255,255,255,0.08)",
-                  background:
-                    "linear-gradient(135deg, rgba(15, 23, 32, 0.9), rgba(34, 201, 166, 0.08))",
+                  backgroundColor: "rgba(15, 23, 32, 0.9)",
                   cursor: "pointer",
                 }}
               >
@@ -452,8 +439,7 @@ export default function Profile() {
                     sx={{
                       p: 2.5,
                       border: "1px solid rgba(255,255,255,0.08)",
-                      background:
-                        "linear-gradient(135deg, rgba(15, 23, 32, 0.9), rgba(34, 201, 166, 0.08))",
+                      backgroundColor: "rgba(15, 23, 32, 0.9)",
                       cursor: "pointer",
                     }}
                   >

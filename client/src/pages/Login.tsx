@@ -4,6 +4,8 @@ import {
   Button,
   Checkbox,
   Divider,
+  Dialog,
+  DialogContent,
   FormControlLabel,
   Paper,
   Stack,
@@ -46,6 +48,14 @@ export default function Login() {
   const [signupConfirm, setSignupConfirm] = useState("");
   const [loginError, setLoginError] = useState("");
   const [signupError, setSignupError] = useState("");
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState<"request" | "reset">("request");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryToken, setRecoveryToken] = useState("");
+  const [recoveryPassword, setRecoveryPassword] = useState("");
+  const [recoveryConfirm, setRecoveryConfirm] = useState("");
+  const [recoveryError, setRecoveryError] = useState("");
+  const [recoveryNotice, setRecoveryNotice] = useState("");
 
   const persistUser = (user?: { name?: string | null; email?: string }) => {
     if (!user?.email) {
@@ -138,8 +148,69 @@ export default function Login() {
     }
   };
 
-  const handleOauth = (provider: string) => {
-    setLoginError(`${provider} ainda nao configurado.`);
+  const handleRecoveryOpen = () => {
+    setRecoveryOpen(true);
+    setRecoveryStep("request");
+    setRecoveryEmail(loginEmail);
+    setRecoveryToken("");
+    setRecoveryPassword("");
+    setRecoveryConfirm("");
+    setRecoveryError("");
+    setRecoveryNotice("");
+  };
+
+  const handleRecoveryClose = () => {
+    setRecoveryOpen(false);
+    setRecoveryError("");
+    setRecoveryNotice("");
+  };
+
+  const handleRecoveryRequest = async () => {
+    setRecoveryError("");
+    setRecoveryNotice("");
+    if (!recoveryEmail) {
+      setRecoveryError("Informe o email da conta.");
+      return;
+    }
+    try {
+      const response = await api.post("/api/auth/forgot-password", {
+        email: recoveryEmail,
+      });
+      const token = response?.data?.resetToken;
+      if (token) {
+        setRecoveryToken(token);
+        setRecoveryNotice("Use o codigo enviado para definir uma nova senha.");
+        setRecoveryStep("reset");
+      } else {
+        setRecoveryNotice("Se o email existir, voce recebera um codigo.");
+      }
+    } catch {
+      setRecoveryError("Nao foi possivel iniciar a recuperacao.");
+    }
+  };
+
+  const handleRecoveryReset = async () => {
+    setRecoveryError("");
+    setRecoveryNotice("");
+    if (!recoveryToken || !recoveryPassword || !recoveryConfirm) {
+      setRecoveryError("Preencha codigo e nova senha.");
+      return;
+    }
+    if (recoveryPassword !== recoveryConfirm) {
+      setRecoveryError("As senhas nao conferem.");
+      return;
+    }
+    try {
+      await api.post("/api/auth/reset-password", {
+        token: recoveryToken,
+        password: recoveryPassword,
+      });
+      setRecoveryNotice("Senha atualizada. Voce ja pode entrar.");
+      setRecoveryStep("request");
+      setRecoveryOpen(false);
+    } catch {
+      setRecoveryError("Codigo invalido ou expirado.");
+    }
   };
 
   return (
@@ -318,9 +389,15 @@ export default function Login() {
                     }
                     label="Manter conectado"
                   />
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                    Esqueceu a senha?
-                  </Typography>
+                  <Button
+                    type="button"
+                    variant="text"
+                    size="small"
+                    onClick={handleRecoveryOpen}
+                    sx={{ textTransform: "none", fontWeight: 600, color: "text.secondary" }}
+                  >
+                    Recuperar senha
+                  </Button>
                 </Stack>
               </Stack>
 
@@ -332,29 +409,6 @@ export default function Login() {
                 onClick={handleLogin}
               >
                 Entrar
-              </Button>
-
-              <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
-
-              <Button
-                type="button"
-                variant="outlined"
-                size="large"
-                fullWidth
-                color="secondary"
-                onClick={() => handleOauth("SSO")}
-              >
-                Entrar com SSO
-              </Button>
-
-              <Button
-                type="button"
-                variant="outlined"
-                size="large"
-                fullWidth
-                onClick={() => handleOauth("Google")}
-              >
-                Entrar com Google
               </Button>
 
               {loginError ? (
@@ -445,6 +499,99 @@ export default function Login() {
           )}
         </Stack>
       </Paper>
+
+      <Dialog open={recoveryOpen} onClose={handleRecoveryClose} maxWidth="xs" fullWidth>
+        <DialogContent>
+          <Stack spacing={2}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography variant="h6">Recuperar senha</Typography>
+              <Button
+                variant="text"
+                onClick={handleRecoveryClose}
+                sx={{ minWidth: 0, px: 1, color: "text.secondary" }}
+              >
+                x
+              </Button>
+            </Box>
+            {recoveryStep === "request" ? (
+              <>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  Informe seu email para receber o codigo de recuperacao.
+                </Typography>
+                <TextField
+                  label="Email"
+                  type="email"
+                  fullWidth
+                  value={recoveryEmail}
+                  onChange={(event) => setRecoveryEmail(event.target.value)}
+                />
+                {recoveryError ? (
+                  <Typography variant="caption" color="error">
+                    {recoveryError}
+                  </Typography>
+                ) : null}
+                {recoveryNotice ? (
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    {recoveryNotice}
+                  </Typography>
+                ) : null}
+                <Stack direction="row" spacing={2} justifyContent="flex-end">
+                  <Button variant="outlined" onClick={handleRecoveryClose}>
+                    Cancelar
+                  </Button>
+                  <Button variant="contained" onClick={handleRecoveryRequest}>
+                    Enviar codigo
+                  </Button>
+                </Stack>
+              </>
+            ) : (
+              <>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  Informe o codigo recebido e escolha uma nova senha.
+                </Typography>
+                <TextField
+                  label="Codigo"
+                  fullWidth
+                  value={recoveryToken}
+                  onChange={(event) => setRecoveryToken(event.target.value)}
+                />
+                <TextField
+                  label="Nova senha"
+                  type="password"
+                  fullWidth
+                  value={recoveryPassword}
+                  onChange={(event) => setRecoveryPassword(event.target.value)}
+                />
+                <TextField
+                  label="Confirmar senha"
+                  type="password"
+                  fullWidth
+                  value={recoveryConfirm}
+                  onChange={(event) => setRecoveryConfirm(event.target.value)}
+                />
+                {recoveryError ? (
+                  <Typography variant="caption" color="error">
+                    {recoveryError}
+                  </Typography>
+                ) : null}
+                {recoveryNotice ? (
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    {recoveryNotice}
+                  </Typography>
+                ) : null}
+                <Stack direction="row" spacing={2} justifyContent="flex-end">
+                  <Button variant="outlined" onClick={handleRecoveryClose}>
+                    Cancelar
+                  </Button>
+                  <Button variant="contained" onClick={handleRecoveryReset}>
+                    Atualizar senha
+                  </Button>
+                </Stack>
+              </>
+            )}
+          </Stack>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

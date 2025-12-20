@@ -4,6 +4,8 @@ import {
   Button,
   Chip,
   Divider,
+  Dialog,
+  DialogContent,
   MenuItem,
   Paper,
   Stack,
@@ -34,11 +36,53 @@ const invites = [
 
 export default function AccessManagement() {
   const [moduleStates, setModuleStates] = useState(() => modules.map(() => true));
+  const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
+  const [activeRole, setActiveRole] = useState<string | null>(null);
+  const [moduleConfirm, setModuleConfirm] = useState<{
+    index: number;
+    nextValue: boolean;
+  } | null>(null);
+  const [rolePermissions, setRolePermissions] = useState<Record<string, boolean[]>>(() => {
+    const initial: Record<string, boolean[]> = {};
+    roles.forEach((role) => {
+      initial[role.name] = modules.map(() => true);
+    });
+    return initial;
+  });
   const toggleModule = (index: number) => {
     setModuleStates((prev) => {
       const next = [...prev];
       next[index] = !next[index];
       return next;
+    });
+  };
+
+  const requestModuleToggle = (index: number) => {
+    setModuleConfirm({ index, nextValue: !moduleStates[index] });
+  };
+
+  const confirmModuleToggle = () => {
+    if (!moduleConfirm) {
+      return;
+    }
+    toggleModule(moduleConfirm.index);
+    setModuleConfirm(null);
+  };
+
+  const openRolePermissions = (roleName: string) => {
+    setActiveRole(roleName);
+    setPermissionDialogOpen(true);
+  };
+
+  const toggleRolePermission = (index: number) => {
+    if (!activeRole) {
+      return;
+    }
+    setRolePermissions((prev) => {
+      const current = prev[activeRole] || modules.map(() => true);
+      const next = [...current];
+      next[index] = !next[index];
+      return { ...prev, [activeRole]: next };
     });
   };
 
@@ -64,7 +108,8 @@ export default function AccessManagement() {
             <Typography variant="h6">Papeis do workspace</Typography>
             <Stack
               direction={{ xs: "column", md: "row" }}
-              spacing={2}
+              spacing={3}
+              useFlexGap
               sx={{ flexWrap: "wrap" }}
             >
               {roles.map((role) => (
@@ -87,7 +132,11 @@ export default function AccessManagement() {
                       size="medium"
                       sx={{ fontSize: 20, height: 36 }}
                     />
-                    <Button variant="text" sx={{ alignSelf: "flex-start" }}>
+                    <Button
+                      variant="text"
+                      onClick={() => openRolePermissions(role.name)}
+                      sx={{ alignSelf: "flex-start" }}
+                    >
                       Editar permissoes
                     </Button>
                   </Stack>
@@ -118,12 +167,11 @@ export default function AccessManagement() {
                 <Paper
                   key={module.name}
                   elevation={0}
-                  onClick={() => toggleModule(index)}
+                  onClick={() => requestModuleToggle(index)}
                   sx={{
                     p: 2.5,
                     border: "1px solid rgba(255,255,255,0.08)",
-                    background:
-                      "linear-gradient(135deg, rgba(15, 23, 32, 0.9), rgba(34, 201, 166, 0.08))",
+                    backgroundColor: "rgba(15, 23, 32, 0.9)",
                     cursor: "pointer",
                   }}
                 >
@@ -141,13 +189,7 @@ export default function AccessManagement() {
                       </Typography>
                       <Switch
                         checked={moduleStates[index]}
-                        onChange={(event) => {
-                          setModuleStates((prev) => {
-                            const next = [...prev];
-                            next[index] = event.target.checked;
-                            return next;
-                          });
-                        }}
+                        onChange={() => requestModuleToggle(index)}
                         onClick={(event) => event.stopPropagation()}
                       />
                     </Box>
@@ -158,11 +200,89 @@ export default function AccessManagement() {
                 </Paper>
               ))}
             </Box>
-            <Button variant="outlined" size="large" sx={{ alignSelf: "flex-start" }}>
-              Salvar ajustes
-            </Button>
           </Stack>
         </Paper>
+
+        <Dialog
+          open={permissionDialogOpen}
+          onClose={() => {
+            setPermissionDialogOpen(false);
+            setActiveRole(null);
+          }}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              backgroundColor: "rgba(15, 23, 32, 0.95)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            },
+          }}
+        >
+          <DialogContent>
+            <Stack spacing={2.5}>
+              <Box>
+                <Typography variant="h6">Editar permissoes</Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  {activeRole ? `Papel: ${activeRole}` : "Selecione um papel."}
+                </Typography>
+              </Box>
+              <Stack spacing={1.5}>
+                {modules.map((module, index) => (
+                  <Paper
+                    key={module.name}
+                    elevation={0}
+                    onClick={() => toggleRolePermission(index)}
+                    sx={{
+                      p: 2.5,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      backgroundColor: "rgba(15, 23, 32, 0.9)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Stack spacing={1}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 2,
+                        }}
+                      >
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          {module.name}
+                        </Typography>
+                        <Switch
+                          checked={
+                            activeRole
+                              ? rolePermissions[activeRole]?.[index] ?? true
+                              : true
+                          }
+                          onChange={() => toggleRolePermission(index)}
+                          onClick={(event) => event.stopPropagation()}
+                          disabled={!activeRole}
+                        />
+                      </Box>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        {module.description}
+                      </Typography>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+              <Stack direction="row" spacing={2} justifyContent="flex-end">
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setPermissionDialogOpen(false);
+                    setActiveRole(null);
+                  }}
+                >
+                  Fechar
+                </Button>
+              </Stack>
+            </Stack>
+          </DialogContent>
+        </Dialog>
 
         <Paper
           elevation={0}
@@ -202,6 +322,33 @@ export default function AccessManagement() {
             </Button>
           </Stack>
         </Paper>
+
+        <Dialog open={Boolean(moduleConfirm)} onClose={() => setModuleConfirm(null)} maxWidth="xs" fullWidth>
+          <DialogContent>
+            <Stack spacing={2}>
+              <Box>
+                <Typography variant="h6">
+                  {moduleConfirm?.nextValue ? "Ativar modulo" : "Desativar modulo"}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  {moduleConfirm
+                    ? `Voce confirma a ${
+                        moduleConfirm.nextValue ? "ativacao" : "desativacao"
+                      } do modulo ${modules[moduleConfirm.index].name}?`
+                    : ""}
+                </Typography>
+              </Box>
+              <Stack direction="row" spacing={2} justifyContent="flex-end">
+                <Button variant="outlined" onClick={() => setModuleConfirm(null)}>
+                  Cancelar
+                </Button>
+                <Button variant="contained" onClick={confirmModuleToggle}>
+                  Confirmar
+                </Button>
+              </Stack>
+            </Stack>
+          </DialogContent>
+        </Dialog>
 
         <Paper
           elevation={0}
