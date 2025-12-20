@@ -3,6 +3,9 @@ import {
   Box,
   Button,
   Chip,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Divider,
   Dialog,
   DialogContent,
@@ -17,6 +20,8 @@ import {
 import { Link as RouterLink } from "wouter";
 import { nanoid } from "nanoid";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import api from "../api";
 import {
   DndContext,
@@ -235,6 +240,8 @@ export default function Pipeline() {
   const [editingCategoryName, setEditingCategoryName] = useState("");
   const [editingCategoryColor, setEditingCategoryColor] = useState(DEFAULT_COLORS[0]);
   const [taskQuery, setTaskQuery] = useState("");
+  const [expanded, setExpanded] = useState<"category" | false>("category");
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);
@@ -338,10 +345,12 @@ export default function Pipeline() {
     setEditComments(deal.comments || "");
     setEditCategoryId(deal.categoryId || "");
     setEditingCategoryId(null);
+    setExpanded("category");
   };
 
   const handleEditClose = () => {
     setEditingDeal(null);
+    setExpanded("category");
   };
 
   const handleEditSave = () => {
@@ -814,13 +823,25 @@ export default function Pipeline() {
             onChange={(event) => setTaskQuery(event.target.value)}
             sx={{ minWidth: { xs: "100%", sm: 280 } }}
           />
-          <Button
-            variant="outlined"
-            onClick={handleAddColumn}
-            sx={{ textTransform: "none", fontWeight: 600 }}
-          >
-            Adicionar coluna
-          </Button>
+          <Stack direction="row" spacing={2} sx={{ width: { xs: "100%", sm: "auto" } }}>
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setEditingCategoryId(null);
+                setCategoryDialogOpen(true);
+              }}
+              sx={{ textTransform: "none", fontWeight: 600 }}
+            >
+              Categorias
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleAddColumn}
+              sx={{ textTransform: "none", fontWeight: 600 }}
+            >
+              Adicionar coluna
+            </Button>
+          </Stack>
         </Box>
 
         <DndContext
@@ -971,149 +992,56 @@ export default function Pipeline() {
               value={editComments}
               onChange={(event) => setEditComments(event.target.value)}
             />
-            <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
-            <Stack spacing={1.5}>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                Categoria do card
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <Chip
-                  label="Sem categoria"
-                  onClick={() => setEditCategoryId("")}
-                  sx={{
-                    color: "#e6edf3",
-                    backgroundColor: "rgba(148, 163, 184, 0.18)",
-                    border:
-                      editCategoryId === ""
-                        ? "1px solid rgba(255,255,255,0.7)"
-                        : "1px solid transparent",
-                  }}
-                />
-                {categories.map((cat) => (
+            <Accordion
+              expanded={expanded === "category"}
+              onChange={(_, isExpanded) => setExpanded(isExpanded ? "category" : false)}
+              disableGutters
+              elevation={0}
+              sx={{
+                backgroundColor: "transparent",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 2,
+                "&:before": { display: "none" },
+              }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                  Categoria do card
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   <Chip
-                    key={cat.id}
-                    label={cat.name}
-                    onClick={() => setEditCategoryId(cat.id)}
+                    label="Sem categoria"
+                    onClick={() => setEditCategoryId("")}
                     sx={{
                       color: "#e6edf3",
-                      backgroundColor: darkenColor(cat.color, 0.5),
+                      backgroundColor: "rgba(148, 163, 184, 0.18)",
                       border:
-                        editCategoryId === cat.id
+                        editCategoryId === ""
                           ? "1px solid rgba(255,255,255,0.7)"
                           : "1px solid transparent",
                     }}
                   />
-                ))}
-              </Stack>
-            </Stack>
-            <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
-            <Stack spacing={2}>
-              {editingCategoryId ? (
-                <Box
-                  sx={{
-                    p: 2,
-                    borderRadius: 2,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    backgroundColor: "rgba(10, 16, 23, 0.7)",
-                  }}
-                >
-                  <Stack spacing={1.5}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      Editar categoria
-                    </Typography>
-                    <TextField
-                      label="Nome"
-                      fullWidth
-                      value={editingCategoryName}
-                      onChange={(event) => setEditingCategoryName(event.target.value)}
+                  {categories.map((cat) => (
+                    <Chip
+                      key={cat.id}
+                      label={cat.name}
+                      onClick={() => setEditCategoryId(cat.id)}
+                      sx={{
+                        color: "#e6edf3",
+                        backgroundColor: darkenColor(cat.color, 0.5),
+                        border:
+                          editCategoryId === cat.id
+                            ? "1px solid rgba(255,255,255,0.7)"
+                            : "1px solid transparent",
+                      }}
                     />
-                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                      {DEFAULT_COLORS.map((color) => (
-                        <Box
-                          key={color}
-                          onClick={() => setEditingCategoryColor(color)}
-                          sx={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 1,
-                            backgroundColor: color,
-                            border:
-                              editingCategoryColor === color
-                                ? "2px solid rgba(255,255,255,0.8)"
-                                : "1px solid rgba(255,255,255,0.2)",
-                            cursor: "pointer",
-                          }}
-                        />
-                      ))}
-                    </Stack>
-                    <Stack direction="row" spacing={2} justifyContent="flex-end">
-                      <Button variant="outlined" onClick={cancelEditCategory}>
-                        Cancelar
-                      </Button>
-                      <Button variant="contained" onClick={saveCategory}>
-                        Salvar
-                      </Button>
-                    </Stack>
-                  </Stack>
-                </Box>
-              ) : null}
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                {categories.map((cat) => (
-                  <Chip
-                    key={cat.id}
-                    label={cat.name}
-                    onClick={() => startEditCategory(cat)}
-                    onDelete={() => handleRemoveCategory(cat.id)}
-                    sx={{
-                      color: "#e6edf3",
-                      backgroundColor: darkenColor(cat.color, 0.5),
-                    }}
-                  />
-                ))}
-              </Stack>
-              {editingCategoryId ? null : (
-                <Box>
-                  <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
-                    Nova categoria
-                  </Typography>
-                  <Stack spacing={1.5}>
-                    <TextField
-                      label="Nome"
-                      fullWidth
-                      value={newCategoryName}
-                      onChange={(event) => setNewCategoryName(event.target.value)}
-                    />
-                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                      {DEFAULT_COLORS.map((color) => (
-                        <Box
-                          key={color}
-                          onClick={() => setNewCategoryColor(color)}
-                          sx={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 1,
-                            backgroundColor: color,
-                            border:
-                              newCategoryColor === color
-                                ? "2px solid rgba(255,255,255,0.8)"
-                                : "1px solid rgba(255,255,255,0.2)",
-                            cursor: "pointer",
-                          }}
-                        />
-                      ))}
-                    </Stack>
-                    <Button
-                      variant="outlined"
-                      onClick={handleAddCategory}
-                      startIcon={<AddRoundedIcon />}
-                      sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
-                    >
-                      Criar categoria
-                    </Button>
-                  </Stack>
-                </Box>
-              )}
-            </Stack>
+                  ))}
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
+
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button color="error" variant="outlined" onClick={handleDealRemove}>
                 Remover
@@ -1123,6 +1051,150 @@ export default function Pipeline() {
               </Button>
               <Button variant="contained" onClick={handleEditSave}>
                 Salvar
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={categoryDialogOpen}
+        onClose={() => {
+          setCategoryDialogOpen(false);
+          cancelEditCategory();
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogContent>
+          <Stack spacing={2.5}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography variant="h6">Categorias</Typography>
+              <IconButton
+                onClick={() => {
+                  setCategoryDialogOpen(false);
+                  cancelEditCategory();
+                }}
+                sx={{ color: "text.secondary" }}
+              >
+                <CloseRoundedIcon fontSize="small" />
+              </IconButton>
+            </Box>
+
+            {editingCategoryId ? (
+              <Box
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  backgroundColor: "rgba(10, 16, 23, 0.7)",
+                }}
+              >
+                <Stack spacing={1.5}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    Editar categoria
+                  </Typography>
+                  <TextField
+                    label="Nome"
+                    fullWidth
+                    value={editingCategoryName}
+                    onChange={(event) => setEditingCategoryName(event.target.value)}
+                  />
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {DEFAULT_COLORS.map((color) => (
+                      <Box
+                        key={color}
+                        onClick={() => setEditingCategoryColor(color)}
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 1,
+                          backgroundColor: color,
+                          border:
+                            editingCategoryColor === color
+                              ? "2px solid rgba(255,255,255,0.8)"
+                              : "1px solid rgba(255,255,255,0.2)",
+                          cursor: "pointer",
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                  <Stack direction="row" spacing={2} justifyContent="flex-end">
+                    <Button variant="outlined" onClick={cancelEditCategory}>
+                      Cancelar
+                    </Button>
+                    <Button variant="contained" onClick={saveCategory}>
+                      Salvar
+                    </Button>
+                  </Stack>
+                </Stack>
+              </Box>
+            ) : null}
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {categories.map((cat) => (
+                <Chip
+                  key={cat.id}
+                  label={cat.name}
+                  onClick={() => startEditCategory(cat)}
+                  onDelete={() => handleRemoveCategory(cat.id)}
+                  sx={{
+                    color: "#e6edf3",
+                    backgroundColor: darkenColor(cat.color, 0.5),
+                  }}
+                />
+              ))}
+            </Stack>
+            {editingCategoryId ? null : (
+              <Box>
+                <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
+                  Nova categoria
+                </Typography>
+                <Stack spacing={1.5}>
+                  <TextField
+                    label="Nome"
+                    fullWidth
+                    value={newCategoryName}
+                    onChange={(event) => setNewCategoryName(event.target.value)}
+                  />
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {DEFAULT_COLORS.map((color) => (
+                      <Box
+                        key={color}
+                        onClick={() => setNewCategoryColor(color)}
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 1,
+                          backgroundColor: color,
+                          border:
+                            newCategoryColor === color
+                              ? "2px solid rgba(255,255,255,0.8)"
+                              : "1px solid rgba(255,255,255,0.2)",
+                          cursor: "pointer",
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                  <Button
+                    variant="outlined"
+                    onClick={handleAddCategory}
+                    startIcon={<AddRoundedIcon />}
+                    sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                  >
+                    Criar categoria
+                  </Button>
+                </Stack>
+              </Box>
+            )}
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setCategoryDialogOpen(false);
+                  cancelEditCategory();
+                }}
+              >
+                Fechar
               </Button>
             </Stack>
           </Stack>
@@ -1249,6 +1321,7 @@ function SortableColumn({
       sx={{
         p: 2.5,
         flex: 1,
+        minWidth: 280,
         border: "1px solid rgba(255,255,255,0.08)",
         backgroundColor: "rgba(15, 23, 32, 0.9)",
         cursor: "grab",
@@ -1359,18 +1432,6 @@ function SortableDeal({
       <Typography variant="caption" sx={{ color: "text.secondary" }}>
         {deal.owner}
       </Typography>
-      {category ? (
-        <Chip
-          size="small"
-          label={category.name}
-          sx={{
-            mt: 1,
-            color: "#e6edf3",
-            backgroundColor: darkenColor(category.color, 0.5),
-            alignSelf: "flex-start",
-          }}
-        />
-      ) : null}
       <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 600 }}>
         {deal.value}
       </Typography>

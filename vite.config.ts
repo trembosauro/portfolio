@@ -10,7 +10,7 @@ const plugins = [react(), tailwindcss(), jsxLocPlugin()];
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.resolve(import.meta.dirname), "");
   const rawTarget =
-    env.VITE_API_PROXY_TARGET || env.VITE_API_URL || "http://localhost:3005";
+    env.VITE_API_PROXY_TARGET || env.VITE_API_URL || "http://localhost:3001";
   const apiTarget = rawTarget.startsWith("/") ? "http://localhost:3005" : rawTarget;
 
   return {
