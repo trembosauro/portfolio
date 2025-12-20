@@ -2069,13 +2069,8 @@ function SortableColumn({
         minWidth: 280,
         border: "1px solid rgba(255,255,255,0.08)",
         backgroundColor: "rgba(15, 23, 32, 0.9)",
-        cursor: "grab",
-        touchAction: "none",
       }}
       style={style}
-      {...attributes}
-      {...listeners}
-      data-draggable
     >
       <Stack spacing={2}>
         <Box
@@ -2084,7 +2079,12 @@ function SortableColumn({
             alignItems: "center",
             gap: 1,
             justifyContent: "space-between",
+            cursor: "grab",
+            touchAction: "none",
           }}
+          {...attributes}
+          {...listeners}
+          data-draggable
         >
           <Box
             sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer" }}

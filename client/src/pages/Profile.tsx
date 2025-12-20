@@ -146,16 +146,17 @@ export default function Profile() {
     setSwitchDialogOpen(true);
   };
 
-  const handleSwitchLogin = async () => {
+  const handleSwitchLogin = async (nextEmail?: string) => {
     setSwitchError("");
-    if (!switchEmail.trim() || !switchPassword) {
+    const targetEmail = (nextEmail || switchEmail).trim().toLowerCase();
+    if (!targetEmail || !switchPassword) {
       setSwitchError("Informe email e senha.");
       return;
     }
     setSwitchLoading(true);
     try {
       const response = await api.post("/api/auth/login", {
-        email: switchEmail.trim().toLowerCase(),
+        email: targetEmail,
         password: switchPassword,
       });
       const user = response?.data?.user;
@@ -626,13 +627,26 @@ export default function Profile() {
                       key={account.email}
                       elevation={0}
                       onClick={() => {
+                        if (account.email === email) {
+                          setSwitchDialogOpen(false);
+                          return;
+                        }
                         setSwitchEmail(account.email);
                         setSwitchError("");
+                        if (switchPassword) {
+                          void handleSwitchLogin(account.email);
+                        }
                       }}
                       sx={{
                         p: 1.5,
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        backgroundColor: "rgba(15, 23, 32, 0.9)",
+                        border:
+                          account.email === email
+                            ? "1px solid rgba(34, 201, 166, 0.6)"
+                            : "1px solid rgba(255,255,255,0.08)",
+                        backgroundColor:
+                          account.email === email
+                            ? "rgba(34, 201, 166, 0.12)"
+                            : "rgba(15, 23, 32, 0.9)",
                         cursor: "pointer",
                       }}
                     >
@@ -656,6 +670,11 @@ export default function Profile() {
                 fullWidth
                 value={switchEmail}
                 onChange={(event) => setSwitchEmail(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    void handleSwitchLogin();
+                  }
+                }}
               />
               <TextField
                 label="Senha"
@@ -663,6 +682,11 @@ export default function Profile() {
                 fullWidth
                 value={switchPassword}
                 onChange={(event) => setSwitchPassword(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    void handleSwitchLogin();
+                  }
+                }}
               />
               {switchError ? (
                 <Typography variant="body2" sx={{ color: "error.main" }}>

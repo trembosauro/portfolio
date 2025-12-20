@@ -27,9 +27,13 @@ pnpm dev
 - `shared/` tipos e utilitarios
 
 ## Funcionalidades
-- Login, cadastro e recuperacao de senha
-- Pipeline com colunas e cards
-- Dados do pipeline com metricas
-- Financas com categorias e gastos
-- Gestao de acessos e convites
-
+- Login e recuperacao de senha com fluxo dedicado
+- Dashboard (Home) com resumo de pipeline, financas e gestao
+- Pipeline com colunas, cards e arraste entre etapas
+- Detalhes de tarefa com descricao rica, categorias e responsaveis
+- Dados da pipeline com metricas e graficos
+- Financas com categorias, filtros e visualizacao de gastos
+- Contatos com multiplos telefones/emails/enderecos e categorias
+- Notificacoes com alertas e indicador no sino
+- Gestao de acessos com papeis, permissoes e modulos pagos
+- Perfil com preferencias, troca de conta e logout

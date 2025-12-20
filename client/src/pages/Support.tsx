@@ -14,24 +14,64 @@ import { useMemo, useState } from "react";
 
 const faqItems = [
   {
-    title: "Como recuperar minha senha?",
+    title: "Login e recuperacao de senha",
     content:
-      "Use a opcao de esqueci minha senha na tela de login. Voce recebera um link para redefinir.",
+      "Tela de login permite entrar com email e senha. Em recuperar senha, voce solicita o link por email e define uma nova senha.",
   },
   {
-    title: "Posso alterar meu email?",
+    title: "Criacao de conta",
     content:
-      "Sim. No perfil, atualize o email e salve as alteracoes. Se o email ja existir, o sistema avisa.",
+      "Crie seu workspace com nome, email e senha. Depois de criar, voce entra automaticamente.",
   },
   {
-    title: "Quanto tempo fico conectado?",
+    title: "Home (dashboard)",
     content:
-      "A sessao fica ativa por 1 semana. Depois disso, sera necessario entrar novamente.",
+      "Mostra uma visao geral do pipeline, financas e gestao com indicadores principais e atalhos.",
   },
   {
-    title: "O que acontece se eu logar em outro dispositivo?",
+    title: "Pipeline",
     content:
-      "Por seguranca, as sessoes sao encerradas e voce precisara entrar novamente.",
+      "Organize tarefas em colunas, arraste cards entre etapas e visualize detalhes. Clique em adicionar tarefa para abrir o modal de edicao.",
+  },
+  {
+    title: "Dados da pipeline",
+    content:
+      "Painel com metricas de tarefas por etapa e graficos. As metricas de valor aparecem apenas quando o campo de valor esta ativo.",
+  },
+  {
+    title: "Financas",
+    content:
+      "Registre gastos, filtre por categorias e visualize graficos. Ao clicar em um gasto, voce abre a visualizacao e pode editar.",
+  },
+  {
+    title: "Categorias (pipeline, financas e contatos)",
+    content:
+      "Cada area tem suas proprias categorias. Voce pode criar, editar cor/nome e remover categorias sem misturar os contextos.",
+  },
+  {
+    title: "Contatos",
+    content:
+      "Cadastre pessoas com multiplos telefones, emails, enderecos e comentarios. Copie dados com um clique e organize por categorias.",
+  },
+  {
+    title: "Notificacoes",
+    content:
+      "Mostra alertas como aniversarios proximos e permite marcar como visto. O sino indica quando ha novidades.",
+  },
+  {
+    title: "Gestao de acessos",
+    content:
+      "Controle papeis, permissoes e modulos pagos. Edite permissoes por papel e ative/desative modulos.",
+  },
+  {
+    title: "Perfil",
+    content:
+      "Atualize dados pessoais, altere preferencias e faca logout. Em trocar de conta, selecione contas recentes ou faça login em outra.",
+  },
+  {
+    title: "Sessao e seguranca",
+    content:
+      "A sessao dura 1 semana. Se logar em outro dispositivo, as sessoes anteriores podem ser encerradas por seguranca.",
   },
 ];
 
