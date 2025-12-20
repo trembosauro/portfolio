@@ -24,6 +24,7 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import DragIndicatorRoundedIcon from "@mui/icons-material/DragIndicatorRounded";
 import api from "../api";
 import {
   DndContext,
@@ -249,6 +250,7 @@ export default function Pipeline() {
   const [taskQuery, setTaskQuery] = useState("");
   const [expanded, setExpanded] = useState<"category" | false>("category");
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [columnManagerOpen, setColumnManagerOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);
@@ -523,6 +525,22 @@ export default function Pipeline() {
     }
     setColumns((prev) => prev.filter((column) => column.id !== editingColumn.id));
     setEditingColumn(null);
+  };
+
+  const handleColumnReorder = (event: { active: { id: string }; over?: { id: string } }) => {
+    const activeId = String(event.active.id);
+    const overId = event.over ? String(event.over.id) : null;
+    if (!overId || activeId === overId) {
+      return;
+    }
+    setColumns((prev) => {
+      const oldIndex = prev.findIndex((column) => column.id === activeId);
+      const newIndex = prev.findIndex((column) => column.id === overId);
+      if (oldIndex === -1 || newIndex === -1) {
+        return prev;
+      }
+      return arrayMove(prev, oldIndex, newIndex);
+    });
   };
 
   const handleDragStart = (event: { active: { id: string } }) => {
@@ -853,6 +871,13 @@ export default function Pipeline() {
             >
               Categorias
             </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setColumnManagerOpen(true)}
+              sx={{ textTransform: "none", fontWeight: 600 }}
+            >
+              Gerir colunas
+            </Button>
           </Stack>
         </Box>
 
@@ -937,6 +962,7 @@ export default function Pipeline() {
                 <Paper
                   elevation={0}
                   onClick={handleAddColumn}
+                  data-draggable
                   sx={{
                     p: 2.5,
                     minWidth: 280,
@@ -1274,6 +1300,55 @@ export default function Pipeline() {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={columnManagerOpen}
+        onClose={() => setColumnManagerOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogContent>
+          <Stack spacing={2.5}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography variant="h6">Gerir colunas</Typography>
+              <IconButton onClick={() => setColumnManagerOpen(false)} sx={{ color: "text.secondary" }}>
+                <CloseRoundedIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Renomeie e reorganize as colunas rapidamente.
+            </Typography>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragEnd={handleColumnReorder}
+            >
+              <SortableContext items={columns.map((column) => column.id)} strategy={verticalListSortingStrategy}>
+                <Stack spacing={1.5}>
+                  {columns.map((column) => (
+                    <SortableColumnRow
+                      key={column.id}
+                      column={column}
+                      onRename={(nextTitle) => {
+                        setColumns((prev) =>
+                          prev.map((item) =>
+                            item.id === column.id ? { ...item, title: nextTitle } : item
+                          )
+                        );
+                      }}
+                    />
+                  ))}
+                </Stack>
+              </SortableContext>
+            </DndContext>
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button variant="outlined" onClick={() => setColumnManagerOpen(false)}>
+                Fechar
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={5000}
@@ -1509,5 +1584,59 @@ function SortableDeal({
         {deal.value}
       </Typography>
     </Box>
+  );
+}
+
+function SortableColumnRow({
+  column,
+  onRename,
+}: {
+  column: Column;
+  onRename: (nextTitle: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({
+      id: column.id,
+      data: { type: "column-row" },
+    });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: isDragging ? "none" : transition || "transform 180ms ease",
+    opacity: isDragging ? 0.7 : 1,
+    willChange: "transform",
+  };
+
+  return (
+    <Paper
+      ref={setNodeRef}
+      elevation={0}
+      sx={{
+        p: 2,
+        border: "1px solid rgba(255,255,255,0.08)",
+        backgroundColor: "rgba(15, 23, 32, 0.9)",
+      }}
+      style={style}
+    >
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
+        <TextField
+          label="Nome da coluna"
+          fullWidth
+          value={column.title}
+          onChange={(event) => onRename(event.target.value)}
+        />
+        <IconButton
+          {...attributes}
+          {...listeners}
+          sx={{
+            border: "1px solid rgba(255,255,255,0.12)",
+            cursor: "grab",
+          }}
+          aria-label={`Arrastar ${column.title}`}
+        >
+          <DragIndicatorRoundedIcon fontSize="small" />
+        </IconButton>
+      </Stack>
+    </Paper>
   );
 }

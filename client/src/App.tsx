@@ -371,15 +371,31 @@ function App() {
                 aria-label="breadcrumb"
                 sx={{ mb: 3, color: "text.secondary" }}
               >
-                <Link
-                  component={RouterLink}
-                  href="/login"
-                  underline="hover"
-                  color="inherit"
-                >
-                  Home
-                </Link>
-                <Typography color="text.primary">{currentLabel}</Typography>
+                {location === "/pipeline/dados" ? (
+                  <>
+                    <Link
+                      component={RouterLink}
+                      href="/pipeline"
+                      underline="hover"
+                      color="inherit"
+                    >
+                      Pipeline
+                    </Link>
+                    <Typography color="text.primary">Dados</Typography>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      component={RouterLink}
+                      href="/login"
+                      underline="hover"
+                      color="inherit"
+                    >
+                      Home
+                    </Link>
+                    <Typography color="text.primary">{currentLabel}</Typography>
+                  </>
+                )}
               </Breadcrumbs>
             ) : null}
             <Switch>

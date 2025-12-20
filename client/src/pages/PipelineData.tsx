@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Button,
-  Chip,
   Dialog,
   DialogContent,
   Divider,
   IconButton,
+  MenuItem,
   Paper,
   Stack,
   TextField,
@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { Link as RouterLink } from "wouter";
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import api from "../api";
 
 type PipelineSummary = {
@@ -21,158 +22,190 @@ type PipelineSummary = {
   stage: string;
   count: number;
   value: string;
+  valueTotal: number;
 };
 
-type Task = {
+type Category = {
+  id: string;
+  name: string;
+  color: string;
+};
+
+type Column = {
   id: string;
   title: string;
-  owner: string;
-  due: string;
-  status: string;
+  deals: Deal[];
 };
 
 type Deal = {
   id: string;
   name: string;
-  stage: string;
   value: string;
   owner: string;
 };
 
-const defaultPipeline: PipelineSummary[] = [
-  { id: "leads", stage: "Leads", count: 24, value: "R$ 310k" },
-  { id: "qualified", stage: "Qualificados", count: 11, value: "R$ 210k" },
-  { id: "proposal", stage: "Proposta", count: 6, value: "R$ 150k" },
-  { id: "closing", stage: "Fechamento", count: 3, value: "R$ 92k" },
-];
+type DealForm = Deal & { columnId: string };
 
-const defaultTasks: Task[] = [
-  {
-    id: "task-1",
-    title: "Revisar proposta - Studio Caravel",
-    owner: "Ana C.",
-    due: "Hoje, 16:00",
-    status: "Alta",
-  },
-  {
-    id: "task-2",
-    title: "Ligar para CFO - Argo Health",
-    owner: "Lucas M.",
-    due: "Amanha, 10:30",
-    status: "Media",
-  },
-  {
-    id: "task-3",
-    title: "Enviar NDA - Prisma Bank",
-    owner: "Rafael P.",
-    due: "Sexta, 14:00",
-    status: "Baixa",
-  },
-];
+const parseValue = (value: string) => {
+  const normalized = value.replace(/\s/g, "").toLowerCase();
+  const numberMatch = normalized.match(/([\d.,]+)/);
+  if (!numberMatch) {
+    return 0;
+  }
+  const raw = numberMatch[1].replace(/\./g, "").replace(",", ".");
+  const base = Number(raw) || 0;
+  const suffix = normalized.match(/([km])/);
+  if (!suffix) {
+    return base;
+  }
+  return suffix[1] === "m" ? base * 1_000_000 : base * 1_000;
+};
 
-const defaultDeals: Deal[] = [
-  {
-    id: "deal-1",
-    name: "Prisma Bank",
-    stage: "Proposta",
-    value: "R$ 68k",
-    owner: "Rafael P.",
-  },
-  {
-    id: "deal-2",
-    name: "Argo Health",
-    stage: "Qualificados",
-    value: "R$ 92k",
-    owner: "Lucas M.",
-  },
-  {
-    id: "deal-3",
-    name: "Studio Caravel",
-    stage: "Fechamento",
-    value: "R$ 48k",
-    owner: "Ana C.",
-  },
-];
+const formatValue = (value: number) => {
+  if (value >= 1_000_000) {
+    return `R$ ${(value / 1_000_000).toFixed(1).replace(".0", "")}M`;
+  }
+  if (value >= 1_000) {
+    return `R$ ${(value / 1_000).toFixed(0)}k`;
+  }
+  return `R$ ${Math.round(value).toLocaleString("pt-BR")}`;
+};
 
 export default function PipelineData() {
-  const [pipeline, setPipeline] = useState<PipelineSummary[]>(defaultPipeline);
-  const [tasks, setTasks] = useState<Task[]>(defaultTasks);
-  const [deals, setDeals] = useState<Deal[]>(defaultDeals);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [columns, setColumns] = useState<Column[]>([]);
+  const [categories, setCategories] = useState<Category[] | null>(null);
   const [editingDeal, setEditingDeal] = useState<Deal | null>(null);
-  const [taskForm, setTaskForm] = useState<Task | null>(null);
-  const [dealForm, setDealForm] = useState<Deal | null>(null);
-  const isLoadedRef = useRef(false);
-  const saveTimeoutRef = useRef<number | null>(null);
+  const [dealForm, setDealForm] = useState<DealForm | null>(null);
+  const boardLoadedRef = useRef(false);
+  const boardSaveTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadBoard = async () => {
       try {
-        const response = await api.get("/api/pipeline/data");
-        const data = response?.data?.data;
-        if (data?.pipeline) {
-          setPipeline(data.pipeline);
-        }
-        if (data?.tasks) {
-          setTasks(data.tasks);
-        }
-        if (data?.deals) {
-          setDeals(data.deals);
+        const response = await api.get("/api/pipeline/board");
+        const pipeline = response?.data?.pipeline;
+        if (Array.isArray(pipeline)) {
+          setColumns(pipeline);
+        } else if (pipeline?.columns) {
+          setColumns(pipeline.columns);
+          if (Array.isArray(pipeline.categories)) {
+            setCategories(pipeline.categories);
+          }
         }
       } catch {
-        // Keep defaults if the request fails.
+        // Keep empty if the request fails.
       } finally {
-        isLoadedRef.current = true;
+        boardLoadedRef.current = true;
       }
     };
-    void loadData();
+    void loadBoard();
   }, []);
 
   useEffect(() => {
-    if (!isLoadedRef.current) {
+    if (!boardLoadedRef.current) {
       return;
     }
-    if (saveTimeoutRef.current) {
-      window.clearTimeout(saveTimeoutRef.current);
+    if (boardSaveTimeoutRef.current) {
+      window.clearTimeout(boardSaveTimeoutRef.current);
     }
-    saveTimeoutRef.current = window.setTimeout(() => {
-      void api.put("/api/pipeline/data", { pipeline, tasks, deals });
+    boardSaveTimeoutRef.current = window.setTimeout(() => {
+      const payload = categories ? { columns, categories } : { columns };
+      void api.put("/api/pipeline/board", { data: payload });
     }, 600);
     return () => {
-      if (saveTimeoutRef.current) {
-        window.clearTimeout(saveTimeoutRef.current);
+      if (boardSaveTimeoutRef.current) {
+        window.clearTimeout(boardSaveTimeoutRef.current);
       }
     };
-  }, [pipeline, tasks, deals]);
+  }, [columns, categories]);
 
-  const openTask = (task: Task) => {
-    setEditingTask(task);
-    setTaskForm({ ...task });
-  };
+  const pipeline = useMemo<PipelineSummary[]>(
+    () =>
+      columns.map((column) => {
+        const total = column.deals.reduce((sum, deal) => sum + parseValue(deal.value), 0);
+        return {
+          id: column.id,
+          stage: column.title,
+          count: column.deals.length,
+          value: formatValue(total),
+          valueTotal: total,
+        };
+      }),
+    [columns]
+  );
 
-  const openDeal = (deal: Deal) => {
+  const pipelineChart = useMemo(
+    () =>
+      pipeline.map((item) => ({
+        name: item.stage,
+        count: item.count,
+        valueTotal: item.valueTotal,
+      })),
+    [pipeline]
+  );
+
+  const pipelineTotals = useMemo(() => {
+    const totalCount = pipeline.reduce((sum, item) => sum + item.count, 0);
+    const totalValue = pipeline.reduce((sum, item) => sum + item.valueTotal, 0);
+    const avgTicket = totalCount > 0 ? totalValue / totalCount : 0;
+    const topStage = pipeline.reduce<PipelineSummary | null>((best, item) => {
+      if (!best || item.valueTotal > best.valueTotal) {
+        return item;
+      }
+      return best;
+    }, null);
+    return {
+      totalCount,
+      totalValue,
+      avgTicket,
+      topStage,
+    };
+  }, [pipeline]);
+
+  const deals = useMemo(
+    () =>
+      columns.flatMap((column) =>
+        column.deals.map((deal) => ({
+          ...deal,
+          stage: column.title,
+          columnId: column.id,
+        }))
+      ),
+    [columns]
+  );
+
+  const openDeal = (deal: Deal & { columnId: string }) => {
     setEditingDeal(deal);
-    setDealForm({ ...deal });
-  };
-
-  const handleTaskSave = () => {
-    if (!editingTask || !taskForm) {
-      return;
-    }
-    setTasks((prev) =>
-      prev.map((item) => (item.id === editingTask.id ? taskForm : item))
-    );
-    setEditingTask(null);
-    setTaskForm(null);
+    setDealForm({ ...deal, columnId: deal.columnId });
   };
 
   const handleDealSave = () => {
     if (!editingDeal || !dealForm) {
       return;
     }
-    setDeals((prev) =>
-      prev.map((item) => (item.id === editingDeal.id ? dealForm : item))
-    );
+    setColumns((prev) => {
+      const next = prev.map((column) => ({
+        ...column,
+        deals: column.deals.filter((deal) => deal.id !== editingDeal.id),
+      }));
+      const targetIndex = next.findIndex((column) => column.id === dealForm.columnId);
+      if (targetIndex === -1) {
+        return prev;
+      }
+      next[targetIndex] = {
+        ...next[targetIndex],
+        deals: [
+          ...next[targetIndex].deals,
+          {
+            id: editingDeal.id,
+            name: dealForm.name,
+            value: dealForm.value,
+            owner: dealForm.owner,
+          },
+        ],
+      };
+      return next;
+    });
     setEditingDeal(null);
     setDealForm(null);
   };
@@ -208,8 +241,7 @@ export default function PipelineData() {
                 p: 2.5,
                 flex: 1,
                 border: "1px solid rgba(255,255,255,0.08)",
-                background:
-                  "linear-gradient(135deg, rgba(34, 201, 166, 0.12), rgba(15, 23, 32, 0.9))",
+                backgroundColor: "rgba(15, 23, 32, 0.9)",
               }}
             >
               <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
@@ -229,67 +261,107 @@ export default function PipelineData() {
           <Paper
             elevation={0}
             sx={{
-              p: 3,
-              flex: 1.1,
+              p: 2.5,
+              flex: 1,
               border: "1px solid rgba(255,255,255,0.08)",
-              backgroundColor: "rgba(15, 23, 32, 0.85)",
+              backgroundColor: "rgba(15, 23, 32, 0.9)",
             }}
           >
-            <Stack spacing={2}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                Tarefas do dia
-              </Typography>
-              <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
-              <Stack spacing={2}>
-                {tasks.map((task) => (
-                  <Box
-                    key={task.id}
-                    onClick={() => openTask(task)}
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 1,
-                      p: 2,
-                      borderRadius: "var(--radius-card)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      backgroundColor: "rgba(10, 16, 23, 0.7)",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                      {task.title}
-                    </Typography>
-                    <Stack direction="row" spacing={2}>
-                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                        {task.owner}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                        {task.due}
-                      </Typography>
-                      <Chip
-                        size="small"
-                        label={task.status}
-                        color={task.status === "Alta" ? "secondary" : "default"}
-                        sx={{
-                          color: "text.primary",
-                          backgroundColor:
-                            task.status === "Alta"
-                              ? "rgba(245, 158, 11, 0.25)"
-                              : "rgba(148, 163, 184, 0.18)",
-                        }}
-                      />
-                    </Stack>
-                  </Box>
-                ))}
-              </Stack>
-            </Stack>
+            <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+              Total de cards
+            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+              {pipelineTotals.totalCount}
+            </Typography>
           </Paper>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              flex: 1,
+              border: "1px solid rgba(255,255,255,0.08)",
+              backgroundColor: "rgba(15, 23, 32, 0.9)",
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+              Valor total
+            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+              {formatValue(pipelineTotals.totalValue)}
+            </Typography>
+          </Paper>
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2.5,
+              flex: 1,
+              border: "1px solid rgba(255,255,255,0.08)",
+              backgroundColor: "rgba(15, 23, 32, 0.9)",
+            }}
+          >
+            <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+              Ticket medio
+            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 700 }}>
+              {formatValue(pipelineTotals.avgTicket)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              {pipelineTotals.topStage
+                ? `Maior etapa: ${pipelineTotals.topStage.stage}`
+                : "Sem dados"}
+            </Typography>
+          </Paper>
+        </Stack>
 
+        <Paper
+          elevation={0}
+          sx={{
+            p: 3,
+            border: "1px solid rgba(255,255,255,0.08)",
+            backgroundColor: "rgba(15, 23, 32, 0.9)",
+          }}
+        >
+          <Stack spacing={2}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Evolucao por etapa
+            </Typography>
+            <Box sx={{ height: 260 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={pipelineChart}>
+                  <XAxis dataKey="name" tick={{ fill: "#9aa6b2", fontSize: 12 }} />
+                  <YAxis tick={{ fill: "#9aa6b2", fontSize: 12 }} />
+                  <Tooltip
+                    formatter={(value, name) => {
+                      if (name === "count") {
+                        return [value, "Cards"];
+                      }
+                      if (name === "valueTotal") {
+                        return [formatValue(Number(value)), "Valor total"];
+                      }
+                      return [value, name];
+                    }}
+                    labelFormatter={(label) => String(label)}
+                    contentStyle={{
+                      background: "rgba(12, 18, 26, 0.98)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      color: "#e6edf3",
+                    }}
+                    itemStyle={{ color: "#e6edf3" }}
+                  />
+                  <Bar dataKey="count" fill="#22c9a6" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="valueTotal" fill="#1d4ed8" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </Box>
+          </Stack>
+        </Paper>
+
+        <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
           <Paper
             elevation={0}
             sx={{
               p: 3,
-              flex: 0.9,
+              flex: 1,
               border: "1px solid rgba(255,255,255,0.08)",
               backgroundColor: "rgba(15, 23, 32, 0.9)",
             }}
@@ -329,59 +401,6 @@ export default function PipelineData() {
         </Stack>
       </Stack>
 
-      <Dialog open={Boolean(editingTask)} onClose={() => setEditingTask(null)} maxWidth="sm" fullWidth>
-        <DialogContent>
-          <Stack spacing={2.5}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Typography variant="h6">Editar tarefa</Typography>
-              <IconButton onClick={() => setEditingTask(null)} sx={{ color: "text.secondary" }}>
-                <CloseRoundedIcon fontSize="small" />
-              </IconButton>
-            </Box>
-            <TextField
-              label="Titulo"
-              fullWidth
-              value={taskForm?.title || ""}
-              onChange={(event) =>
-                setTaskForm((prev) => (prev ? { ...prev, title: event.target.value } : prev))
-              }
-            />
-            <TextField
-              label="Responsavel"
-              fullWidth
-              value={taskForm?.owner || ""}
-              onChange={(event) =>
-                setTaskForm((prev) => (prev ? { ...prev, owner: event.target.value } : prev))
-              }
-            />
-            <TextField
-              label="Prazo"
-              fullWidth
-              value={taskForm?.due || ""}
-              onChange={(event) =>
-                setTaskForm((prev) => (prev ? { ...prev, due: event.target.value } : prev))
-              }
-            />
-            <TextField
-              label="Status"
-              fullWidth
-              value={taskForm?.status || ""}
-              onChange={(event) =>
-                setTaskForm((prev) => (prev ? { ...prev, status: event.target.value } : prev))
-              }
-            />
-            <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button variant="outlined" onClick={() => setEditingTask(null)}>
-                Cancelar
-              </Button>
-              <Button variant="contained" onClick={handleTaskSave}>
-                Salvar
-              </Button>
-            </Stack>
-          </Stack>
-        </DialogContent>
-      </Dialog>
-
       <Dialog open={Boolean(editingDeal)} onClose={() => setEditingDeal(null)} maxWidth="sm" fullWidth>
         <DialogContent>
           <Stack spacing={2.5}>
@@ -400,13 +419,22 @@ export default function PipelineData() {
               }
             />
             <TextField
+              select
               label="Etapa"
               fullWidth
-              value={dealForm?.stage || ""}
+              value={dealForm?.columnId || ""}
               onChange={(event) =>
-                setDealForm((prev) => (prev ? { ...prev, stage: event.target.value } : prev))
+                setDealForm((prev) =>
+                  prev ? { ...prev, columnId: event.target.value } : prev
+                )
               }
-            />
+            >
+              {columns.map((column) => (
+                <MenuItem key={column.id} value={column.id}>
+                  {column.title}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Valor"
               fullWidth
