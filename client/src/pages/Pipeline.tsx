@@ -3,6 +3,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  Checkbox,
   Chip,
   Divider,
   Dialog,
@@ -12,6 +13,7 @@ import {
   Paper,
   Alert,
   Stack,
+  Switch,
   TextField,
   Tooltip,
   Typography,
@@ -266,6 +268,11 @@ export default function Pipeline() {
   const [editColumnDescription, setEditColumnDescription] = useState("");
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [users, setUsers] = useState<PipelineUser[]>([]);
+  const [taskFieldSettingsOpen, setTaskFieldSettingsOpen] = useState(false);
+  const [taskFieldSettings, setTaskFieldSettings] = useState({
+    value: false,
+    link: false,
+  });
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_COLORS[0]);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
@@ -434,9 +441,9 @@ export default function Pipeline() {
             ? {
                 ...deal,
                 name: editName.trim() || deal.name,
-                value: editValue.trim() || deal.value,
+                value: taskFieldSettings.value ? editValue.trim() || deal.value : deal.value,
                 owner: ownerLabel.trim() || deal.owner,
-                link: editLink.trim(),
+                link: taskFieldSettings.link ? editLink.trim() : deal.link,
                 comments: stripHtml(editDescription),
                 descriptionHtml: editDescription,
                 responsibleIds: editResponsibleIds,
@@ -941,6 +948,13 @@ export default function Pipeline() {
             </Button>
             <Button
               variant="outlined"
+              onClick={() => setTaskFieldSettingsOpen(true)}
+              sx={{ textTransform: "none", fontWeight: 600 }}
+            >
+              Personalizar tarefas
+            </Button>
+            <Button
+              variant="outlined"
               onClick={() => setColumnManagerOpen(true)}
               sx={{ textTransform: "none", fontWeight: 600 }}
             >
@@ -1027,6 +1041,7 @@ export default function Pipeline() {
                     taskQuery={normalizedQuery}
                     getDealOwnerLabel={getDealOwnerLabel}
                     stripHtml={stripHtml}
+                    showValue={taskFieldSettings.value}
                   />
                 ))}
                 <Paper
@@ -1108,9 +1123,11 @@ export default function Pipeline() {
                       <Typography variant="caption" sx={{ color: "text.secondary" }}>
                         {getDealOwnerLabel(deal)}
                       </Typography>
-                      <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 600 }}>
-                        {deal.value}
-                      </Typography>
+                      {taskFieldSettings.value ? (
+                        <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 600 }}>
+                          {deal.value}
+                        </Typography>
+                      ) : null}
                     </Box>
                   );
                 })()
@@ -1132,12 +1149,14 @@ export default function Pipeline() {
               value={editName}
               onChange={(event) => setEditName(event.target.value)}
             />
-            <TextField
-              label="Valor"
-              fullWidth
-              value={editValue}
-              onChange={(event) => setEditValue(event.target.value)}
-            />
+            {taskFieldSettings.value ? (
+              <TextField
+                label="Valor"
+                fullWidth
+                value={editValue}
+                onChange={(event) => setEditValue(event.target.value)}
+              />
+            ) : null}
             <Autocomplete
               multiple
               options={users}
@@ -1180,18 +1199,31 @@ export default function Pipeline() {
                 ))
               }
             />
-            <TextField
-              label="Link"
-              fullWidth
-              value={editLink}
-              onChange={(event) => setEditLink(event.target.value)}
-            />
+            {taskFieldSettings.link ? (
+              <TextField
+                label="Link"
+                fullWidth
+                value={editLink}
+                onChange={(event) => setEditLink(event.target.value)}
+              />
+            ) : null}
             <Autocomplete
               multiple
               options={categories}
               value={categories.filter((cat) => editCategoryIds.includes(cat.id))}
               onChange={(_, value) => setEditCategoryIds(value.map((cat) => cat.id))}
               getOptionLabel={(option) => option.name}
+              disableCloseOnSelect
+              renderOption={(props, option, { selected }) => (
+                <li {...props}>
+                  <Checkbox
+                    checked={selected}
+                    size="small"
+                    sx={{ mr: 1 }}
+                  />
+                  {option.name}
+                </li>
+              )}
               renderInput={(params) => (
                 <TextField {...params} label="Categorias" fullWidth />
               )}
@@ -1379,6 +1411,69 @@ export default function Pipeline() {
       </Dialog>
 
       <Dialog
+        open={taskFieldSettingsOpen}
+        onClose={() => setTaskFieldSettingsOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogContent>
+          <Stack spacing={2.5}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography variant="h6">Personalizar tarefas</Typography>
+              <IconButton onClick={() => setTaskFieldSettingsOpen(false)} sx={{ color: "text.secondary" }}>
+                <CloseRoundedIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            <Stack spacing={1}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  p: 1.5,
+                  borderRadius: 2,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  backgroundColor: "rgba(15, 23, 32, 0.9)",
+                }}
+              >
+                <Typography variant="subtitle2">Mostrar valor</Typography>
+                <Switch
+                  checked={taskFieldSettings.value}
+                  onChange={(event) =>
+                    setTaskFieldSettings((prev) => ({ ...prev, value: event.target.checked }))
+                  }
+                />
+              </Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  p: 1.5,
+                  borderRadius: 2,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  backgroundColor: "rgba(15, 23, 32, 0.9)",
+                }}
+              >
+                <Typography variant="subtitle2">Mostrar link</Typography>
+                <Switch
+                  checked={taskFieldSettings.link}
+                  onChange={(event) =>
+                    setTaskFieldSettings((prev) => ({ ...prev, link: event.target.checked }))
+                  }
+                />
+              </Box>
+            </Stack>
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button variant="outlined" onClick={() => setTaskFieldSettingsOpen(false)}>
+                Fechar
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
         open={columnManagerOpen}
         onClose={() => setColumnManagerOpen(false)}
         maxWidth="sm"
@@ -1511,6 +1606,7 @@ function SortableColumn({
   taskQuery,
   getDealOwnerLabel,
   stripHtml,
+  showValue,
 }: {
   column: Column;
   onEdit: (deal: Deal) => void;
@@ -1520,6 +1616,7 @@ function SortableColumn({
   taskQuery: string;
   getDealOwnerLabel: (deal: Deal) => string;
   stripHtml: (value: string) => string;
+  showValue: boolean;
 }) {
   const filteredDeals = taskQuery
     ? column.deals.filter((deal) => {
@@ -1607,6 +1704,7 @@ function SortableColumn({
                 onEdit={onEdit}
                 ownerLabel={getDealOwnerLabel(deal)}
                 category={categoryMap.get(deal.categoryId || "")}
+                showValue={showValue}
               />
             ))}
           </Stack>
@@ -1620,11 +1718,13 @@ function SortableDeal({
   deal,
   onEdit,
   ownerLabel,
+  showValue,
   category,
 }: {
   deal: Deal;
   onEdit: (deal: Deal) => void;
   ownerLabel: string;
+  showValue: boolean;
   category?: Category;
 }) {
   const dragId = cardDragId(deal.id);
@@ -1664,9 +1764,11 @@ function SortableDeal({
       <Typography variant="caption" sx={{ color: "text.secondary" }}>
         {ownerLabel}
       </Typography>
-      <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 600 }}>
-        {deal.value}
-      </Typography>
+      {showValue ? (
+        <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 600 }}>
+          {deal.value}
+        </Typography>
+      ) : null}
     </Box>
   );
 }
