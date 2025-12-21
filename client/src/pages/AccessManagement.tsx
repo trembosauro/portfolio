@@ -96,6 +96,7 @@ export default function AccessManagement() {
   const [rolePermissions, setRolePermissions] = useState<Record<string, RolePermissionMap>>({});
   const [users, setUsers] = useState<AccessUser[]>([]);
   const [userRoles, setUserRoles] = useState<Record<string, string>>({});
+  const [userFilter, setUserFilter] = useState("");
   const toggleModule = (index: number) => {
     setModuleStates((prev) => {
       const next = [...prev];
@@ -150,10 +151,12 @@ export default function AccessManagement() {
       ROLE_PERMISSION_STORAGE_KEY,
       JSON.stringify(rolePermissions)
     );
+    window.dispatchEvent(new Event("roles-change"));
   }, [rolePermissions]);
 
   useEffect(() => {
     window.localStorage.setItem(USER_ROLE_STORAGE_KEY, JSON.stringify(userRoles));
+    window.dispatchEvent(new Event("roles-change"));
   }, [userRoles]);
 
   useEffect(() => {
@@ -170,6 +173,17 @@ export default function AccessManagement() {
     };
     void loadUsers();
   }, []);
+
+  const filteredUsers = useMemo(() => {
+    const term = userFilter.trim().toLowerCase();
+    if (!term) {
+      return users;
+    }
+    return users.filter((user) => {
+      const name = user.name?.toLowerCase() || "";
+      return name.includes(term) || user.email.toLowerCase().includes(term);
+    });
+  }, [users, userFilter]);
 
   const requestModuleToggle = (index: number) => {
     setModuleConfirm({ index, nextValue: !moduleStates[index] });
@@ -278,13 +292,19 @@ export default function AccessManagement() {
         >
           <Stack spacing={2.5}>
             <Typography variant="h6">Usuarios e papeis</Typography>
-            {users.length === 0 ? (
+            <TextField
+              label="Buscar usuario"
+              fullWidth
+              value={userFilter}
+              onChange={(event) => setUserFilter(event.target.value)}
+            />
+            {filteredUsers.length === 0 ? (
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                Nenhum usuario encontrado.
+                😕 Nao ha resultados para a sua pesquisa.
               </Typography>
             ) : (
-              <Stack spacing={1.5}>
-                {users.map((user) => (
+              <Stack spacing={1.5} sx={{ maxHeight: 360, overflowY: "auto", pr: 1 }}>
+                {filteredUsers.map((user) => (
                   <Paper
                     key={user.id}
                     elevation={0}

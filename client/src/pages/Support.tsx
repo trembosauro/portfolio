@@ -155,7 +155,7 @@ export default function Support() {
                 ))
               ) : (
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Nenhuma duvida encontrada.
+                  😕 Nao ha resultados para a sua pesquisa.
                 </Typography>
               )}
             </Stack>

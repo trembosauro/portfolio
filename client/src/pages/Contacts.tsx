@@ -233,6 +233,7 @@ export default function Contacts() {
   const [editingCategoryColor, setEditingCategoryColor] = useState(DEFAULT_COLORS[0]);
   const [copyMessage, setCopyMessage] = useState("");
   const [copySnackbarOpen, setCopySnackbarOpen] = useState(false);
+  const [contactQuery, setContactQuery] = useState("");
   const [birthdayInput, setBirthdayInput] = useState("");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => {
@@ -462,6 +463,24 @@ export default function Contacts() {
     return false;
   };
 
+  const filteredContacts = contacts.filter((contact) => {
+    const term = contactQuery.trim().toLowerCase();
+    if (!term) {
+      return true;
+    }
+    const haystack = [
+      contact.name,
+      ...contact.phones,
+      ...contact.emails,
+      ...contact.addresses,
+      ...contact.comments,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return haystack.includes(term);
+  });
+
   const removeContact = () => {
     if (!editingContact) {
       return;
@@ -658,46 +677,60 @@ export default function Contacts() {
             </Typography>
           </Paper>
         ) : (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-              gap: 2,
-            }}
-          >
-            {contacts.map((contact) => (
-              <Paper
-                key={contact.id}
-                elevation={0}
-                onClick={() => openContact(contact)}
+          <Stack spacing={2}>
+            <TextField
+              label="Buscar contatos"
+              value={contactQuery}
+              onChange={(event) => setContactQuery(event.target.value)}
+              sx={{ maxWidth: 360 }}
+            />
+            {filteredContacts.length === 0 ? (
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                😕 Nao ha resultados para a sua pesquisa.
+              </Typography>
+            ) : (
+              <Box
                 sx={{
-                  p: 2.5,
-                  minHeight: 160,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  backgroundColor: "rgba(15, 23, 32, 0.9)",
-                  cursor: "pointer",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                  gap: 2,
                 }}
               >
-                <Stack spacing={1}>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                    {contact.name || "Sem nome"}
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                    {contact.phones.filter(Boolean).length} telefones
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                    {contact.emails.filter(Boolean).length} emails
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                    {contact.addresses.filter(Boolean).length} enderecos
-                  </Typography>
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                    {contact.categoryIds?.length ? `${contact.categoryIds.length} categorias` : "Sem categoria"}
-                  </Typography>
-                </Stack>
-              </Paper>
-            ))}
-          </Box>
+                {filteredContacts.map((contact) => (
+                  <Paper
+                    key={contact.id}
+                    elevation={0}
+                    onClick={() => openContact(contact)}
+                    sx={{
+                      p: 2.5,
+                      minHeight: 160,
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      backgroundColor: "rgba(15, 23, 32, 0.9)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Stack spacing={1}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                        {contact.name || "Sem nome"}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        {contact.phones.filter(Boolean).length} telefones
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        {contact.emails.filter(Boolean).length} emails
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        {contact.addresses.filter(Boolean).length} enderecos
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        {contact.categoryIds?.length ? `${contact.categoryIds.length} categorias` : "Sem categoria"}
+                      </Typography>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Box>
+            )}
+          </Stack>
         )}
       </Stack>
 

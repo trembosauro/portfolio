@@ -1213,6 +1213,9 @@ export default function Pipeline() {
   };
 
   const handleAddColumn = () => {
+    if (!permissions.pipeline_edit_columns) {
+      return;
+    }
     const nextId = nanoid(6);
     const index = columns.length + 1;
     setColumns((prev) => [
@@ -1226,6 +1229,9 @@ export default function Pipeline() {
   };
 
   const handleAddDeal = (columnId: string) => {
+    if (!permissions.pipeline_edit_tasks) {
+      return;
+    }
     const nextId = nanoid(6);
     const newDeal: Deal = {
       id: `deal-${nextId}`,
@@ -1374,6 +1380,21 @@ export default function Pipeline() {
           onDragCancel={handleDragCancel}
           autoScroll
         >
+          {normalizedQuery && visibleColumns.length === 0 ? (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                border: "1px solid rgba(255,255,255,0.08)",
+                backgroundColor: "rgba(15, 23, 32, 0.85)",
+                mb: 2,
+              }}
+            >
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                😕 Nao ha resultados para a sua pesquisa.
+              </Typography>
+            </Paper>
+          ) : null}
           <SortableContext items={columnItems} strategy={horizontalListSortingStrategy}>
             <Box sx={{ position: "relative" }}>
               <IconButton
@@ -1680,25 +1701,29 @@ export default function Pipeline() {
               />
             </Stack>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button
-                color="error"
-                variant="outlined"
-                onClick={() => setRemoveDealOpen(true)}
-              >
-                Remover
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  if (!viewingDeal) {
-                    return;
-                  }
-                  handleEditOpen(viewingDeal);
-                  setViewingDeal(null);
-                }}
-              >
-                Editar
-              </Button>
+              {permissions.pipeline_edit_tasks ? (
+                <Button
+                  color="error"
+                  variant="outlined"
+                  onClick={() => setRemoveDealOpen(true)}
+                >
+                  Remover
+                </Button>
+              ) : null}
+              {permissions.pipeline_edit_tasks ? (
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    if (!viewingDeal) {
+                      return;
+                    }
+                    handleEditOpen(viewingDeal);
+                    setViewingDeal(null);
+                  }}
+                >
+                  Editar
+                </Button>
+              ) : null}
               <Button variant="contained" onClick={handleViewClose}>
                 Fechar
               </Button>

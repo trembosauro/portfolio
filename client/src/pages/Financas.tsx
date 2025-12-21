@@ -6,6 +6,7 @@ import {
   Checkbox,
   Dialog,
   DialogContent,
+  Autocomplete,
   FormControl,
   IconButton,
   InputLabel,
@@ -28,6 +29,7 @@ import {
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from "recharts";
+import { useLocation } from "wouter";
 import api from "../api";
 
 type Category = {
@@ -43,6 +45,13 @@ type Expense = {
   categoryId: string;
   comment: string;
   createdAt: string;
+  contactIds?: string[];
+};
+
+type Contact = {
+  id: string;
+  name: string;
+  emails: string[];
 };
 
 const STORAGE_KEY = "finance_data_v1";
@@ -225,6 +234,7 @@ const darkenColor = (value: string, factor: number) => {
 };
 
 export default function Financas() {
+  const [, setLocation] = useLocation();
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [expenses, setExpenses] = useState<Expense[]>(defaultExpenses);
   const [open, setOpen] = useState(false);
@@ -233,6 +243,7 @@ export default function Financas() {
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState(defaultCategories[0]?.id || "");
   const [comment, setComment] = useState("");
+  const [contactIds, setContactIds] = useState<string[]>([]);
   const [expenseQuery, setExpenseQuery] = useState("");
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   const [categorySearch, setCategorySearch] = useState("");
@@ -244,8 +255,37 @@ export default function Financas() {
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [removeExpenseOpen, setRemoveExpenseOpen] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [permissions, setPermissions] = useState(() => ({
+    pipeline_view: true,
+    pipeline_edit_tasks: true,
+    pipeline_edit_columns: true,
+    finance_view: true,
+    finance_edit: true,
+  }));
   const isLoadedRef = useRef(false);
   const saveTimeoutRef = useRef<number | null>(null);
+
+  const getStoredPermissions = () => {
+    const storedUser = window.localStorage.getItem("sc_user");
+    const email = storedUser ? (JSON.parse(storedUser) as { email?: string }).email : "";
+    const storedRoles = window.localStorage.getItem("sc_user_roles");
+    const userRoles = storedRoles ? (JSON.parse(storedRoles) as Record<string, string>) : {};
+    const roleName = (email && userRoles[email]) || "Administrador";
+    const storedPermissions = window.localStorage.getItem("sc_role_permissions");
+    const rolePermissions = storedPermissions
+      ? (JSON.parse(storedPermissions) as Record<string, Record<string, boolean>>)
+      : {};
+    return (
+      rolePermissions[roleName] || {
+        pipeline_view: true,
+        pipeline_edit_tasks: true,
+        pipeline_edit_columns: true,
+        finance_view: true,
+        finance_edit: true,
+      }
+    );
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -307,6 +347,54 @@ export default function Financas() {
   }, []);
 
   useEffect(() => {
+    const loadContacts = () => {
+      const stored = window.localStorage.getItem("contacts_v1");
+      if (!stored) {
+        setContacts([]);
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as Contact[];
+        if (Array.isArray(parsed)) {
+          setContacts(parsed);
+        }
+      } catch {
+        window.localStorage.removeItem("contacts_v1");
+        setContacts([]);
+      }
+    };
+    loadContacts();
+    const handleContactsChange = () => loadContacts();
+    window.addEventListener("contacts-change", handleContactsChange);
+    return () => {
+      window.removeEventListener("contacts-change", handleContactsChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncPermissions = () => {
+      try {
+        setPermissions(getStoredPermissions());
+      } catch {
+        setPermissions({
+          pipeline_view: true,
+          pipeline_edit_tasks: true,
+          pipeline_edit_columns: true,
+          finance_view: true,
+          finance_edit: true,
+        });
+      }
+    };
+    syncPermissions();
+    window.addEventListener("roles-change", syncPermissions);
+    window.addEventListener("auth-change", syncPermissions);
+    return () => {
+      window.removeEventListener("roles-change", syncPermissions);
+      window.removeEventListener("auth-change", syncPermissions);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isLoadedRef.current) {
       return;
     }
@@ -326,6 +414,12 @@ export default function Financas() {
   }, [categories, expenses]);
 
   useEffect(() => {
+    if (!permissions.finance_view) {
+      setLocation("/home");
+    }
+  }, [permissions.finance_view, setLocation]);
+
+  useEffect(() => {
     if (!isLoadedRef.current) {
       return;
     }
@@ -343,6 +437,12 @@ export default function Financas() {
     categories.forEach((cat) => map.set(cat.id, cat));
     return map;
   }, [categories]);
+
+  const contactMap = useMemo(() => {
+    const map = new Map<string, Contact>();
+    contacts.forEach((contact) => map.set(contact.id, contact));
+    return map;
+  }, [contacts]);
 
   useEffect(() => {
     if (categoryId && categories.some((cat) => cat.id === categoryId)) {
@@ -409,6 +509,9 @@ export default function Financas() {
   }, [categories, categorySearch]);
 
   const handleSaveExpense = () => {
+    if (!permissions.finance_edit) {
+      return;
+    }
     const parsed = Number(amount.replace(",", "."));
     if (!title.trim() || Number.isNaN(parsed)) {
       return;
@@ -423,6 +526,7 @@ export default function Financas() {
                 amount: parsed,
                 categoryId,
                 comment: comment.trim(),
+                contactIds,
               }
             : expense
         )
@@ -436,6 +540,7 @@ export default function Financas() {
           amount: parsed,
           categoryId,
           comment: comment.trim(),
+          contactIds,
           createdAt: new Date().toISOString(),
         },
         ...prev,
@@ -444,6 +549,7 @@ export default function Financas() {
     setTitle("");
     setAmount("");
     setComment("");
+    setContactIds([]);
     setEditingExpenseId(null);
     setOpen(false);
   };
@@ -463,6 +569,7 @@ export default function Financas() {
     setAmount(String(expense.amount));
     setCategoryId(expense.categoryId);
     setComment(expense.comment);
+    setContactIds(expense.contactIds || []);
     setOpen(true);
   };
 
@@ -549,9 +656,11 @@ export default function Financas() {
                 setAmount("");
                 setComment("");
                 setCategoryId(categories[0]?.id || "");
+                setContactIds([]);
                 setOpen(true);
               }}
               sx={{ textTransform: "none", fontWeight: 600 }}
+              disabled={!permissions.finance_edit}
             >
               Adicionar gasto
             </Button>
@@ -737,7 +846,9 @@ export default function Financas() {
                 {filteredExpenses.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} sx={{ color: "text.secondary" }}>
-                      Nenhum gasto registrado.
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                        😕 Nao ha resultados para a sua pesquisa.
+                      </Typography>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -841,6 +952,27 @@ export default function Financas() {
                 minRows={3}
                 value={comment}
                 onChange={(event) => setComment(event.target.value)}
+              />
+              <Autocomplete
+                multiple
+                options={contacts}
+                value={contacts.filter((contact) => contactIds.includes(contact.id))}
+                onChange={(_, value) => setContactIds(value.map((contact) => contact.id))}
+                getOptionLabel={(option) => option.name || option.emails?.[0] || "Contato"}
+                noOptionsText="Nenhum contato"
+                renderInput={(params) => (
+                  <TextField {...params} label="Contatos associados" fullWidth />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      {...getTagProps({ index })}
+                      key={option.id}
+                      label={option.name || option.emails?.[0] || "Contato"}
+                      size="small"
+                    />
+                  ))
+                }
               />
             </Stack>
 
@@ -1058,25 +1190,52 @@ export default function Financas() {
                 {viewingExpense?.comment || "-"}
               </Typography>
             </Stack>
+            <Stack spacing={0.5}>
+              <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                Contatos associados
+              </Typography>
+              {viewingExpense?.contactIds?.length ? (
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {viewingExpense.contactIds
+                    .map((id) => contactMap.get(id))
+                    .filter(Boolean)
+                    .map((contact) => (
+                      <Chip
+                        key={contact?.id}
+                        label={contact?.name || contact?.emails?.[0] || "Contato"}
+                        size="small"
+                      />
+                    ))}
+                </Stack>
+              ) : (
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  Nenhum contato associado.
+                </Typography>
+              )}
+            </Stack>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button
-                color="error"
-                variant="outlined"
-                onClick={() => setRemoveExpenseOpen(true)}
-              >
-                Remover
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  if (viewingExpense) {
-                    handleEditOpen(viewingExpense);
-                    setViewingExpense(null);
-                  }
-                }}
-              >
-                Editar
-              </Button>
+              {permissions.finance_edit ? (
+                <Button
+                  color="error"
+                  variant="outlined"
+                  onClick={() => setRemoveExpenseOpen(true)}
+                >
+                  Remover
+                </Button>
+              ) : null}
+              {permissions.finance_edit ? (
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    if (viewingExpense) {
+                      handleEditOpen(viewingExpense);
+                      setViewingExpense(null);
+                    }
+                  }}
+                >
+                  Editar
+                </Button>
+              ) : null}
               <Button variant="contained" onClick={handleViewClose}>
                 Fechar
               </Button>
