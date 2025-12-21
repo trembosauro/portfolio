@@ -10,6 +10,7 @@ import {
   DialogContent,
   IconButton,
   InputAdornment,
+  MenuItem,
   Paper,
   Popover,
   Snackbar,
@@ -35,6 +36,7 @@ type Contact = {
   addresses: string[];
   comments: string[];
   categoryIds: string[];
+  role?: string;
 };
 
 type Category = {
@@ -45,6 +47,7 @@ type Category = {
 
 const STORAGE_KEY = "contacts_v1";
 const CATEGORY_STORAGE_KEY = "contact_categories_v1";
+const USER_ROLE_STORAGE_KEY = "sc_user_roles";
 
 const DEFAULT_COLORS = [
   "#0f766e",
@@ -60,6 +63,8 @@ const DEFAULT_COLORS = [
   "#1f2937",
   "#0f3d3e",
 ];
+
+const roleOptions = ["Administrador", "Gestor", "Analista", "Leitor"];
 
 const defaultCategories: Category[] = [
   { id: "cat-familia", name: "Familia", color: DEFAULT_COLORS[0] },
@@ -114,6 +119,7 @@ const emptyContact = (): Contact => ({
   addresses: [""],
   comments: [""],
   categoryIds: [],
+  role: "",
 });
 
 const sampleContacts: Contact[] = [
@@ -463,6 +469,29 @@ export default function Contacts() {
     return false;
   };
 
+  const updateUserRole = (contact: Contact) => {
+    const email = (contact.emails || []).find((value) => value.trim())?.trim();
+    if (!email) {
+      return;
+    }
+    const stored = window.localStorage.getItem(USER_ROLE_STORAGE_KEY);
+    let roles: Record<string, string> = {};
+    if (stored) {
+      try {
+        roles = JSON.parse(stored) as Record<string, string>;
+      } catch {
+        window.localStorage.removeItem(USER_ROLE_STORAGE_KEY);
+      }
+    }
+    if (contact.role) {
+      roles[email] = contact.role;
+    } else if (roles[email]) {
+      delete roles[email];
+    }
+    window.localStorage.setItem(USER_ROLE_STORAGE_KEY, JSON.stringify(roles));
+    window.dispatchEvent(new Event("roles-change"));
+  };
+
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
 
   const filteredContacts = contacts.filter((contact) => {
@@ -520,6 +549,7 @@ export default function Contacts() {
     });
     setEditingContact(null);
     setContactForm(null);
+    updateUserRole(nextContact);
   };
 
   useEffect(() => {
@@ -538,6 +568,7 @@ export default function Contacts() {
       next[existingIndex] = contactForm;
       return next;
     });
+    updateUserRole(contactForm);
   }, [contactForm]);
 
   useEffect(() => {
@@ -1026,6 +1057,22 @@ export default function Contacts() {
                 setContactForm((prev) => (prev ? { ...prev, name: event.target.value } : prev))
               }
             />
+            <TextField
+              select
+              label="Papel (Gestao)"
+              fullWidth
+              value={contactForm?.role || ""}
+              onChange={(event) =>
+                setContactForm((prev) => (prev ? { ...prev, role: event.target.value } : prev))
+              }
+            >
+              <MenuItem value="">Sem papel</MenuItem>
+              {roleOptions.map((role) => (
+                <MenuItem key={role} value={role}>
+                  {role}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               label="Data de aniversario"
               fullWidth

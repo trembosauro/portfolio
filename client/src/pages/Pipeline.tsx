@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Autocomplete,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Box,
   Button,
   Checkbox,
@@ -25,8 +28,11 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { Link as RouterLink, useLocation } from "wouter";
 import { nanoid } from "nanoid";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import ArchiveRoundedIcon from "@mui/icons-material/ArchiveRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import DragIndicatorRoundedIcon from "@mui/icons-material/DragIndicatorRounded";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import FormatBoldRoundedIcon from "@mui/icons-material/FormatBoldRounded";
 import FormatItalicRoundedIcon from "@mui/icons-material/FormatItalicRounded";
 import FormatListBulletedRoundedIcon from "@mui/icons-material/FormatListBulletedRounded";
@@ -37,8 +43,10 @@ import LooksTwoRoundedIcon from "@mui/icons-material/LooksTwoRounded";
 import Looks3RoundedIcon from "@mui/icons-material/Looks3Rounded";
 import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
+import RestoreFromTrashRoundedIcon from "@mui/icons-material/RestoreFromTrashRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
+import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import api from "../api";
 import {
   DndContext,
@@ -77,6 +85,7 @@ type Column = {
   title: string;
   deals: Deal[];
   description?: string;
+  archived?: boolean;
 };
 
 type Category = {
@@ -421,6 +430,7 @@ const normalizePersonIds = (ids?: Array<number | string>) => {
 const normalizeColumns = (incoming: Column[]) =>
   incoming.map((column) => ({
     ...column,
+    archived: Boolean(column.archived),
     deals: column.deals.map((deal) => ({
       ...deal,
       responsibleIds: normalizePersonIds(deal.responsibleIds as Array<number | string>),
@@ -465,7 +475,7 @@ export default function Pipeline() {
   const [editingCategoryName, setEditingCategoryName] = useState("");
   const [editingCategoryColor, setEditingCategoryColor] = useState(DEFAULT_COLORS[0]);
   const [taskQuery, setTaskQuery] = useState("");
-  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
   const [columnManagerOpen, setColumnManagerOpen] = useState(false);
   const [newDealId, setNewDealId] = useState<string | null>(null);
   const [removeDealOpen, setRemoveDealOpen] = useState(false);
@@ -751,21 +761,51 @@ export default function Pipeline() {
 
   const filterDealsByQuery = (column: Column, query: string) => {
     if (!query) {
-      return column.deals;
+      return column.deals.filter((deal) => {
+        if (categoryFilters.length === 0) {
+          return true;
+        }
+        const ids = deal.categoryIds?.length
+          ? deal.categoryIds
+          : deal.categoryId
+            ? [deal.categoryId]
+            : [];
+        return categoryFilters.some((id) => ids.includes(id));
+      });
     }
     return column.deals.filter((deal) => {
+      if (categoryFilters.length > 0) {
+        const ids = deal.categoryIds?.length
+          ? deal.categoryIds
+          : deal.categoryId
+            ? [deal.categoryId]
+            : [];
+        if (!categoryFilters.some((id) => ids.includes(id))) {
+          return false;
+        }
+      }
       const description = stripHtml(deal.descriptionHtml || deal.comments || "");
       const haystack = `${deal.name} ${getDealOwnerLabel(deal)} ${deal.value} ${description}`.toLowerCase();
       return haystack.includes(query);
     });
   };
 
+  const activeColumns = useMemo(
+    () => columns.filter((column) => !column.archived),
+    [columns]
+  );
+
+  const archivedColumns = useMemo(
+    () => columns.filter((column) => column.archived),
+    [columns]
+  );
+
   const visibleColumns = useMemo(() => {
     if (!normalizedQuery) {
-      return columns;
+      return activeColumns;
     }
-    return columns.filter((column) => filterDealsByQuery(column, normalizedQuery).length > 0);
-  }, [columns, normalizedQuery, getDealOwnerLabel, stripHtml]);
+    return activeColumns.filter((column) => filterDealsByQuery(column, normalizedQuery).length > 0);
+  }, [activeColumns, normalizedQuery, categoryFilters, getDealOwnerLabel, stripHtml]);
 
   const columnItems = useMemo(
     () => visibleColumns.map((column) => columnDragId(column.id)),
@@ -1000,20 +1040,48 @@ export default function Pipeline() {
     setEditingColumn(null);
   };
 
+  const handleArchiveColumn = (columnId: string) => {
+    setColumns((prev) =>
+      prev.map((column) =>
+        column.id === columnId ? { ...column, archived: true } : column
+      )
+    );
+  };
+
+  const handleRestoreColumn = (columnId: string) => {
+    setColumns((prev) =>
+      prev.map((column) =>
+        column.id === columnId ? { ...column, archived: false } : column
+      )
+    );
+  };
+
+  const handleRemoveColumnById = (columnId: string) => {
+    setColumns((prev) => prev.filter((column) => column.id !== columnId));
+    if (editingColumn?.id === columnId) {
+      setEditingColumn(null);
+    }
+  };
+
+  const reorderActiveColumns = (prev: Column[], activeId: string, overId: string) => {
+    const activeList = prev.filter((column) => !column.archived);
+    const archivedList = prev.filter((column) => column.archived);
+    const oldIndex = activeList.findIndex((column) => column.id === activeId);
+    const newIndex = activeList.findIndex((column) => column.id === overId);
+    if (oldIndex === -1 || newIndex === -1) {
+      return prev;
+    }
+    const nextActive = arrayMove(activeList, oldIndex, newIndex);
+    return [...nextActive, ...archivedList];
+  };
+
   const handleColumnReorder = (event: { active: { id: string }; over?: { id: string } }) => {
     const activeId = String(event.active.id);
     const overId = event.over ? String(event.over.id) : null;
     if (!overId || activeId === overId) {
       return;
     }
-    setColumns((prev) => {
-      const oldIndex = prev.findIndex((column) => column.id === activeId);
-      const newIndex = prev.findIndex((column) => column.id === overId);
-      if (oldIndex === -1 || newIndex === -1) {
-        return prev;
-      }
-      return arrayMove(prev, oldIndex, newIndex);
-    });
+    setColumns((prev) => reorderActiveColumns(prev, activeId, overId));
   };
 
   const handleDragStart = (event: { active: { id: string } }) => {
@@ -1038,14 +1106,10 @@ export default function Pipeline() {
       if (!overId || !isColumnId(overId) || activeId === overId) {
         return;
       }
-      const activeIndex = columns.findIndex(
-        (column) => column.id === stripPrefix(activeId)
-      );
-      const overIndex = columns.findIndex(
-        (column) => column.id === stripPrefix(overId)
-      );
-      if (activeIndex !== -1 && overIndex !== -1 && activeIndex !== overIndex) {
-        setColumns((prev) => arrayMove(prev, activeIndex, overIndex));
+      const activeColumnId = stripPrefix(activeId);
+      const overColumnId = stripPrefix(overId);
+      if (activeColumnId !== overColumnId) {
+        setColumns((prev) => reorderActiveColumns(prev, activeColumnId, overColumnId));
       }
       return;
     }
@@ -1224,6 +1288,7 @@ export default function Pipeline() {
         id: `stage-${nextId}`,
         title: `Etapa ${index}`,
         deals: [],
+        archived: false,
       },
     ]);
   };
@@ -1315,14 +1380,16 @@ export default function Pipeline() {
               Pipeline
             </Typography>
           </Box>
-          <Button
-            component={RouterLink}
-            href="/pipeline/dados"
-            variant="outlined"
-            sx={{ textTransform: "none", fontWeight: 600 }}
-          >
-            Ver dados
-          </Button>
+          <Stack direction="row" spacing={2}>
+            <Button
+              component={RouterLink}
+              href="/pipeline/dados"
+              variant="outlined"
+              sx={{ textTransform: "none", fontWeight: 600 }}
+            >
+              Ver dados
+            </Button>
+          </Stack>
         </Box>
 
         <Box
@@ -1334,32 +1401,70 @@ export default function Pipeline() {
             justifyContent: "space-between",
           }}
         >
-          <TextField
-            label="Buscar tasks"
-            value={taskQuery}
-            onChange={(event) => setTaskQuery(event.target.value)}
-            sx={{ minWidth: { xs: "100%", sm: 280 } }}
-          />
-          <Stack direction="row" spacing={2} sx={{ width: { xs: "100%", sm: "auto" } }}>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setEditingCategoryId(null);
-                setCategoryDialogOpen(true);
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ width: { xs: "100%", sm: "auto" } }}>
+            <TextField
+              label="Buscar tasks"
+              value={taskQuery}
+              onChange={(event) => setTaskQuery(event.target.value)}
+              sx={{ minWidth: { xs: "100%", sm: 280 } }}
+            />
+            <Autocomplete
+              multiple
+              options={categories}
+              value={categories.filter((cat) => categoryFilters.includes(cat.id))}
+              onChange={(_, value) => setCategoryFilters(value.map((cat) => cat.id))}
+              getOptionLabel={(option) => option.name}
+              disableCloseOnSelect
+              ListboxProps={{ style: { maxHeight: 240 } }}
+              renderOption={(props, option, { selected }) => (
+                <li {...props}>
+                  <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
+                  {option.name}
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField {...params} label="Filtrar categorias" />
+              )}
+              renderTags={(value, getTagProps) => {
+                const visible = value.slice(0, 2);
+                const hiddenCount = value.length - visible.length;
+                return (
+                  <>
+                    {visible.map((option, index) => (
+                      <Chip
+                        {...getTagProps({ index })}
+                        key={option.id}
+                        label={option.name}
+                        size="small"
+                        sx={{
+                          color: "#e6edf3",
+                          backgroundColor: darkenColor(option.color, 0.5),
+                          maxWidth: 120,
+                          "& .MuiChip-label": {
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            maxWidth: 100,
+                          },
+                        }}
+                      />
+                    ))}
+                    {hiddenCount > 0 ? (
+                      <Chip
+                        label={`+${hiddenCount}`}
+                        size="small"
+                        sx={{
+                          color: "text.secondary",
+                          border: "1px solid rgba(255,255,255,0.16)",
+                        }}
+                      />
+                    ) : null}
+                  </>
+                );
               }}
-              sx={{ textTransform: "none", fontWeight: 600 }}
-              disabled={!permissions.pipeline_edit_tasks}
-            >
-              Categorias
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => setTaskFieldSettingsOpen(true)}
-              sx={{ textTransform: "none", fontWeight: 600 }}
-              disabled={!permissions.pipeline_edit_tasks}
-            >
-              Personalizar tarefas
-            </Button>
+              sx={{ minWidth: { xs: "100%", sm: 280 }, "& .MuiAutocomplete-inputRoot": { minHeight: 44 } }}
+            />
+          </Stack>
+          <Stack direction="row" spacing={2} sx={{ width: { xs: "100%", sm: "auto" } }}>
             <Button
               variant="outlined"
               onClick={() => setColumnManagerOpen(true)}
@@ -1368,6 +1473,21 @@ export default function Pipeline() {
             >
               Gerir colunas
             </Button>
+            <Tooltip title="Configuracoes" placement="bottom">
+              <span>
+                <IconButton
+                  onClick={() => setTaskFieldSettingsOpen(true)}
+                  disabled={!permissions.pipeline_edit_tasks}
+                  sx={{
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: 2,
+                    color: "text.primary",
+                  }}
+                >
+                  <SettingsRoundedIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
           </Stack>
         </Box>
 
@@ -1902,9 +2022,9 @@ export default function Pipeline() {
       </Dialog>
 
       <Dialog
-        open={categoryDialogOpen}
+        open={taskFieldSettingsOpen}
         onClose={() => {
-          setCategoryDialogOpen(false);
+          setTaskFieldSettingsOpen(false);
           cancelEditCategory();
         }}
         maxWidth="sm"
@@ -1913,10 +2033,10 @@ export default function Pipeline() {
         <DialogContent>
           <Stack spacing={2.5}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Typography variant="h6">Categorias</Typography>
+              <Typography variant="h6">Configuracoes</Typography>
               <IconButton
                 onClick={() => {
-                  setCategoryDialogOpen(false);
+                  setTaskFieldSettingsOpen(false);
                   cancelEditCategory();
                 }}
                 sx={{ color: "text.secondary" }}
@@ -1924,142 +2044,10 @@ export default function Pipeline() {
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
-
-            {editingCategoryId ? (
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  backgroundColor: "rgba(10, 16, 23, 0.7)",
-                }}
-              >
-                <Stack spacing={1.5}>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    Editar categoria
-                  </Typography>
-                  <TextField
-                    label="Nome"
-                    fullWidth
-                    value={editingCategoryName}
-                    onChange={(event) => setEditingCategoryName(event.target.value)}
-                  />
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {DEFAULT_COLORS.map((color) => (
-                      <Box
-                        key={color}
-                        onClick={() => setEditingCategoryColor(color)}
-                        sx={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 1,
-                          backgroundColor: color,
-                          border:
-                            editingCategoryColor === color
-                              ? "2px solid rgba(255,255,255,0.8)"
-                              : "1px solid rgba(255,255,255,0.2)",
-                          cursor: "pointer",
-                        }}
-                      />
-                    ))}
-                  </Stack>
-                  <Stack direction="row" spacing={2} justifyContent="flex-end">
-                    <Button variant="outlined" onClick={cancelEditCategory}>
-                      Cancelar
-                    </Button>
-                    <Button variant="contained" onClick={saveCategory}>
-                      Salvar
-                    </Button>
-                  </Stack>
-                </Stack>
-              </Box>
-            ) : null}
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {categories.map((cat) => (
-                <Chip
-                  key={cat.id}
-                  label={cat.name}
-                  onClick={() => startEditCategory(cat)}
-                  onDelete={() => handleRemoveCategory(cat.id)}
-                  sx={{
-                    color: "#e6edf3",
-                    backgroundColor: darkenColor(cat.color, 0.5),
-                  }}
-                />
-              ))}
-            </Stack>
-            {editingCategoryId ? null : (
-              <Box>
-                <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
-                  Nova categoria
-                </Typography>
-                <Stack spacing={1.5}>
-                  <TextField
-                    label="Nome"
-                    fullWidth
-                    value={newCategoryName}
-                    onChange={(event) => setNewCategoryName(event.target.value)}
-                  />
-                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                    {DEFAULT_COLORS.map((color) => (
-                      <Box
-                        key={color}
-                        onClick={() => setNewCategoryColor(color)}
-                        sx={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 1,
-                          backgroundColor: color,
-                          border:
-                            newCategoryColor === color
-                              ? "2px solid rgba(255,255,255,0.8)"
-                              : "1px solid rgba(255,255,255,0.2)",
-                          cursor: "pointer",
-                        }}
-                      />
-                    ))}
-                  </Stack>
-                  <Button
-                    variant="outlined"
-                    onClick={handleAddCategory}
-                    startIcon={<AddRoundedIcon />}
-                    sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
-                  >
-                    Criar categoria
-                  </Button>
-                </Stack>
-              </Box>
-            )}
-            <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setCategoryDialogOpen(false);
-                  cancelEditCategory();
-                }}
-              >
-                Fechar
-              </Button>
-            </Stack>
-          </Stack>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={taskFieldSettingsOpen}
-        onClose={() => setTaskFieldSettingsOpen(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogContent>
-          <Stack spacing={2.5}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Typography variant="h6">Personalizar tarefas</Typography>
-              <IconButton onClick={() => setTaskFieldSettingsOpen(false)} sx={{ color: "text.secondary" }}>
-                <CloseRoundedIcon fontSize="small" />
-              </IconButton>
-            </Box>
             <Stack spacing={1}>
+              <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                Campos da tarefa
+              </Typography>
               <Box
                 sx={{
                   display: "flex",
@@ -2109,8 +2097,128 @@ export default function Pipeline() {
                 />
               </Box>
             </Stack>
+
+            <Divider sx={{ borderColor: "rgba(255,255,255,0.08)" }} />
+
+            <Stack spacing={1.5}>
+              <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
+                Categorias
+              </Typography>
+              {editingCategoryId ? (
+                <Box
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    backgroundColor: "rgba(10, 16, 23, 0.7)",
+                  }}
+                >
+                  <Stack spacing={1.5}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Editar categoria
+                    </Typography>
+                    <TextField
+                      label="Nome"
+                      fullWidth
+                      value={editingCategoryName}
+                      onChange={(event) => setEditingCategoryName(event.target.value)}
+                    />
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {DEFAULT_COLORS.map((color) => (
+                        <Box
+                          key={color}
+                          onClick={() => setEditingCategoryColor(color)}
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 1,
+                            backgroundColor: color,
+                            border:
+                              editingCategoryColor === color
+                                ? "2px solid rgba(255,255,255,0.8)"
+                                : "1px solid rgba(255,255,255,0.2)",
+                            cursor: "pointer",
+                          }}
+                        />
+                      ))}
+                    </Stack>
+                    <Stack direction="row" spacing={2} justifyContent="flex-end">
+                      <Button variant="outlined" onClick={cancelEditCategory}>
+                        Cancelar
+                      </Button>
+                      <Button variant="contained" onClick={saveCategory}>
+                        Salvar
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Box>
+              ) : null}
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {categories.map((cat) => (
+                  <Chip
+                    key={cat.id}
+                    label={cat.name}
+                    onClick={() => startEditCategory(cat)}
+                    onDelete={() => handleRemoveCategory(cat.id)}
+                    sx={{
+                      color: "#e6edf3",
+                      backgroundColor: darkenColor(cat.color, 0.5),
+                    }}
+                  />
+                ))}
+              </Stack>
+              {editingCategoryId ? null : (
+                <Box>
+                  <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
+                    Nova categoria
+                  </Typography>
+                  <Stack spacing={1.5}>
+                    <TextField
+                      label="Nome"
+                      fullWidth
+                      value={newCategoryName}
+                      onChange={(event) => setNewCategoryName(event.target.value)}
+                    />
+                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                      {DEFAULT_COLORS.map((color) => (
+                        <Box
+                          key={color}
+                          onClick={() => setNewCategoryColor(color)}
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 1,
+                            backgroundColor: color,
+                            border:
+                              newCategoryColor === color
+                                ? "2px solid rgba(255,255,255,0.8)"
+                                : "1px solid rgba(255,255,255,0.2)",
+                            cursor: "pointer",
+                          }}
+                        />
+                      ))}
+                    </Stack>
+                    <Button
+                      variant="outlined"
+                      onClick={handleAddCategory}
+                      startIcon={<AddRoundedIcon />}
+                      sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                    >
+                      Criar categoria
+                    </Button>
+                  </Stack>
+                </Box>
+              )}
+            </Stack>
+
             <Stack direction="row" spacing={2} justifyContent="flex-end">
-              <Button variant="outlined" onClick={() => setTaskFieldSettingsOpen(false)}>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setTaskFieldSettingsOpen(false);
+                  cancelEditCategory();
+                }}
+              >
                 Fechar
               </Button>
             </Stack>
@@ -2140,9 +2248,9 @@ export default function Pipeline() {
               collisionDetection={closestCorners}
               onDragEnd={handleColumnReorder}
             >
-              <SortableContext items={columns.map((column) => column.id)} strategy={verticalListSortingStrategy}>
+              <SortableContext items={activeColumns.map((column) => column.id)} strategy={verticalListSortingStrategy}>
                 <Stack spacing={1.5}>
-                  {columns.map((column) => (
+                  {activeColumns.map((column) => (
                     <SortableColumnRow
                       key={column.id}
                       column={column}
@@ -2153,11 +2261,73 @@ export default function Pipeline() {
                           )
                         );
                       }}
+                      onArchive={() => handleArchiveColumn(column.id)}
+                      onRemove={() => handleRemoveColumnById(column.id)}
                     />
                   ))}
                 </Stack>
               </SortableContext>
             </DndContext>
+            <Accordion
+              elevation={0}
+              sx={{
+                border: "1px solid rgba(255,255,255,0.08)",
+                backgroundColor: "rgba(15, 23, 32, 0.6)",
+              }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Colunas arquivadas ({archivedColumns.length})
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                {archivedColumns.length === 0 ? (
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Nenhuma coluna arquivada.
+                  </Typography>
+                ) : (
+                  <Stack spacing={1.5}>
+                    {archivedColumns.map((column) => (
+                      <Paper
+                        key={column.id}
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          backgroundColor: "rgba(10, 16, 23, 0.8)",
+                        }}
+                      >
+                        <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
+                          <Typography variant="subtitle2" sx={{ flex: 1 }}>
+                            {column.title}
+                          </Typography>
+                          <Stack direction="row" spacing={1}>
+                            <Tooltip title="Restaurar" placement="top">
+                              <IconButton
+                                onClick={() => handleRestoreColumn(column.id)}
+                                sx={{ border: "1px solid rgba(255,255,255,0.12)" }}
+                                aria-label={`Restaurar ${column.title}`}
+                              >
+                                <RestoreFromTrashRoundedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Remover" placement="top">
+                              <IconButton
+                                onClick={() => handleRemoveColumnById(column.id)}
+                                sx={{ border: "1px solid rgba(255,255,255,0.12)" }}
+                                aria-label={`Remover ${column.title}`}
+                              >
+                                <DeleteRoundedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </Stack>
+                      </Paper>
+                    ))}
+                  </Stack>
+                )}
+              </AccordionDetails>
+            </Accordion>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button variant="outlined" onClick={() => setColumnManagerOpen(false)}>
                 Fechar
@@ -2430,9 +2600,13 @@ function SortableDeal({
 function SortableColumnRow({
   column,
   onRename,
+  onArchive,
+  onRemove,
 }: {
   column: Column;
   onRename: (nextTitle: string) => void;
+  onArchive: () => void;
+  onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({
@@ -2465,17 +2639,37 @@ function SortableColumnRow({
           value={column.title}
           onChange={(event) => onRename(event.target.value)}
         />
-        <IconButton
-          {...attributes}
-          {...listeners}
-          sx={{
-            border: "1px solid rgba(255,255,255,0.12)",
-            cursor: "grab",
-          }}
-          aria-label={`Arrastar ${column.title}`}
-        >
-          <DragIndicatorRoundedIcon fontSize="small" />
-        </IconButton>
+        <Stack direction="row" spacing={1}>
+          <Tooltip title="Arquivar" placement="top">
+            <IconButton
+              onClick={onArchive}
+              sx={{ border: "1px solid rgba(255,255,255,0.12)" }}
+              aria-label={`Arquivar ${column.title}`}
+            >
+              <ArchiveRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Remover" placement="top">
+            <IconButton
+              onClick={onRemove}
+              sx={{ border: "1px solid rgba(255,255,255,0.12)" }}
+              aria-label={`Remover ${column.title}`}
+            >
+              <DeleteRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <IconButton
+            {...attributes}
+            {...listeners}
+            sx={{
+              border: "1px solid rgba(255,255,255,0.12)",
+              cursor: "grab",
+            }}
+            aria-label={`Arrastar ${column.title}`}
+          >
+            <DragIndicatorRoundedIcon fontSize="small" />
+          </IconButton>
+        </Stack>
       </Stack>
     </Paper>
   );
