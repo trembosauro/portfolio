@@ -463,8 +463,16 @@ export default function Contacts() {
     return false;
   };
 
+  const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
+
   const filteredContacts = contacts.filter((contact) => {
     const term = contactQuery.trim().toLowerCase();
+    if (categoryFilters.length > 0) {
+      const ids = contact.categoryIds || [];
+      if (!categoryFilters.some((filterId) => ids.includes(filterId))) {
+        return false;
+      }
+    }
     if (!term) {
       return true;
     }
@@ -474,6 +482,9 @@ export default function Contacts() {
       ...contact.emails,
       ...contact.addresses,
       ...contact.comments,
+      ...((contact.categoryIds || [])
+        .map((id) => categoryMap.get(id)?.name)
+        .filter(Boolean) as string[]),
     ]
       .filter(Boolean)
       .join(" ")
@@ -678,12 +689,75 @@ export default function Contacts() {
           </Paper>
         ) : (
           <Stack spacing={2}>
-            <TextField
-              label="Buscar contatos"
-              value={contactQuery}
-              onChange={(event) => setContactQuery(event.target.value)}
-              sx={{ maxWidth: 360 }}
-            />
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+              <TextField
+                label="Buscar contatos"
+                value={contactQuery}
+                onChange={(event) => setContactQuery(event.target.value)}
+                sx={{ maxWidth: 360 }}
+              />
+              <Autocomplete
+                multiple
+                options={categories}
+                value={categories.filter((cat) => categoryFilters.includes(cat.id))}
+                onChange={(_, value) => setCategoryFilters(value.map((cat) => cat.id))}
+                getOptionLabel={(option) => option.name}
+                disableCloseOnSelect
+                ListboxProps={{
+                  style: { maxHeight: 240 },
+                }}
+                renderOption={(props, option, { selected }) => (
+                  <li {...props}>
+                    <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
+                    {option.name}
+                  </li>
+                )}
+                renderInput={(params) => (
+                  <TextField {...params} label="Filtrar categorias" />
+                )}
+                renderTags={(value, getTagProps) => {
+                  const visible = value.slice(0, 2);
+                  const hiddenCount = value.length - visible.length;
+                  return (
+                    <>
+                      {visible.map((option, index) => (
+                        <Chip
+                          {...getTagProps({ index })}
+                          key={option.id}
+                          label={option.name}
+                          size="small"
+                          sx={{
+                            color: "#e6edf3",
+                            backgroundColor: darkenColor(option.color, 0.5),
+                            maxWidth: 120,
+                            "& .MuiChip-label": {
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: 100,
+                            },
+                          }}
+                        />
+                      ))}
+                      {hiddenCount > 0 ? (
+                        <Chip
+                          label={`+${hiddenCount}`}
+                          size="small"
+                          sx={{
+                            color: "text.secondary",
+                            border: "1px solid rgba(255,255,255,0.16)",
+                          }}
+                        />
+                      ) : null}
+                    </>
+                  );
+                }}
+                sx={{
+                  minWidth: { xs: "100%", sm: 320 },
+                  maxWidth: 420,
+                  "& .MuiAutocomplete-inputRoot": { minHeight: 44 },
+                }}
+              />
+            </Stack>
             {filteredContacts.length === 0 ? (
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
                 😕 Nao ha resultados para a sua pesquisa.

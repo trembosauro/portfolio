@@ -7,15 +7,9 @@ import {
   Dialog,
   DialogContent,
   Autocomplete,
-  FormControl,
   IconButton,
-  InputLabel,
-  ListItemText,
-  ListSubheader,
   MenuItem,
-  OutlinedInput,
   Paper,
-  Select,
   Table,
   TableBody,
   TableCell,
@@ -246,7 +240,6 @@ export default function Financas() {
   const [contactIds, setContactIds] = useState<string[]>([]);
   const [expenseQuery, setExpenseQuery] = useState("");
   const [categoryFilters, setCategoryFilters] = useState<string[]>([]);
-  const [categorySearch, setCategorySearch] = useState("");
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_COLORS[0]);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
@@ -500,13 +493,6 @@ export default function Financas() {
     });
   }, [sortedExpenses, expenseQuery, categoryFilters]);
 
-  const filteredCategories = useMemo(() => {
-    const normalized = categorySearch.trim().toLowerCase();
-    if (!normalized) {
-      return categories;
-    }
-    return categories.filter((cat) => cat.name.toLowerCase().includes(normalized));
-  }, [categories, categorySearch]);
 
   const handleSaveExpense = () => {
     if (!permissions.finance_edit) {
@@ -764,61 +750,73 @@ export default function Financas() {
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               Detalhe dos gastos
             </Typography>
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              spacing={2}
-              sx={{ width: { xs: "100%", md: "auto" } }}
-            >
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 label="Buscar gastos"
                 value={expenseQuery}
                 onChange={(event) => setExpenseQuery(event.target.value)}
                 sx={{ minWidth: { xs: "100%", sm: 240 } }}
               />
-              <FormControl sx={{ minWidth: { xs: "100%", sm: 240 } }}>
-                <InputLabel>Categorias</InputLabel>
-                <Select
-                  multiple
-                  value={categoryFilters}
-                  onChange={(event) =>
-                    setCategoryFilters(
-                      typeof event.target.value === "string"
-                        ? event.target.value.split(",")
-                        : event.target.value
-                    )
-                  }
-                  input={<OutlinedInput label="Categorias" />}
-                  renderValue={(selected) =>
-                    selected
-                      .map((id) => categoryMap.get(id)?.name)
-                      .filter(Boolean)
-                      .join(", ")
-                  }
-                  MenuProps={{
-                    PaperProps: {
-                      sx: { maxHeight: 320 },
-                    },
-                  }}
-                >
-                  {categories.length > 6 ? (
-                    <ListSubheader sx={{ backgroundColor: "rgba(15, 23, 32, 0.95)" }}>
-                      <TextField
-                        label="Buscar categoria"
-                        value={categorySearch}
-                        onChange={(event) => setCategorySearch(event.target.value)}
-                        size="small"
-                        fullWidth
-                      />
-                    </ListSubheader>
-                  ) : null}
-                  {filteredCategories.map((cat) => (
-                    <MenuItem key={cat.id} value={cat.id}>
-                      <Checkbox checked={categoryFilters.includes(cat.id)} />
-                      <ListItemText primary={cat.name} />
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Autocomplete
+                multiple
+                options={categories}
+                value={categories.filter((cat) => categoryFilters.includes(cat.id))}
+                onChange={(_, value) => setCategoryFilters(value.map((cat) => cat.id))}
+                getOptionLabel={(option) => option.name}
+                disableCloseOnSelect
+                ListboxProps={{
+                  style: { maxHeight: 240 },
+                }}
+                renderOption={(props, option, { selected }) => (
+                  <li {...props}>
+                    <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
+                    {option.name}
+                  </li>
+                )}
+                renderInput={(params) => (
+                  <TextField {...params} label="Filtrar categorias" fullWidth />
+                )}
+                renderTags={(value, getTagProps) => {
+                  const visible = value.slice(0, 2);
+                  const hiddenCount = value.length - visible.length;
+                  return (
+                    <>
+                      {visible.map((option, index) => (
+                        <Chip
+                          {...getTagProps({ index })}
+                          key={option.id}
+                          label={option.name}
+                          size="small"
+                          sx={{
+                            color: "#e6edf3",
+                            backgroundColor: darkenColor(option.color, 0.5),
+                            maxWidth: 120,
+                            "& .MuiChip-label": {
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              maxWidth: 100,
+                            },
+                          }}
+                        />
+                      ))}
+                      {hiddenCount > 0 ? (
+                        <Chip
+                          label={`+${hiddenCount}`}
+                          size="small"
+                          sx={{
+                            color: "text.secondary",
+                            border: "1px solid rgba(255,255,255,0.16)",
+                          }}
+                        />
+                      ) : null}
+                    </>
+                  );
+                }}
+                sx={{
+                  minWidth: { xs: "100%", sm: 280 },
+                  "& .MuiAutocomplete-inputRoot": { minHeight: 44 },
+                }}
+              />
             </Stack>
           </Stack>
           <TableContainer>
