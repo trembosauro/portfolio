@@ -24,7 +24,9 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
 } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { Link as RouterLink } from "wouter";
 import {
   DragEndEvent,
@@ -62,6 +64,8 @@ import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import SettingsIconButton from "../components/SettingsIconButton";
 import PageContainer from "../components/layout/PageContainer";
+import AppCard from "../components/layout/AppCard";
+import { loadUserStorage, saveUserStorage } from "../userStorage";
 
 type Category = {
   id: string;
@@ -469,60 +473,154 @@ export default function Calendar() {
     useSensor(PointerSensor, { activationConstraint: { distance: 3 } })
   );
 
+  const theme = useTheme();
+  const isSmDown = useMediaQuery(theme.breakpoints.down("sm"));
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_TASKS);
-    if (!stored) {
-      const sample = getSampleTasks(new Date());
-      setTasks(sample);
-      window.localStorage.setItem(STORAGE_TASKS, JSON.stringify(sample));
-      return;
-    }
-    try {
-      const parsed = JSON.parse(stored) as CalendarTask[];
-      if (Array.isArray(parsed) && parsed.length) {
-        setTasks(parsed);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const fromDb = await loadUserStorage<CalendarTask[]>(STORAGE_TASKS);
+        if (cancelled) {
+          return;
+        }
+        if (Array.isArray(fromDb) && fromDb.length) {
+          setTasks(fromDb);
+          window.localStorage.setItem(STORAGE_TASKS, JSON.stringify(fromDb));
+          return;
+        }
+      } catch {
+        // Ignore and fallback.
+      }
+
+      const stored = window.localStorage.getItem(STORAGE_TASKS);
+      if (!stored) {
+        const sample = getSampleTasks(new Date());
+        setTasks(sample);
+        window.localStorage.setItem(STORAGE_TASKS, JSON.stringify(sample));
+        void saveUserStorage(STORAGE_TASKS, sample);
         return;
       }
-      const sample = getSampleTasks(new Date());
-      setTasks(sample);
-      window.localStorage.setItem(STORAGE_TASKS, JSON.stringify(sample));
-    } catch {
-      window.localStorage.removeItem(STORAGE_TASKS);
-    }
+      try {
+        const parsed = JSON.parse(stored) as CalendarTask[];
+        if (Array.isArray(parsed) && parsed.length) {
+          setTasks(parsed);
+          void saveUserStorage(STORAGE_TASKS, parsed);
+          return;
+        }
+        const sample = getSampleTasks(new Date());
+        setTasks(sample);
+        window.localStorage.setItem(STORAGE_TASKS, JSON.stringify(sample));
+        void saveUserStorage(STORAGE_TASKS, sample);
+      } catch {
+        window.localStorage.removeItem(STORAGE_TASKS);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_TASKS, JSON.stringify(tasks));
+    const t = window.setTimeout(() => {
+      void saveUserStorage(STORAGE_TASKS, tasks);
+    }, 250);
+    return () => window.clearTimeout(t);
   }, [tasks]);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_CATEGORIES);
-    if (!stored) {
-      return;
-    }
-    try {
-      const parsed = JSON.parse(stored) as Category[];
-      if (Array.isArray(parsed) && parsed.length) {
-        setCategories(parsed);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const fromDb = await loadUserStorage<Category[]>(STORAGE_CATEGORIES);
+        if (cancelled) {
+          return;
+        }
+        if (Array.isArray(fromDb) && fromDb.length) {
+          setCategories(fromDb);
+          window.localStorage.setItem(
+            STORAGE_CATEGORIES,
+            JSON.stringify(fromDb)
+          );
+          return;
+        }
+      } catch {
+        // Ignore and fallback.
       }
-    } catch {
-      window.localStorage.removeItem(STORAGE_CATEGORIES);
-    }
+
+      const stored = window.localStorage.getItem(STORAGE_CATEGORIES);
+      if (!stored) {
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as Category[];
+        if (Array.isArray(parsed) && parsed.length) {
+          setCategories(parsed);
+          void saveUserStorage(STORAGE_CATEGORIES, parsed);
+        }
+      } catch {
+        window.localStorage.removeItem(STORAGE_CATEGORIES);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_CALENDARS);
-    if (!stored) {
+    if (!categories.length) {
       return;
     }
-    try {
-      const parsed = JSON.parse(stored) as CalendarSource[];
-      if (Array.isArray(parsed) && parsed.length) {
-        setCalendarSources(parsed);
+    window.localStorage.setItem(STORAGE_CATEGORIES, JSON.stringify(categories));
+    const t = window.setTimeout(() => {
+      void saveUserStorage(STORAGE_CATEGORIES, categories);
+    }, 250);
+    return () => window.clearTimeout(t);
+  }, [categories]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const fromDb =
+          await loadUserStorage<CalendarSource[]>(STORAGE_CALENDARS);
+        if (cancelled) {
+          return;
+        }
+        if (Array.isArray(fromDb) && fromDb.length) {
+          setCalendarSources(fromDb);
+          window.localStorage.setItem(
+            STORAGE_CALENDARS,
+            JSON.stringify(fromDb)
+          );
+          return;
+        }
+      } catch {
+        // Ignore and fallback.
       }
-    } catch {
-      window.localStorage.removeItem(STORAGE_CALENDARS);
-    }
+
+      const stored = window.localStorage.getItem(STORAGE_CALENDARS);
+      if (!stored) {
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as CalendarSource[];
+        if (Array.isArray(parsed) && parsed.length) {
+          setCalendarSources(parsed);
+          void saveUserStorage(STORAGE_CALENDARS, parsed);
+        }
+      } catch {
+        window.localStorage.removeItem(STORAGE_CALENDARS);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -530,6 +628,10 @@ export default function Calendar() {
       STORAGE_CALENDARS,
       JSON.stringify(calendarSources)
     );
+    const t = window.setTimeout(() => {
+      void saveUserStorage(STORAGE_CALENDARS, calendarSources);
+    }, 250);
+    return () => window.clearTimeout(t);
   }, [calendarSources]);
 
   useEffect(() => {
@@ -574,37 +676,54 @@ export default function Calendar() {
   }, []);
 
   useEffect(() => {
-    const loadContacts = () => {
+    let cancelled = false;
+    const loadContacts = async () => {
+      try {
+        const dbContacts = await loadUserStorage<Contact[]>("contacts_v1");
+        if (!cancelled && Array.isArray(dbContacts)) {
+          setContacts(dbContacts);
+          window.localStorage.setItem(
+            "contacts_v1",
+            JSON.stringify(dbContacts)
+          );
+          return;
+        }
+      } catch {
+        // Ignore and fallback.
+      }
+
       const stored = window.localStorage.getItem("contacts_v1");
       if (!stored) {
-        setContacts([]);
+        if (!cancelled) {
+          setContacts([]);
+        }
         return;
       }
       try {
         const parsed = JSON.parse(stored) as Contact[];
-        if (Array.isArray(parsed)) {
+        if (!cancelled && Array.isArray(parsed)) {
           setContacts(parsed);
         }
       } catch {
         window.localStorage.removeItem("contacts_v1");
-        setContacts([]);
+        if (!cancelled) {
+          setContacts([]);
+        }
       }
     };
-    loadContacts();
-    const handleContactsChange = () => loadContacts();
+
+    void loadContacts();
+    const handleContactsChange = () => void loadContacts();
     window.addEventListener("contacts-change", handleContactsChange);
     return () => {
+      cancelled = true;
       window.removeEventListener("contacts-change", handleContactsChange);
     };
   }, []);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem("sc_calendar_settings");
-    if (!stored) {
-      return;
-    }
-    try {
-      const parsed = JSON.parse(stored) as Partial<typeof calendarSettings>;
+    let cancelled = false;
+    const hydrate = (parsed: Partial<typeof calendarSettings>) => {
       setCalendarSettings({
         showAllDay:
           parsed.showAllDay !== undefined ? Boolean(parsed.showAllDay) : true,
@@ -645,9 +764,42 @@ export default function Calendar() {
             ? Boolean(parsed.showNotifications)
             : true,
       });
-    } catch {
-      window.localStorage.removeItem("sc_calendar_settings");
-    }
+    };
+
+    const load = async () => {
+      try {
+        const fromDb = await loadUserStorage<Partial<typeof calendarSettings>>(
+          "sc_calendar_settings"
+        );
+        if (!cancelled && fromDb && typeof fromDb === "object") {
+          hydrate(fromDb);
+          window.localStorage.setItem(
+            "sc_calendar_settings",
+            JSON.stringify(fromDb)
+          );
+          return;
+        }
+      } catch {
+        // Ignore and fallback.
+      }
+
+      const stored = window.localStorage.getItem("sc_calendar_settings");
+      if (!stored) {
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as Partial<typeof calendarSettings>;
+        hydrate(parsed);
+        void saveUserStorage("sc_calendar_settings", parsed);
+      } catch {
+        window.localStorage.removeItem("sc_calendar_settings");
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -656,21 +808,47 @@ export default function Calendar() {
       JSON.stringify(calendarSettings)
     );
     window.dispatchEvent(new Event("task-fields-change"));
+    const t = window.setTimeout(() => {
+      void saveUserStorage("sc_calendar_settings", calendarSettings);
+    }, 250);
+    return () => window.clearTimeout(t);
   }, [calendarSettings]);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(STORAGE_CATEGORY_FILTER);
-    if (!stored) {
-      return;
-    }
-    try {
-      const parsed = JSON.parse(stored) as string[];
-      if (Array.isArray(parsed)) {
-        setCategoryFilter(parsed);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const fromDb = await loadUserStorage<string[]>(STORAGE_CATEGORY_FILTER);
+        if (!cancelled && Array.isArray(fromDb)) {
+          setCategoryFilter(fromDb);
+          window.localStorage.setItem(
+            STORAGE_CATEGORY_FILTER,
+            JSON.stringify(fromDb)
+          );
+          return;
+        }
+      } catch {
+        // Ignore and fallback.
       }
-    } catch {
-      window.localStorage.removeItem(STORAGE_CATEGORY_FILTER);
-    }
+
+      const stored = window.localStorage.getItem(STORAGE_CATEGORY_FILTER);
+      if (!stored) {
+        return;
+      }
+      try {
+        const parsed = JSON.parse(stored) as string[];
+        if (Array.isArray(parsed)) {
+          setCategoryFilter(parsed);
+          void saveUserStorage(STORAGE_CATEGORY_FILTER, parsed);
+        }
+      } catch {
+        window.localStorage.removeItem(STORAGE_CATEGORY_FILTER);
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -678,6 +856,10 @@ export default function Calendar() {
       STORAGE_CATEGORY_FILTER,
       JSON.stringify(categoryFilter)
     );
+    const t = window.setTimeout(() => {
+      void saveUserStorage(STORAGE_CATEGORY_FILTER, categoryFilter);
+    }, 250);
+    return () => window.clearTimeout(t);
   }, [categoryFilter]);
 
   const personOptions = useMemo<PersonOption[]>(() => {
@@ -1156,6 +1338,7 @@ export default function Calendar() {
                 setSelectedMonth(
                   new Date(today.getFullYear(), today.getMonth(), 1)
                 );
+                setAgendaPage(1);
               }}
               sx={{
                 textTransform: "none",
@@ -1176,7 +1359,7 @@ export default function Calendar() {
             gap: 2.5,
           }}
         >
-          <Stack spacing={2.5}>
+          <Stack spacing={2.5} sx={{ display: { xs: "none", md: "flex" } }}>
             <Autocomplete
               multiple
               options={categories}
@@ -1390,12 +1573,31 @@ export default function Calendar() {
           </Stack>
 
           <Stack spacing={2.5}>
+            {isSmDown ? (
+              <AppCard sx={{ p: 2 }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => setMobileSidebarOpen(true)}
+                  sx={{
+                    width: "100%",
+                    textTransform: "none",
+                    fontWeight: 600,
+                    justifyContent: "space-between",
+                  }}
+                  endIcon={<CalendarTodayRoundedIcon fontSize="small" />}
+                >
+                  {monthLabels[selectedMonth.getMonth()]}{" "}
+                  {selectedMonth.getFullYear()}
+                </Button>
+              </AppCard>
+            ) : null}
             <Stack spacing={2}>
               <Stack
                 direction={{ xs: "column", md: "row" }}
                 spacing={2}
                 alignItems={{ xs: "flex-start", md: "center" }}
                 justifyContent="space-between"
+                sx={{ display: { xs: "none", md: "flex" } }}
               >
                 <TextField
                   select
@@ -1603,6 +1805,48 @@ export default function Calendar() {
                   </Stack>
                 </DndContext>
               )}
+
+              <Stack
+                direction="column"
+                spacing={2}
+                sx={{ display: { xs: "flex", md: "none" } }}
+              >
+                <TextField
+                  select
+                  label="Itens por pagina"
+                  value={agendaPerPage}
+                  onChange={event => {
+                    setAgendaPerPage(Number(event.target.value));
+                    setAgendaPage(1);
+                  }}
+                  fullWidth
+                >
+                  {[3, 5, 7, 10].map(value => (
+                    <MenuItem key={value} value={value}>
+                      {value} dias
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <Pagination
+                  count={totalAgendaPages}
+                  page={agendaPage}
+                  onChange={(_, value) => setAgendaPage(value)}
+                  color="primary"
+                  variant="outlined"
+                  shape="rounded"
+                  size="medium"
+                  sx={{
+                    width: "100%",
+                    "& .MuiPaginationItem-root": {
+                      borderRadius: "999px",
+                    },
+                    "& .MuiPagination-ul": {
+                      width: "100%",
+                      justifyContent: "center",
+                    },
+                  }}
+                />
+              </Stack>
             </Stack>
           </Stack>
         </Box>
@@ -1789,6 +2033,244 @@ export default function Calendar() {
                 Fechar
               </Button>
             </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={mobileSidebarOpen}
+        onClose={() => setMobileSidebarOpen(false)}
+        fullScreen={isSmDown}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogContent>
+          <Stack spacing={2.5}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+            >
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Calendário
+              </Typography>
+              <IconButton onClick={() => setMobileSidebarOpen(false)}>
+                <CloseRoundedIcon />
+              </IconButton>
+            </Stack>
+
+            <Autocomplete
+              multiple
+              options={categories}
+              value={categories.filter(item =>
+                categoryFilter.includes(item.id)
+              )}
+              onChange={(_, value) =>
+                setCategoryFilter(value.map(item => item.id))
+              }
+              getOptionLabel={option => option.name}
+              noOptionsText="Sem categorias"
+              renderOption={(props, option, { selected }) => (
+                <li {...props}>
+                  <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
+                  {option.name}
+                </li>
+              )}
+              renderInput={params => (
+                <TextField {...params} label="Filtrar categorias" fullWidth />
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    {...getTagProps({ index })}
+                    key={option.id}
+                    label={option.name}
+                    size="small"
+                  />
+                ))
+              }
+            />
+
+            <Paper elevation={0} variant="outlined" sx={{ p: 2 }}>
+              <Stack spacing={2}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      setSelectedMonth(
+                        new Date(
+                          selectedMonth.getFullYear(),
+                          selectedMonth.getMonth() - 1,
+                          1
+                        )
+                      )
+                    }
+                  >
+                    <ChevronLeftRoundedIcon fontSize="small" />
+                  </IconButton>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                    {monthLabels[selectedMonth.getMonth()]}{" "}
+                    {selectedMonth.getFullYear()}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={() =>
+                      setSelectedMonth(
+                        new Date(
+                          selectedMonth.getFullYear(),
+                          selectedMonth.getMonth() + 1,
+                          1
+                        )
+                      )
+                    }
+                  >
+                    <ChevronRightRoundedIcon fontSize="small" />
+                  </IconButton>
+                </Stack>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(7, 1fr)",
+                    gap: 0.5,
+                  }}
+                >
+                  {weekLabels.map(label => (
+                    <Typography
+                      key={label}
+                      variant="caption"
+                      sx={{ textAlign: "center", color: "text.secondary" }}
+                    >
+                      {label}
+                    </Typography>
+                  ))}
+                  {getCalendarDays(selectedMonth).map((day, index) => {
+                    const isToday = day
+                      ? formatDateKey(day) === formatDateKey(new Date())
+                      : false;
+                    const isSelected = day
+                      ? formatDateKey(day) === formatDateKey(selectedDate)
+                      : false;
+                    const hasTasks = day
+                      ? tasksByDate.has(formatDateKey(day))
+                      : false;
+                    return (
+                      <Box
+                        key={`${day ? day.toISOString() : "empty"}-${index}`}
+                        onClick={() => {
+                          if (!day) {
+                            return;
+                          }
+                          setSelectedDate(day);
+                          setSelectedMonth(
+                            new Date(day.getFullYear(), day.getMonth(), 1)
+                          );
+                          setAgendaPage(1);
+                          setMobileSidebarOpen(false);
+                        }}
+                        sx={theme => ({
+                          ...interactiveCardSx(theme),
+                          height: 36,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderRadius: "12px",
+                          border: isSelected ? 1 : "1px solid transparent",
+                          borderColor: isSelected
+                            ? "primary.main"
+                            : "transparent",
+                          cursor: day ? "pointer" : "default",
+                          color: isSelected
+                            ? "primary.main"
+                            : isToday
+                              ? "text.primary"
+                              : "text.secondary",
+                          fontWeight: isToday ? 600 : 500,
+                          position: "relative",
+                        })}
+                      >
+                        {day ? day.getDate() : ""}
+                        {hasTasks ? (
+                          <Box
+                            sx={{
+                              position: "absolute",
+                              bottom: 4,
+                              width: 6,
+                              height: 6,
+                              borderRadius: "50%",
+                              backgroundColor: "primary.main",
+                            }}
+                          />
+                        ) : null}
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Stack>
+            </Paper>
+
+            <Paper elevation={0} variant="outlined" sx={{ p: 2 }}>
+              <Stack spacing={2}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Calendários
+                </Typography>
+                <Stack spacing={1.5}>
+                  {calendarSources.map(source => (
+                    <Box
+                      key={source.id}
+                      onClick={() =>
+                        setCalendarSources(prev =>
+                          prev.map(item =>
+                            item.id === source.id
+                              ? { ...item, enabled: !item.enabled }
+                              : item
+                          )
+                        )
+                      }
+                      sx={theme => ({
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: "var(--radius-card)",
+                        cursor: "pointer",
+                        ...interactiveCardSx(theme),
+                      })}
+                    >
+                      <Stack direction="row" spacing={1.5} alignItems="center">
+                        <Box
+                          sx={{
+                            width: 12,
+                            height: 12,
+                            borderRadius: "50%",
+                            backgroundColor: source.color,
+                          }}
+                        />
+                        <Typography variant="body2">{source.name}</Typography>
+                      </Stack>
+                      <Checkbox
+                        checked={source.enabled}
+                        onClick={event => event.stopPropagation()}
+                        onChange={event =>
+                          setCalendarSources(prev =>
+                            prev.map(item =>
+                              item.id === source.id
+                                ? { ...item, enabled: event.target.checked }
+                                : item
+                            )
+                          )
+                        }
+                        size="small"
+                      />
+                    </Box>
+                  ))}
+                </Stack>
+              </Stack>
+            </Paper>
           </Stack>
         </DialogContent>
       </Dialog>
