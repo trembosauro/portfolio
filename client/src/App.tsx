@@ -40,11 +40,11 @@ import Notes from "./pages/Notes";
 const navItems = [
   { label: "Home", href: "/home" },
   { label: "Pipeline", href: "/pipeline" },
-  { label: "Financas", href: "/financas" },
+  { label: "Finanças", href: "/financas" },
   { label: "Contatos", href: "/contatos" },
-  { label: "Calendario", href: "/calendario" },
+  { label: "Calendário", href: "/calendario" },
   { label: "Notas", href: "/notas" },
-  { label: "Gestao", href: "/access" },
+  { label: "Gestão", href: "/access" },
 ];
 
 function App() {
@@ -263,19 +263,19 @@ function App() {
   const breadcrumbMap: Record<string, string> = {
     "/home": "Home",
     "/profile": "Perfil",
-    "/access": "Gestao",
+    "/access": "Gestão",
     "/support": "Suporte",
     "/pipeline": "Pipeline",
     "/pipeline/dados": "Dados",
-    "/financas": "Financas",
+    "/financas": "Finanças",
     "/contatos": "Contatos",
-    "/calendario": "Calendario",
+    "/calendario": "Calendário",
     "/calendario/concluidas": "Tarefas feitas",
     "/notas": "Notas",
-    "/notifications": "Notificacoes",
+    "/notifications": "Notificações",
   };
   const showBreadcrumbs = !["/", "/login", "/signup"].includes(location);
-  const currentLabel = breadcrumbMap[location] ?? "Pagina";
+  const currentLabel = breadcrumbMap[location] ?? "Página";
   const notesBreadcrumb = (() => {
     if (!location.startsWith("/notas/")) {
       return null;
@@ -357,7 +357,7 @@ function App() {
               underline="hover"
               color="inherit"
             >
-              Calendario
+              Calendário
             </Link>,
             <Typography key="concluidas" color="text.primary">
               Tarefas feitas

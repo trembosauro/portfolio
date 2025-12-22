@@ -82,9 +82,9 @@ const rolePermissionItems: Array<{
 
 const modules = [
   { name: "Dashboard executivo", description: "KPIs e indicadores de acesso." },
-  { name: "Gestao de usuarios", description: "Perfis, roles e permissao." },
+  { name: "Gestão de usuários", description: "Perfis, roles e permissão." },
   { name: "Convites e onboarding", description: "Fluxos de entrada." },
-  { name: "Relatorios", description: "Exportacao e auditoria." },
+  { name: "Relatórios", description: "Exportação e auditoria." },
 ];
 
 const invites = [
@@ -240,7 +240,7 @@ export default function AccessManagement() {
     <Box sx={{ maxWidth: 1100, mx: "auto" }}>
       <Stack spacing={3}>
         <Stack spacing={1}>
-          <Typography variant="h4">Gestao de acessos e convites</Typography>
+        <Typography variant="h4">Gestão de acessos e convites</Typography>
         </Stack>
 
         <Paper
@@ -253,7 +253,7 @@ export default function AccessManagement() {
           }}
         >
           <Stack spacing={2.5}>
-            <Typography variant="h6">Papeis do workspace</Typography>
+            <Typography variant="h6">Papéis do workspace</Typography>
             <Stack
               direction={{ xs: "column", md: "row" }}
               spacing={3}
@@ -302,7 +302,7 @@ export default function AccessManagement() {
           }
         >
           <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-            <Typography variant="h6">Usuarios e papeis</Typography>
+            <Typography variant="h6">Usuários e papéis</Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Stack spacing={2.5}>
@@ -350,7 +350,7 @@ export default function AccessManagement() {
                       >
                         <Box>
                           <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                            {user.name || "Usuario"}
+                          {user.name || "Usuário"}
                           </Typography>
                           <Typography variant="caption" sx={{ color: "text.secondary" }}>
                             {user.email}
@@ -390,7 +390,7 @@ export default function AccessManagement() {
           }
         >
           <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-            <Typography variant="h6">Permissoes por modulo</Typography>
+            <Typography variant="h6">Permissões por módulo</Typography>
           </AccordionSummary>
           <AccordionDetails>
             <Box
@@ -469,7 +469,7 @@ export default function AccessManagement() {
                 }}
               >
                 <Box>
-                  <Typography variant="h6">Editar permissoes</Typography>
+                  <Typography variant="h6">Editar permissões</Typography>
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
                     {activeRole ? `Papel: ${activeRole}` : "Selecione um papel."}
                   </Typography>

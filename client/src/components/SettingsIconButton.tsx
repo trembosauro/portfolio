@@ -9,7 +9,7 @@ type SettingsIconButtonProps = {
 };
 
 export default function SettingsIconButton({
-  title = "Configuracoes",
+  title = "Configurações",
   onClick,
   size = "small",
   disabled = false,

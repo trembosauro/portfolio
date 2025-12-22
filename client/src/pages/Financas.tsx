@@ -706,7 +706,7 @@ export default function Financas() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Box sx={{ flex: 1 }}>
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-              Financas
+              Finanças
             </Typography>
           </Box>
           <Stack direction="row" spacing={2}>
@@ -1106,7 +1106,7 @@ export default function Financas() {
         <DialogContent>
           <Stack spacing={2.5}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Typography variant="h6">Configuracoes</Typography>
+              <Typography variant="h6">Configurações</Typography>
               <IconButton
                 onClick={() => {
                   setSettingsOpen(false);

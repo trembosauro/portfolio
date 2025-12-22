@@ -362,7 +362,7 @@ export default function CalendarCompleted() {
                                 {task.allDay
                                   ? "Dia todo"
                                   : [task.startTime, task.endTime].filter(Boolean).join(" - ") ||
-                                    "Horario livre"}
+                                    "Horário livre"}
                               </Typography>
                               {task.location ? (
                                 <Typography variant="caption" sx={{ color: "text.secondary" }}>

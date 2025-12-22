@@ -965,7 +965,7 @@ export default function Contacts() {
             {detailFields.birthday ? (
               <Stack spacing={0.5}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  Aniversario
+                  Aniversário
                 </Typography>
                 {selectedContact?.birthday ? (
                   <Typography variant="body2">
@@ -1087,7 +1087,7 @@ export default function Contacts() {
             {detailFields.addresses ? (
               <Stack spacing={1.5}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  Enderecos
+                  Endereços
                 </Typography>
                 {selectedContact?.addresses.filter(Boolean).length ? (
                   selectedContact?.addresses.filter(Boolean).map((address, index) => (
@@ -1201,7 +1201,7 @@ export default function Contacts() {
             />
             <TextField
               select
-              label="Papel (Gestao)"
+              label="Papel (Gestão)"
               fullWidth
               value={contactForm?.role || ""}
               onChange={(event) =>
@@ -1456,12 +1456,12 @@ export default function Contacts() {
 
             <Stack spacing={1.5}>
               <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Enderecos
+                Endereços
               </Typography>
               {contactForm?.addresses.map((address, index) => (
                 <Stack key={`address-${index}`} direction="row" spacing={1} alignItems="center">
                   <TextField
-                    label={`Endereco ${index + 1}`}
+                    label={`Endereço ${index + 1}`}
                     fullWidth
                     value={address}
                     onChange={(event) => updateListField("addresses", index, event.target.value)}
@@ -1590,7 +1590,7 @@ export default function Contacts() {
         <DialogContent>
           <Stack spacing={2.5}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Typography variant="h6">Configuracoes</Typography>
+              <Typography variant="h6">Configurações</Typography>
               <IconButton
                 onClick={() => {
                   setSettingsOpen(false);
@@ -1834,7 +1834,7 @@ export default function Contacts() {
                       setCardFields((prev) => ({ ...prev, addresses: !prev.addresses }))
                     }
                   >
-                    <Typography variant="subtitle2">Enderecos</Typography>
+                    <Typography variant="subtitle2">Endereços</Typography>
                     <ToggleCheckbox
                       checked={cardFields.addresses}
                       onChange={(event) =>
@@ -1907,11 +1907,11 @@ export default function Contacts() {
                   }}
                 >
                   {[
-                    { key: "birthday", label: "Aniversario" },
+                    { key: "birthday", label: "Aniversário" },
                     { key: "categories", label: "Categorias" },
                     { key: "phones", label: "Telefones" },
                     { key: "emails", label: "Emails" },
-                    { key: "addresses", label: "Enderecos" },
+                    { key: "addresses", label: "Endereços" },
                     { key: "comments", label: "Comentarios" },
                   ].map((item) => (
                     <Box

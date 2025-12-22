@@ -11,6 +11,7 @@ import {
   Dialog,
   DialogContent,
   IconButton,
+  MenuItem,
   Paper,
   Stack,
   TextField,
@@ -162,10 +163,25 @@ export default function Notes() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>(defaultCategories[0]?.id || "");
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
-  const [categoryDraft, setCategoryDraft] = useState("");
-  const [subcategoryDraft, setSubcategoryDraft] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_COLORS[0]);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState("");
+  const [editingCategoryColor, setEditingCategoryColor] = useState(DEFAULT_COLORS[0]);
+  const [newSubcategoryName, setNewSubcategoryName] = useState("");
+  const [newSubcategoryCategory, setNewSubcategoryCategory] = useState(
+    defaultCategories[0]?.id || ""
+  );
+  const [editingSubcategoryId, setEditingSubcategoryId] = useState<string | null>(null);
+  const [editingSubcategoryName, setEditingSubcategoryName] = useState("");
+  const [editingSubcategoryCategory, setEditingSubcategoryCategory] = useState(
+    defaultCategories[0]?.id || ""
+  );
   const [noteQuery, setNoteQuery] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsAccordion, setSettingsAccordion] = useState<
+    "categories" | "subcategories" | "display" | false
+  >(false);
   const [fieldSettings, setFieldSettings] = useState({
     showCategories: true,
     showSubcategories: true,
@@ -364,18 +380,20 @@ export default function Notes() {
   };
 
   const addCategory = () => {
-    const name = categoryDraft.trim();
+    const name = newCategoryName.trim();
     if (!name) {
       return;
     }
     const next = {
       id: `note-cat-${Date.now()}`,
       name,
-      color: DEFAULT_COLORS[categories.length % DEFAULT_COLORS.length],
+      color: newCategoryColor,
     };
     setCategories((prev) => [...prev, next]);
-    setCategoryDraft("");
+    setNewCategoryName("");
+    setNewCategoryColor(DEFAULT_COLORS[0]);
     setActiveCategory(next.id);
+    setNewSubcategoryCategory(next.id);
   };
 
   const removeCategory = (categoryId: string) => {
@@ -406,17 +424,17 @@ export default function Notes() {
   };
 
   const addSubcategory = () => {
-    const name = subcategoryDraft.trim();
-    if (!name || !activeCategory) {
+    const name = newSubcategoryName.trim();
+    if (!name || !newSubcategoryCategory) {
       return;
     }
     const next = {
       id: `note-sub-${Date.now()}`,
       name,
-      categoryId: activeCategory,
+      categoryId: newSubcategoryCategory,
     };
     setSubcategories((prev) => [...prev, next]);
-    setSubcategoryDraft("");
+    setNewSubcategoryName("");
   };
 
   const removeSubcategory = (subcategoryId: string) => {
@@ -428,6 +446,65 @@ export default function Notes() {
           : note
       )
     );
+  };
+
+  const startEditSubcategory = (subcategory: NoteSubcategory) => {
+    setEditingSubcategoryId(subcategory.id);
+    setEditingSubcategoryName(subcategory.name);
+    setEditingSubcategoryCategory(subcategory.categoryId);
+  };
+
+  const cancelEditSubcategory = () => {
+    setEditingSubcategoryId(null);
+    setEditingSubcategoryName("");
+    setEditingSubcategoryCategory(defaultCategories[0]?.id || "");
+  };
+
+  const saveSubcategory = () => {
+    if (!editingSubcategoryId) {
+      return;
+    }
+    const name = editingSubcategoryName.trim();
+    if (!name || !editingSubcategoryCategory) {
+      return;
+    }
+    setSubcategories((prev) =>
+      prev.map((subcategory) =>
+        subcategory.id === editingSubcategoryId
+          ? { ...subcategory, name, categoryId: editingSubcategoryCategory }
+          : subcategory
+      )
+    );
+    cancelEditSubcategory();
+  };
+  const startEditCategory = (category: NoteCategory) => {
+    setEditingCategoryId(category.id);
+    setEditingCategoryName(category.name);
+    setEditingCategoryColor(category.color);
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCategoryId(null);
+    setEditingCategoryName("");
+    setEditingCategoryColor(DEFAULT_COLORS[0]);
+  };
+
+  const saveCategory = () => {
+    if (!editingCategoryId) {
+      return;
+    }
+    const name = editingCategoryName.trim();
+    if (!name) {
+      return;
+    }
+    setCategories((prev) =>
+      prev.map((category) =>
+        category.id === editingCategoryId
+          ? { ...category, name, color: editingCategoryColor }
+          : category
+      )
+    );
+    cancelEditCategory();
   };
 
   const removeLink = (note: Note, linkId: string) => {
@@ -532,50 +609,19 @@ export default function Notes() {
                             ...interactiveCardSx(theme),
                           })}
                         >
-                          <Stack
-                            direction="row"
-                            spacing={1}
-                            alignItems="center"
-                            justifyContent="space-between"
-                          >
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <Box
-                                sx={{
-                                  width: 10,
-                                  height: 10,
-                                  borderRadius: "50%",
-                                  backgroundColor: category.color,
-                                }}
-                              />
-                              <Typography variant="body2">{category.name}</Typography>
-                            </Stack>
-                            <Tooltip title="Remover categoria" placement="top">
-                              <IconButton
-                                size="small"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setConfirmRemove({ type: "category", id: category.id });
-                                }}
-                                aria-label="Remover categoria"
-                              >
-                                <CloseRoundedIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Box
+                              sx={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: "50%",
+                                backgroundColor: category.color,
+                              }}
+                            />
+                            <Typography variant="body2">{category.name}</Typography>
                           </Stack>
                         </Box>
                       ))}
-                    </Stack>
-                    <Stack direction="row" spacing={1}>
-                      <TextField
-                        label="Nova categoria"
-                        size="small"
-                        fullWidth
-                        value={categoryDraft}
-                        onChange={(event) => setCategoryDraft(event.target.value)}
-                      />
-                      <IconButton onClick={addCategory} aria-label="Adicionar categoria">
-                        <AddRoundedIcon fontSize="small" />
-                      </IconButton>
                     </Stack>
                   </Stack>
                 </Paper>
@@ -597,28 +643,7 @@ export default function Notes() {
                       {activeSubcategories.length ? (
                         <Stack spacing={1}>
                           {activeSubcategories.map((subcategory) => (
-                            <Stack
-                              key={subcategory.id}
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                            >
-                              <Chip label={subcategory.name} size="small" />
-                              <Tooltip title="Remover subcategoria" placement="top">
-                                <IconButton
-                                  size="small"
-                                  onClick={() =>
-                                    setConfirmRemove({
-                                      type: "subcategory",
-                                      id: subcategory.id,
-                                    })
-                                  }
-                                  aria-label="Remover subcategoria"
-                                >
-                                  <CloseRoundedIcon fontSize="small" />
-                                </IconButton>
-                              </Tooltip>
-                            </Stack>
+                            <Chip key={subcategory.id} label={subcategory.name} size="small" />
                           ))}
                         </Stack>
                       ) : (
@@ -626,18 +651,6 @@ export default function Notes() {
                           Sem subcategorias.
                         </Typography>
                       )}
-                      <Stack direction="row" spacing={1}>
-                        <TextField
-                          label="Nova subcategoria"
-                          size="small"
-                          fullWidth
-                          value={subcategoryDraft}
-                          onChange={(event) => setSubcategoryDraft(event.target.value)}
-                        />
-                        <IconButton onClick={addSubcategory} aria-label="Adicionar subcategoria">
-                          <AddRoundedIcon fontSize="small" />
-                        </IconButton>
-                      </Stack>
                     </Stack>
                   </AccordionDetails>
                 </Accordion>
@@ -972,50 +985,305 @@ export default function Notes() {
           </Stack>
         </Box>
       </Stack>
-      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="sm" fullWidth>
         <DialogContent>
-          <Stack spacing={2}>
+          <Stack spacing={2.5}>
             <Typography variant="h6">Configuracoes de notas</Typography>
-            {[
-              { key: "showCategories", label: "Mostrar categorias" },
-              { key: "showSubcategories", label: "Mostrar subcategorias" },
-              { key: "showLinks", label: "Mostrar links" },
-              { key: "showUpdatedAt", label: "Mostrar ultima atualizacao" },
-            ].map((item) => (
-              <Box
-                key={item.key}
-                sx={(theme) => ({
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  p: 1.5,
-                  borderRadius: "var(--radius-card)",
-                  border: 1,
-                  borderColor: "divider",
-                  backgroundColor: "background.paper",
-                  cursor: "pointer",
-                  ...interactiveCardSx(theme),
-                })}
-                onClick={() =>
-                  setFieldSettings((prev) => ({
-                    ...prev,
-                    [item.key]: !prev[item.key as keyof typeof fieldSettings],
-                  }))
-                }
-              >
-                <Typography variant="subtitle2">{item.label}</Typography>
-                <ToggleCheckbox
-                  checked={Boolean(fieldSettings[item.key as keyof typeof fieldSettings])}
-                  onChange={(event) =>
-                    setFieldSettings((prev) => ({
-                      ...prev,
-                      [item.key]: event.target.checked,
-                    }))
-                  }
-                  onClick={(event) => event.stopPropagation()}
-                />
-              </Box>
-            ))}
+            <Accordion
+              elevation={0}
+              expanded={settingsAccordion === "categories"}
+              onChange={(_, isExpanded) =>
+                setSettingsAccordion(isExpanded ? "categories" : false)
+              }
+              sx={{
+                border: 1,
+                borderColor: "divider",
+                borderRadius: "var(--radius-card)",
+                backgroundColor: "background.paper",
+                "&:before": { display: "none" },
+              }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Categorias
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Stack spacing={1.5}>
+                  {editingCategoryId ? (
+                    <Box
+                      sx={{
+                        p: 2,
+                        borderRadius: "var(--radius-card)",
+                        border: 1,
+                        borderColor: "divider",
+                        backgroundColor: "background.paper",
+                      }}
+                    >
+                      <Stack spacing={1.5}>
+                        <TextField
+                          label="Nome"
+                          fullWidth
+                          value={editingCategoryName}
+                          onChange={(event) => setEditingCategoryName(event.target.value)}
+                        />
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                          {DEFAULT_COLORS.map((color) => (
+                            <Box
+                              key={color}
+                              onClick={() => setEditingCategoryColor(color)}
+                              sx={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: 1,
+                                backgroundColor: color,
+                                borderStyle: "solid",
+                                borderWidth: editingCategoryColor === color ? 2 : 1,
+                                borderColor: "divider",
+                                cursor: "pointer",
+                              }}
+                            />
+                          ))}
+                        </Stack>
+                        <Stack direction="row" spacing={2} justifyContent="flex-end">
+                          <Button variant="outlined" onClick={cancelEditCategory}>
+                            Cancelar
+                          </Button>
+                          <Button variant="contained" onClick={saveCategory}>
+                            Salvar
+                          </Button>
+                        </Stack>
+                      </Stack>
+                    </Box>
+                  ) : null}
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {categories.map((category) => (
+                      <Chip
+                        key={category.id}
+                        label={category.name}
+                        onClick={() => startEditCategory(category)}
+                        onDelete={() => setConfirmRemove({ type: "category", id: category.id })}
+                        sx={{
+                          color: "#e6edf3",
+                          backgroundColor: darkenColor(category.color, 0.5),
+                        }}
+                      />
+                    ))}
+                  </Stack>
+                  {editingCategoryId ? null : (
+                    <Stack spacing={1.5}>
+                      <TextField
+                        label="Nova categoria"
+                        fullWidth
+                        value={newCategoryName}
+                        onChange={(event) => setNewCategoryName(event.target.value)}
+                      />
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        {DEFAULT_COLORS.map((color) => (
+                          <Box
+                            key={color}
+                            onClick={() => setNewCategoryColor(color)}
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: 1,
+                              backgroundColor: color,
+                              borderStyle: "solid",
+                              borderWidth: newCategoryColor === color ? 2 : 1,
+                              borderColor: "divider",
+                              cursor: "pointer",
+                            }}
+                          />
+                        ))}
+                      </Stack>
+                      <Button
+                        variant="outlined"
+                        startIcon={<AddRoundedIcon />}
+                        onClick={addCategory}
+                        sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
+                      >
+                        Criar categoria
+                      </Button>
+                    </Stack>
+                  )}
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion
+              elevation={0}
+              expanded={settingsAccordion === "subcategories"}
+              onChange={(_, isExpanded) =>
+                setSettingsAccordion(isExpanded ? "subcategories" : false)
+              }
+              sx={{
+                border: 1,
+                borderColor: "divider",
+                borderRadius: "var(--radius-card)",
+                backgroundColor: "background.paper",
+                "&:before": { display: "none" },
+              }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Subcategorias
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Stack spacing={1.5}>
+                  {editingSubcategoryId ? (
+                    <Box
+                      sx={{
+                        p: 2,
+                        borderRadius: "var(--radius-card)",
+                        border: 1,
+                        borderColor: "divider",
+                        backgroundColor: "background.paper",
+                      }}
+                    >
+                      <Stack spacing={1.5}>
+                        <TextField
+                          label="Nome"
+                          fullWidth
+                          value={editingSubcategoryName}
+                          onChange={(event) => setEditingSubcategoryName(event.target.value)}
+                        />
+                        <TextField
+                          select
+                          label="Categoria"
+                          value={editingSubcategoryCategory}
+                          onChange={(event) =>
+                            setEditingSubcategoryCategory(event.target.value)
+                          }
+                        >
+                          {categories.map((category) => (
+                            <MenuItem key={category.id} value={category.id}>
+                              {category.name}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                        <Stack direction="row" spacing={2} justifyContent="flex-end">
+                          <Button variant="outlined" onClick={cancelEditSubcategory}>
+                            Cancelar
+                          </Button>
+                          <Button variant="contained" onClick={saveSubcategory}>
+                            Salvar
+                          </Button>
+                        </Stack>
+                      </Stack>
+                    </Box>
+                  ) : null}
+                  <Stack spacing={1}>
+                    {subcategories.map((subcategory) => (
+                      <Chip
+                        key={subcategory.id}
+                        label={`${categories.find((cat) => cat.id === subcategory.categoryId)?.name || "Categoria"} - ${subcategory.name}`}
+                        onClick={() => startEditSubcategory(subcategory)}
+                        onDelete={() =>
+                          setConfirmRemove({ type: "subcategory", id: subcategory.id })
+                        }
+                      />
+                    ))}
+                    {!subcategories.length ? (
+                      <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                        Nenhuma subcategoria criada.
+                      </Typography>
+                    ) : null}
+                  </Stack>
+                  {editingSubcategoryId ? null : (
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <TextField
+                        select
+                        label="Categoria"
+                        value={newSubcategoryCategory}
+                        onChange={(event) => setNewSubcategoryCategory(event.target.value)}
+                        sx={{ minWidth: 180 }}
+                      >
+                        {categories.map((category) => (
+                          <MenuItem key={category.id} value={category.id}>
+                            {category.name}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                      <TextField
+                        label="Nova subcategoria"
+                        fullWidth
+                        value={newSubcategoryName}
+                        onChange={(event) => setNewSubcategoryName(event.target.value)}
+                      />
+                      <IconButton onClick={addSubcategory} aria-label="Adicionar subcategoria">
+                        <AddRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Stack>
+                  )}
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion
+              elevation={0}
+              expanded={settingsAccordion === "display"}
+              onChange={(_, isExpanded) =>
+                setSettingsAccordion(isExpanded ? "display" : false)
+              }
+              sx={{
+                border: 1,
+                borderColor: "divider",
+                borderRadius: "var(--radius-card)",
+                backgroundColor: "background.paper",
+                "&:before": { display: "none" },
+              }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Exibicao
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Stack spacing={1.5}>
+                  {[
+                    { key: "showCategories", label: "Mostrar categorias" },
+                    { key: "showSubcategories", label: "Mostrar subcategorias" },
+                    { key: "showLinks", label: "Mostrar links" },
+                    { key: "showUpdatedAt", label: "Mostrar ultima atualizacao" },
+                  ].map((item) => (
+                    <Box
+                      key={item.key}
+                      sx={(theme) => ({
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        p: 1.5,
+                        borderRadius: "var(--radius-card)",
+                        border: 1,
+                        borderColor: "divider",
+                        backgroundColor: "background.paper",
+                        cursor: "pointer",
+                        ...interactiveCardSx(theme),
+                      })}
+                      onClick={() =>
+                        setFieldSettings((prev) => ({
+                          ...prev,
+                          [item.key]: !prev[item.key as keyof typeof fieldSettings],
+                        }))
+                      }
+                    >
+                      <Typography variant="subtitle2">{item.label}</Typography>
+                      <ToggleCheckbox
+                        checked={Boolean(fieldSettings[item.key as keyof typeof fieldSettings])}
+                        onChange={(event) =>
+                          setFieldSettings((prev) => ({
+                            ...prev,
+                            [item.key]: event.target.checked,
+                          }))
+                        }
+                        onClick={(event) => event.stopPropagation()}
+                      />
+                    </Box>
+                  ))}
+                </Stack>
+              </AccordionDetails>
+            </Accordion>
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button variant="outlined" onClick={() => setSettingsOpen(false)}>
                 Fechar

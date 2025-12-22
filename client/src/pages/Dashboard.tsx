@@ -224,7 +224,7 @@ export default function Dashboard() {
             Home
           </Typography>
           <SettingsIconButton
-            title="Configuracoes da home"
+            title="Configurações da home"
             onClick={() => setSectionsDialogOpen(true)}
           />
         </Stack>
@@ -325,7 +325,7 @@ export default function Dashboard() {
         >
           <Stack spacing={2.5}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Typography variant="h6">Financas</Typography>
+              <Typography variant="h6">Finanças</Typography>
               <Button
                 component={RouterLink}
                 href="/financas"
@@ -392,7 +392,7 @@ export default function Dashboard() {
         >
           <Stack spacing={2.5}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Typography variant="h6">Gestao</Typography>
+              <Typography variant="h6">Gestão</Typography>
               <Button
                 component={RouterLink}
                 href="/access"
@@ -414,7 +414,7 @@ export default function Dashboard() {
                 }}
               >
                 <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
-                  Papeis ativos
+                  Papéis ativos
                 </Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                   {accessSummary.rolesCount}
@@ -458,7 +458,7 @@ export default function Dashboard() {
         <DialogContent>
           <Stack spacing={2.5}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Typography variant="h6">Configuracoes da home</Typography>
+              <Typography variant="h6">Configurações da home</Typography>
               <IconButton onClick={() => setSectionsDialogOpen(false)} aria-label="Fechar">
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
@@ -467,8 +467,8 @@ export default function Dashboard() {
               {(
                 [
                   { key: "pipeline", label: "Pipeline" },
-                  { key: "finance", label: "Financas" },
-                  { key: "access", label: "Gestao" },
+                  { key: "finance", label: "Finanças" },
+                  { key: "access", label: "Gestão" },
                 ] as const
               ).map((item) => (
                 <Paper

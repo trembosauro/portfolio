@@ -132,10 +132,10 @@ const DEFAULT_COLORS = [
 ];
 
 const defaultCategories: Category[] = [
-  { id: "cat-reunioes", name: "Reunioes", color: DEFAULT_COLORS[0] },
+  { id: "cat-reunioes", name: "Reuniões", color: DEFAULT_COLORS[0] },
   { id: "cat-trabalho", name: "Trabalho", color: DEFAULT_COLORS[1] },
   { id: "cat-pessoal", name: "Pessoal", color: DEFAULT_COLORS[2] },
-  { id: "cat-aniversario", name: "Aniversarios", color: DEFAULT_COLORS[3] },
+  { id: "cat-aniversario", name: "Aniversários", color: DEFAULT_COLORS[3] },
   { id: "cat-viagem", name: "Viagem", color: DEFAULT_COLORS[4] },
   { id: "cat-saude", name: "Saude", color: DEFAULT_COLORS[5] },
   { id: "cat-estudos", name: "Estudos", color: DEFAULT_COLORS[6] },
@@ -304,7 +304,7 @@ const getSampleTasks = (base: Date): CalendarTask[] => {
     },
     {
       id: "cal-sample-6",
-      name: "Aniversario da Ana",
+      name: "Aniversário da Ana",
       calendarId: "cal-pessoal",
       categoryIds: ["cat-aniversario"],
       date: makeDate(13),
@@ -978,7 +978,7 @@ export default function Calendar() {
         >
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>
-              Calendario
+              Calendário
             </Typography>
           </Box>
           <Stack direction="row" spacing={1.5} alignItems="center">
@@ -1140,7 +1140,7 @@ export default function Calendar() {
             <Paper elevation={0} variant="outlined" sx={{ p: 2 }}>
               <Stack spacing={2}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  Calendarios
+                  Calendários
                 </Typography>
                 <Stack spacing={1.5}>
                   {calendarSources.map((source) => (
@@ -1312,7 +1312,7 @@ export default function Calendar() {
                                               ? "Dia todo"
                                               : [task.startTime, task.endTime]
                                                   .filter(Boolean)
-                                                  .join(" - ") || "Horario livre"}
+                                                  .join(" - ") || "Horário livre"}
                                           </Typography>
                                         ) : null}
                                         {calendarSettings.showLocation && task.location ? (
@@ -1390,7 +1390,7 @@ export default function Calendar() {
                 {viewingTask?.name || ""}
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                {calendarMap.get(viewingTask?.calendarId || "")?.name || "Calendario"}
+                {calendarMap.get(viewingTask?.calendarId || "")?.name || "Calendário"}
               </Typography>
             </Stack>
             <Divider />
@@ -1406,7 +1406,7 @@ export default function Calendar() {
                     ? "Dia todo"
                     : [viewingTask?.startTime, viewingTask?.endTime]
                         .filter(Boolean)
-                        .join(" - ") || "Horario livre"}
+                        .join(" - ") || "Horário livre"}
                 </Typography>
               ) : null}
               {calendarSettings.showLocation && viewingTask?.location ? (
@@ -1426,7 +1426,7 @@ export default function Calendar() {
               ) : null}
               {calendarSettings.showRepeat ? (
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Repeticao: {viewingTask?.repeat || "none"}
+                  Repetição: {viewingTask?.repeat || "none"}
                 </Typography>
               ) : null}
               {calendarSettings.showVisibility ? (
@@ -1436,7 +1436,7 @@ export default function Calendar() {
               ) : null}
               {calendarSettings.showNotifications ? (
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Notificacao: {viewingTask?.notification || "app"}
+                  Notificação: {viewingTask?.notification || "app"}
                 </Typography>
               ) : null}
               {viewingTask ? (
@@ -1521,7 +1521,7 @@ export default function Calendar() {
             />
             <TextField
               select
-              label="Calendario"
+              label="Calendário"
               fullWidth
               value={draftTask?.calendarId || ""}
               onChange={(event) => {
@@ -1819,7 +1819,7 @@ export default function Calendar() {
             {calendarSettings.showDescription ? (
               <Stack spacing={1}>
                 <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
-                  Descricao
+                  Descrição
                 </Typography>
                 <RichTextEditor
                   value={draftTask?.descriptionHtml || ""}
@@ -1943,7 +1943,7 @@ export default function Calendar() {
         <DialogContent>
           <Stack spacing={2.5}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Typography variant="h6">Configuracoes do calendario</Typography>
+              <Typography variant="h6">Configurações do calendário</Typography>
               <IconButton onClick={() => setCalendarSettingsOpen(false)}>
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
@@ -1975,16 +1975,16 @@ export default function Calendar() {
                 >
                   {[
                     { key: "showAllDay", label: "Campo dia todo" },
-                    { key: "showTime", label: "Horario" },
+                    { key: "showTime", label: "Horário" },
                     { key: "showLocation", label: "Local" },
                     { key: "showParticipants", label: "Participantes" },
                     { key: "showMeetingLink", label: "Link da reuniao" },
                     { key: "showReminders", label: "Lembretes" },
-                    { key: "showRepeat", label: "Repeticao" },
+                    { key: "showRepeat", label: "Repetição" },
                     { key: "showCategories", label: "Categorias" },
-                    { key: "showDescription", label: "Descricao" },
+                    { key: "showDescription", label: "Descrição" },
                     { key: "showVisibility", label: "Visibilidade" },
-                    { key: "showNotifications", label: "Notificacoes" },
+                    { key: "showNotifications", label: "Notificações" },
                   ].map((item) => (
                     <Box
                       key={item.key}
@@ -2313,12 +2313,12 @@ function RichTextEditor({
             <FormatListNumberedRoundedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Citacao" placement="top">
+        <Tooltip title="Citação" placement="top">
           <IconButton
             {...iconButtonProps}
             onClick={() => editor?.chain().focus().toggleBlockquote().run()}
             color={editor?.isActive("blockquote") ? "primary" : "default"}
-            aria-label="Citacao"
+            aria-label="Citação"
           >
             <FormatQuoteRoundedIcon fontSize="small" />
           </IconButton>
