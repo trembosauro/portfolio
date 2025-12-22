@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Box, Button, Paper, Stack, Typography } from "@mui/material";
+import { Box, Button, Dialog, DialogContent, IconButton, Paper, Stack, Typography } from "@mui/material";
 import { Link as RouterLink } from "wouter";
 import api from "../api";
+import ToggleCheckbox from "../components/ToggleCheckbox";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import SettingsIconButton from "../components/SettingsIconButton";
+import { interactiveCardSx } from "../styles/interactiveCard";
 
 type Deal = {
   id: string;
@@ -67,6 +71,8 @@ const formatValue = (value: number) => {
   return `R$ ${Math.round(value).toLocaleString("pt-BR")}`;
 };
 
+const DASHBOARD_SECTIONS_KEY = "dashboard_sections_v1";
+
 export default function Dashboard() {
   const [columns, setColumns] = useState<Column[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -74,6 +80,12 @@ export default function Dashboard() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
+  const [sections, setSections] = useState({
+    pipeline: true,
+    finance: true,
+    access: true,
+  });
+  const [sectionsDialogOpen, setSectionsDialogOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -127,6 +139,23 @@ export default function Dashboard() {
     };
     void loadAccess();
   }, []);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(DASHBOARD_SECTIONS_KEY);
+    if (!stored) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stored) as Partial<typeof sections>;
+      setSections((prev) => ({ ...prev, ...parsed }));
+    } catch {
+      window.localStorage.removeItem(DASHBOARD_SECTIONS_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(DASHBOARD_SECTIONS_KEY, JSON.stringify(sections));
+  }, [sections]);
 
   const pipelineSummary = useMemo(() => {
     const totalCount = columns.reduce((sum, column) => sum + column.deals.length, 0);
@@ -185,12 +214,22 @@ export default function Dashboard() {
   return (
     <Box sx={{ maxWidth: 1100, mx: "auto" }}>
       <Stack spacing={3}>
-        <Stack spacing={1}>
+        <Stack
+          direction={{ xs: "column", sm: "row" }}
+          spacing={2}
+          alignItems={{ xs: "flex-start", sm: "center" }}
+          justifyContent="space-between"
+        >
           <Typography variant="h4" sx={{ fontWeight: 700 }}>
             Home
           </Typography>
+          <SettingsIconButton
+            title="Configuracoes da home"
+            onClick={() => setSectionsDialogOpen(true)}
+          />
         </Stack>
 
+        {sections.pipeline ? (
         <Paper
           elevation={0}
           sx={{
@@ -272,7 +311,9 @@ export default function Dashboard() {
             </Stack>
           </Stack>
         </Paper>
+        ) : null}
 
+        {sections.finance ? (
         <Paper
           elevation={0}
           sx={{
@@ -337,7 +378,9 @@ export default function Dashboard() {
             </Stack>
           </Stack>
         </Paper>
+        ) : null}
 
+        {sections.access ? (
         <Paper
           elevation={0}
           sx={{
@@ -403,7 +446,66 @@ export default function Dashboard() {
             </Stack>
           </Stack>
         </Paper>
+        ) : null}
       </Stack>
+
+      <Dialog
+        open={sectionsDialogOpen}
+        onClose={() => setSectionsDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogContent>
+          <Stack spacing={2.5}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <Typography variant="h6">Configuracoes da home</Typography>
+              <IconButton onClick={() => setSectionsDialogOpen(false)} aria-label="Fechar">
+                <CloseRoundedIcon fontSize="small" />
+              </IconButton>
+            </Box>
+            <Stack spacing={1.5}>
+              {(
+                [
+                  { key: "pipeline", label: "Pipeline" },
+                  { key: "finance", label: "Financas" },
+                  { key: "access", label: "Gestao" },
+                ] as const
+              ).map((item) => (
+                <Paper
+                  key={item.key}
+                  variant="outlined"
+                  onClick={() =>
+                    setSections((prev) => ({ ...prev, [item.key]: !prev[item.key] }))
+                  }
+                  sx={(theme) => ({
+                    p: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    cursor: "pointer",
+                    backgroundColor: "background.paper",
+                    ...interactiveCardSx(theme),
+                  })}
+                >
+                  <Typography variant="subtitle2">{item.label}</Typography>
+                  <ToggleCheckbox
+                    checked={sections[item.key]}
+                    onChange={(event) =>
+                      setSections((prev) => ({ ...prev, [item.key]: event.target.checked }))
+                    }
+                    onClick={(event) => event.stopPropagation()}
+                  />
+                </Paper>
+              ))}
+            </Stack>
+            <Stack direction="row" spacing={2} justifyContent="flex-end">
+              <Button variant="outlined" onClick={() => setSectionsDialogOpen(false)}>
+                Fechar
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

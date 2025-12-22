@@ -3,9 +3,13 @@ import {
   Box,
   Button,
   Chip,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Divider,
   Dialog,
   DialogContent,
+  IconButton,
   InputAdornment,
   MenuItem,
   Paper,
@@ -17,6 +21,7 @@ import api from "../api";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 
 type RolePermissionKey =
   | "pipeline_view"
@@ -96,6 +101,9 @@ export default function AccessManagement() {
     index: number;
     nextValue: boolean;
   } | null>(null);
+  const [expandedAccordion, setExpandedAccordion] = useState<
+    "users" | "modules" | "invites" | "recent" | false
+  >("users");
   const [rolePermissions, setRolePermissions] = useState<Record<string, RolePermissionMap>>({});
   const [users, setUsers] = useState<AccessUser[]>([]);
   const [userRoles, setUserRoles] = useState<Record<string, string>>({});
@@ -287,104 +295,104 @@ export default function AccessManagement() {
           </Stack>
         </Paper>
 
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            border: 1,
-                      borderColor: "divider",
-            backgroundColor: "background.paper",
-          }}
+        <Accordion
+          expanded={expandedAccordion === "users"}
+          onChange={(_, isExpanded) =>
+            setExpandedAccordion(isExpanded ? "users" : false)
+          }
         >
-          <Stack spacing={2.5}>
+          <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
             <Typography variant="h6">Usuarios e papeis</Typography>
-            <TextField
-              label="Buscar usuario"
-              fullWidth
-              value={userFilter}
-              onChange={(event) => setUserFilter(event.target.value)}
-              InputProps={{
-                endAdornment: userFilter ? (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => setUserFilter("")}
-                      aria-label="Limpar busca"
-                    >
-                      <CloseRoundedIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ) : null,
-              }}
-            />
-            {filteredUsers.length === 0 ? (
-              <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                Nenhum usuario encontrado.
-              </Typography>
-            ) : (
-              <Stack spacing={1.5} sx={{ maxHeight: 360, overflowY: "auto", pr: 1 }}>
-                {filteredUsers.map((user) => (
-                  <Paper
-                    key={user.id}
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      border: 1,
-                      borderColor: "divider",
-                      backgroundColor: "background.paper",
-                    }}
-                  >
-                    <Stack
-                      direction={{ xs: "column", md: "row" }}
-                      spacing={2}
-                      alignItems={{ xs: "flex-start", md: "center" }}
-                      justifyContent="space-between"
-                    >
-                      <Box>
-                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                          {user.name || "Usuario"}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                          {user.email}
-                        </Typography>
-                      </Box>
-                      <TextField
-                        select
-                        label="Papel"
-                        value={userRoles[user.email] || "Administrador"}
-                        onChange={(event) =>
-                          setUserRoles((prev) => ({
-                            ...prev,
-                            [user.email]: event.target.value,
-                          }))
-                        }
-                        sx={{ minWidth: 200 }}
+          </AccordionSummary>
+          <AccordionDetails>
+            <Stack spacing={2.5}>
+              <TextField
+                label="Buscar usuario"
+                fullWidth
+                value={userFilter}
+                onChange={(event) => setUserFilter(event.target.value)}
+                InputProps={{
+                  endAdornment: userFilter ? (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => setUserFilter("")}
+                        aria-label="Limpar busca"
                       >
-                        {roles.map((role) => (
-                          <MenuItem key={role.name} value={role.name}>
-                            {role.name}
-                          </MenuItem>
-                        ))}
-                      </TextField>
-                    </Stack>
-                  </Paper>
-                ))}
-              </Stack>
-            )}
-          </Stack>
-        </Paper>
+                        <CloseRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                }}
+              />
+              {filteredUsers.length === 0 ? (
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  Nenhum usuario encontrado.
+                </Typography>
+              ) : (
+                <Stack spacing={1.5} sx={{ maxHeight: 360, overflowY: "auto", pr: 1 }}>
+                  {filteredUsers.map((user) => (
+                    <Paper
+                      key={user.id}
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        border: 1,
+                        borderColor: "divider",
+                        backgroundColor: "background.paper",
+                      }}
+                    >
+                      <Stack
+                        direction={{ xs: "column", md: "row" }}
+                        spacing={2}
+                        alignItems={{ xs: "flex-start", md: "center" }}
+                        justifyContent="space-between"
+                      >
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                            {user.name || "Usuario"}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                            {user.email}
+                          </Typography>
+                        </Box>
+                        <TextField
+                          select
+                          label="Papel"
+                          value={userRoles[user.email] || "Administrador"}
+                          onChange={(event) =>
+                            setUserRoles((prev) => ({
+                              ...prev,
+                              [user.email]: event.target.value,
+                            }))
+                          }
+                          sx={{ minWidth: 200 }}
+                        >
+                          {roles.map((role) => (
+                            <MenuItem key={role.name} value={role.name}>
+                              {role.name}
+                            </MenuItem>
+                          ))}
+                        </TextField>
+                      </Stack>
+                    </Paper>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
 
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            border: 1,
-                      borderColor: "divider",
-            backgroundColor: "background.paper",
-          }}
+        <Accordion
+          expanded={expandedAccordion === "modules"}
+          onChange={(_, isExpanded) =>
+            setExpandedAccordion(isExpanded ? "modules" : false)
+          }
         >
-          <Stack spacing={2.5}>
+          <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
             <Typography variant="h6">Permissoes por modulo</Typography>
+          </AccordionSummary>
+          <AccordionDetails>
             <Box
               sx={{
                 display: "grid",
@@ -400,7 +408,7 @@ export default function AccessManagement() {
                   sx={(theme) => ({
                     p: 2.5,
                     border: 1,
-                      borderColor: "divider",
+                    borderColor: "divider",
                     backgroundColor: "background.paper",
                     cursor: "pointer",
                     ...interactiveCardSx(theme),
@@ -431,8 +439,8 @@ export default function AccessManagement() {
                 </Paper>
               ))}
             </Box>
-          </Stack>
-        </Paper>
+          </AccordionDetails>
+        </Accordion>
 
         <Dialog
           open={permissionDialogOpen}
@@ -452,11 +460,29 @@ export default function AccessManagement() {
         >
           <DialogContent>
             <Stack spacing={2.5}>
-              <Box>
-                <Typography variant="h6">Editar permissoes</Typography>
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  {activeRole ? `Papel: ${activeRole}` : "Selecione um papel."}
-                </Typography>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 2,
+                }}
+              >
+                <Box>
+                  <Typography variant="h6">Editar permissoes</Typography>
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    {activeRole ? `Papel: ${activeRole}` : "Selecione um papel."}
+                  </Typography>
+                </Box>
+                <IconButton
+                  onClick={() => {
+                    setPermissionDialogOpen(false);
+                    setActiveRole(null);
+                  }}
+                  aria-label="Fechar"
+                >
+                  <CloseRoundedIcon fontSize="small" />
+                </IconButton>
               </Box>
               <Box
                 sx={{
@@ -524,45 +550,46 @@ export default function AccessManagement() {
           </DialogContent>
         </Dialog>
 
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            border: 1,
-                      borderColor: "divider",
-            backgroundColor: "background.paper",
-          }}
+        <Accordion
+          expanded={expandedAccordion === "invites"}
+          onChange={(_, isExpanded) =>
+            setExpandedAccordion(isExpanded ? "invites" : false)
+          }
         >
-          <Stack spacing={2.5}>
+          <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
             <Typography variant="h6">Enviar convite</Typography>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                gap: 2,
-              }}
-            >
-              <TextField label="Email" type="email" fullWidth />
-              <TextField label="Papel" select fullWidth defaultValue="Gestor">
-                {["Administrador", "Gestor", "Analista", "Leitor"].map((role) => (
-                  <MenuItem key={role} value={role}>
-                    {role}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <TextField
-                label="Mensagem personalizada"
-                fullWidth
-                multiline
-                minRows={3}
-                sx={{ gridColumn: { xs: "auto", md: "1 / -1" } }}
-              />
-            </Box>
-            <Button variant="outlined" size="large" sx={{ alignSelf: "flex-start" }}>
-              Enviar convite
-            </Button>
-          </Stack>
-        </Paper>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Stack spacing={2.5}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                  gap: 2,
+                }}
+              >
+                <TextField label="Email" type="email" fullWidth />
+                <TextField label="Papel" select fullWidth defaultValue="Gestor">
+                  {["Administrador", "Gestor", "Analista", "Leitor"].map((role) => (
+                    <MenuItem key={role} value={role}>
+                      {role}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  label="Mensagem personalizada"
+                  fullWidth
+                  multiline
+                  minRows={3}
+                  sx={{ gridColumn: { xs: "auto", md: "1 / -1" } }}
+                />
+              </Box>
+              <Button variant="outlined" size="large" sx={{ alignSelf: "flex-start" }}>
+                Enviar convite
+              </Button>
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
 
         <Dialog open={Boolean(moduleConfirm)} onClose={() => setModuleConfirm(null)} maxWidth="xs" fullWidth>
           <DialogContent>
@@ -591,54 +618,53 @@ export default function AccessManagement() {
           </DialogContent>
         </Dialog>
 
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            border: 1,
-                      borderColor: "divider",
-            backgroundColor: "background.paper",
-          }}
+        <Accordion
+          expanded={expandedAccordion === "recent"}
+          onChange={(_, isExpanded) =>
+            setExpandedAccordion(isExpanded ? "recent" : false)
+          }
         >
-          <Stack spacing={2}>
+          <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
             <Typography variant="h6">Convites recentes</Typography>
-            {invites.map((invite, index) => (
-              <Box key={invite.email}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 2,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Stack spacing={0.5}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      {invite.email}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                      Papel: {invite.role}
-                    </Typography>
-                  </Stack>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Chip
-                      label={invite.status}
-                      color={invite.status === "Aceito" ? "secondary" : "default"}
-                      size="small"
-                    />
-                    <Button variant="text" size="small">
-                      Reenviar
-                    </Button>
-                  </Stack>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Stack spacing={2}>
+              {invites.map((invite, index) => (
+                <Box key={invite.email}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 2,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <Stack spacing={0.5}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {invite.email}
+                      </Typography>
+                      <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                        Papel: {invite.role}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Chip
+                        label={invite.status}
+                        color={invite.status === "Aceito" ? "secondary" : "default"}
+                        size="small"
+                      />
+                      <Button variant="text" size="small">
+                        Reenviar
+                      </Button>
+                    </Stack>
+                  </Box>
+                  {index !== invites.length - 1 && <Divider sx={{ my: 2 }} />}
                 </Box>
-                {index !== invites.length - 1 && (
-                  <Divider sx={{ my: 2 }} />
-                )}
-              </Box>
-            ))}
-          </Stack>
-        </Paper>
+              ))}
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
       </Stack>
     </Box>
   );

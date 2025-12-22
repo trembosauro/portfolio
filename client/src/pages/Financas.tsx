@@ -28,7 +28,7 @@ import {
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
-import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import SettingsIconButton from "../components/SettingsIconButton";
 import {
   PieChart,
   Pie,
@@ -710,21 +710,7 @@ export default function Financas() {
             </Typography>
           </Box>
           <Stack direction="row" spacing={2}>
-            <Tooltip title="Configuracoes" placement="bottom">
-              <span>
-                <IconButton
-                  onClick={() => setSettingsOpen(true)}
-                  sx={{
-                    border: 1,
-                      borderColor: "divider",
-                    borderRadius: 2,
-                    color: "text.primary",
-                  }}
-                >
-                  <SettingsRoundedIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
+            <SettingsIconButton onClick={() => setSettingsOpen(true)} />
             <Button
               variant="contained"
               onClick={() => {

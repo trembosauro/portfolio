@@ -30,7 +30,8 @@ import CalendarTodayRoundedIcon from "@mui/icons-material/CalendarTodayRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
-import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import WhatsAppRoundedIcon from "@mui/icons-material/WhatsAppRounded";
+import SettingsIconButton from "../components/SettingsIconButton";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
 
@@ -56,6 +57,7 @@ const STORAGE_KEY = "contacts_v1";
 const CATEGORY_STORAGE_KEY = "contact_categories_v1";
 const USER_ROLE_STORAGE_KEY = "sc_user_roles";
 const CARD_FIELDS_KEY = "contact_card_fields_v1";
+const DETAIL_FIELDS_KEY = "contact_detail_fields_v1";
 
 const DEFAULT_COLORS = [
   "#0f766e",
@@ -241,13 +243,21 @@ export default function Contacts() {
   const [categories, setCategories] = useState<Category[]>(defaultCategories);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsAccordion, setSettingsAccordion] = useState<
-    "categories" | "cards" | false
+    "categories" | "cards" | "details" | false
   >(false);
   const [cardFields, setCardFields] = useState({
     phones: true,
     emails: true,
     addresses: true,
     categories: true,
+  });
+  const [detailFields, setDetailFields] = useState({
+    birthday: true,
+    categories: true,
+    phones: true,
+    emails: true,
+    addresses: true,
+    comments: true,
   });
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_COLORS[0]);
@@ -350,6 +360,23 @@ export default function Contacts() {
     window.localStorage.setItem(CARD_FIELDS_KEY, JSON.stringify(cardFields));
   }, [cardFields]);
 
+  useEffect(() => {
+    const stored = window.localStorage.getItem(DETAIL_FIELDS_KEY);
+    if (!stored) {
+      return;
+    }
+    try {
+      const parsed = JSON.parse(stored) as Partial<typeof detailFields>;
+      setDetailFields((prev) => ({ ...prev, ...parsed }));
+    } catch {
+      window.localStorage.removeItem(DETAIL_FIELDS_KEY);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(DETAIL_FIELDS_KEY, JSON.stringify(detailFields));
+  }, [detailFields]);
+
   const categoryMap = new Map(categories.map((cat) => [cat.id, cat]));
 
   const openNewContact = () => {
@@ -379,6 +406,14 @@ export default function Contacts() {
   };
 
   const sanitizePhone = (value: string) => value.replace(/\D/g, "");
+  const formatWhatsAppLink = (value: string) => {
+    const digits = sanitizePhone(value);
+    if (!digits) {
+      return "";
+    }
+    const withCountry = digits.startsWith("55") ? digits : `55${digits}`;
+    return `https://wa.me/${withCountry}`;
+  };
 
   const copyText = async (value: string) => {
     const text = value.trim();
@@ -832,22 +867,9 @@ export default function Contacts() {
                 }}
               />
               <Box sx={{ flex: 1, display: { xs: "none", sm: "block" } }} />
-              <Tooltip title="Configuracoes" placement="bottom">
-                <span>
-                  <IconButton
-                    onClick={() => setSettingsOpen(true)}
-                    sx={{
-                      border: 1,
-                      borderColor: "divider",
-                      borderRadius: 2,
-                      color: "text.primary",
-                      alignSelf: { xs: "flex-start", sm: "center" },
-                    }}
-                  >
-                    <SettingsRoundedIcon fontSize="small" />
-                  </IconButton>
-                </span>
-              </Tooltip>
+              <Box sx={{ alignSelf: { xs: "flex-start", sm: "center" } }}>
+                <SettingsIconButton onClick={() => setSettingsOpen(true)} />
+              </Box>
             </Stack>
             {filteredContacts.length === 0 ? (
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
@@ -940,162 +962,192 @@ export default function Contacts() {
                 <CloseRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
-            <Stack spacing={0.5}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Aniversario
-              </Typography>
-              {selectedContact?.birthday ? (
-                <Typography variant="body2">
-                  {new Date(selectedContact.birthday).toLocaleDateString("pt-BR")}
+            {detailFields.birthday ? (
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Aniversario
                 </Typography>
-              ) : (
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Nao informado.
-                </Typography>
-              )}
-            </Stack>
-            <Stack spacing={1.5}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Categorias
-              </Typography>
-              {selectedContact?.categoryIds?.length ? (
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  {selectedContact.categoryIds
-                    .map((catId) => categoryMap.get(catId))
-                    .filter(Boolean)
-                    .map((cat) => (
-                      <Chip
-                        key={cat?.id}
-                        label={cat?.name}
-                        size="small"
-                        sx={{
-                          color: "#e6edf3",
-                          backgroundColor: darkenColor(cat?.color || "#0f172a", 0.5),
-                        }}
-                      />
-                    ))}
-                </Stack>
-              ) : (
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Sem categoria.
-                </Typography>
-              )}
-            </Stack>
-            <Stack spacing={1.5}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Telefones
-              </Typography>
-              {selectedContact?.phones.filter(Boolean).length ? (
-                selectedContact?.phones.filter(Boolean).map((phone, index) => (
-                  <Stack
-                    key={`view-phone-${index}`}
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                  >
-                    <Typography variant="body2">{phone}</Typography>
-                    <Tooltip title="Copiar telefone" placement="top">
-                      <IconButton
-                        size="small"
-                        onClick={() => copyText(phone)}
-                        aria-label="Copiar telefone"
-                      >
-                        <ContentCopyRoundedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                ))
-              ) : (
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Nenhum telefone informado.
-                </Typography>
-              )}
-            </Stack>
-            <Stack spacing={1.5}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Emails
-              </Typography>
-              {selectedContact?.emails.filter(Boolean).length ? (
-                selectedContact?.emails.filter(Boolean).map((email, index) => (
-                  <Stack
-                    key={`view-email-${index}`}
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                  >
-                    <Typography variant="body2">{email}</Typography>
-                    <Tooltip title="Copiar email" placement="top">
-                      <IconButton
-                        size="small"
-                        onClick={() => copyText(email)}
-                        aria-label="Copiar email"
-                      >
-                        <ContentCopyRoundedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                ))
-              ) : (
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Nenhum email informado.
-                </Typography>
-              )}
-            </Stack>
-            <Stack spacing={1.5}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Enderecos
-              </Typography>
-              {selectedContact?.addresses.filter(Boolean).length ? (
-                selectedContact?.addresses.filter(Boolean).map((address, index) => (
-                  <Stack key={`view-address-${index}`} direction="row" spacing={1} alignItems="center">
-                    <Typography variant="body2">{address}</Typography>
-                    <Tooltip title="Copiar endereco" placement="top">
-                      <IconButton
-                        size="small"
-                        onClick={() => copyText(address)}
-                        aria-label="Copiar endereco"
-                      >
-                        <ContentCopyRoundedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Abrir no Maps" placement="top">
-                      <IconButton
-                        component="a"
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                          address
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        size="small"
-                        aria-label="Abrir no Maps"
-                      >
-                        <LinkRoundedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                ))
-              ) : (
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Nenhum endereco informado.
-                </Typography>
-              )}
-            </Stack>
-            <Stack spacing={1.5}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Comentarios
-              </Typography>
-              {selectedContact?.comments.filter(Boolean).length ? (
-                selectedContact?.comments.filter(Boolean).map((comment, index) => (
-                  <Typography key={`view-comment-${index}`} variant="body2">
-                    {comment}
+                {selectedContact?.birthday ? (
+                  <Typography variant="body2">
+                    {new Date(selectedContact.birthday).toLocaleDateString("pt-BR")}
                   </Typography>
-                ))
-              ) : (
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Nenhum comentario informado.
+                ) : (
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Nao informado.
+                  </Typography>
+                )}
+              </Stack>
+            ) : null}
+            {detailFields.categories ? (
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Categorias
                 </Typography>
-              )}
-            </Stack>
+                {selectedContact?.categoryIds?.length ? (
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedContact.categoryIds
+                      .map((catId) => categoryMap.get(catId))
+                      .filter(Boolean)
+                      .map((cat) => (
+                        <Chip
+                          key={cat?.id}
+                          label={cat?.name}
+                          size="small"
+                          sx={{
+                            color: "#e6edf3",
+                            backgroundColor: darkenColor(cat?.color || "#0f172a", 0.5),
+                          }}
+                        />
+                      ))}
+                  </Stack>
+                ) : (
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Sem categoria.
+                  </Typography>
+                )}
+              </Stack>
+            ) : null}
+            {detailFields.phones ? (
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Telefones
+                </Typography>
+                {selectedContact?.phones.filter(Boolean).length ? (
+                  selectedContact?.phones.filter(Boolean).map((phone, index) => (
+                    <Stack
+                      key={`view-phone-${index}`}
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                    >
+                      <Typography variant="body2">{phone}</Typography>
+                      <Tooltip title="Copiar telefone" placement="top">
+                        <IconButton
+                          size="small"
+                          onClick={() => copyText(phone)}
+                          aria-label="Copiar telefone"
+                        >
+                          <ContentCopyRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Abrir no WhatsApp" placement="top">
+                        <IconButton
+                          component="a"
+                          href={formatWhatsAppLink(phone)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          size="small"
+                          aria-label="Abrir WhatsApp"
+                          disabled={!formatWhatsAppLink(phone)}
+                        >
+                          <WhatsAppRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  ))
+                ) : (
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Nenhum telefone informado.
+                  </Typography>
+                )}
+              </Stack>
+            ) : null}
+            {detailFields.emails ? (
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Emails
+                </Typography>
+                {selectedContact?.emails.filter(Boolean).length ? (
+                  selectedContact?.emails.filter(Boolean).map((email, index) => (
+                    <Stack
+                      key={`view-email-${index}`}
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                    >
+                      <Typography variant="body2">{email}</Typography>
+                      <Tooltip title="Copiar email" placement="top">
+                        <IconButton
+                          size="small"
+                          onClick={() => copyText(email)}
+                          aria-label="Copiar email"
+                        >
+                          <ContentCopyRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  ))
+                ) : (
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Nenhum email informado.
+                  </Typography>
+                )}
+              </Stack>
+            ) : null}
+            {detailFields.addresses ? (
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Enderecos
+                </Typography>
+                {selectedContact?.addresses.filter(Boolean).length ? (
+                  selectedContact?.addresses.filter(Boolean).map((address, index) => (
+                    <Stack
+                      key={`view-address-${index}`}
+                      direction="row"
+                      spacing={1}
+                      alignItems="center"
+                    >
+                      <Typography variant="body2">{address}</Typography>
+                      <Tooltip title="Copiar endereco" placement="top">
+                        <IconButton
+                          size="small"
+                          onClick={() => copyText(address)}
+                          aria-label="Copiar endereco"
+                        >
+                          <ContentCopyRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Abrir no Maps" placement="top">
+                        <IconButton
+                          component="a"
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                            address
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          size="small"
+                          aria-label="Abrir no Maps"
+                        >
+                          <LinkRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  ))
+                ) : (
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Nenhum endereco informado.
+                  </Typography>
+                )}
+              </Stack>
+            ) : null}
+            {detailFields.comments ? (
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Comentarios
+                </Typography>
+                {selectedContact?.comments.filter(Boolean).length ? (
+                  selectedContact?.comments.filter(Boolean).map((comment, index) => (
+                    <Typography key={`view-comment-${index}`} variant="body2">
+                      {comment}
+                    </Typography>
+                  ))
+                ) : (
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Nenhum comentario informado.
+                  </Typography>
+                )}
+              </Stack>
+            ) : null}
             <Stack direction="row" spacing={2} justifyContent="flex-end">
               <Button
                 color="error"
@@ -1214,9 +1266,9 @@ export default function Contacts() {
                 sx: {
                   mt: 1,
                   p: 2,
-                  borderRadius: 2,
+                  borderRadius: "var(--radius-card)",
                   border: 1,
-                      borderColor: "divider",
+                  borderColor: "divider",
                   backgroundColor: "background.paper",
                   minWidth: 280,
                 },
@@ -1823,6 +1875,79 @@ export default function Contacts() {
                       onClick={(event) => event.stopPropagation()}
                     />
                   </Box>
+                </Box>
+              </AccordionDetails>
+            </Accordion>
+
+            <Accordion
+              expanded={settingsAccordion === "details"}
+              onChange={(_, isExpanded) =>
+                setSettingsAccordion(isExpanded ? "details" : false)
+              }
+              elevation={0}
+              sx={{
+                border: 1,
+                      borderColor: "divider",
+                borderRadius: "var(--radius-card)",
+                backgroundColor: "background.paper",
+                "&:before": { display: "none" },
+              }}
+            >
+              <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                  Detalhes do contato
+                </Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                    gap: 1.5,
+                  }}
+                >
+                  {[
+                    { key: "birthday", label: "Aniversario" },
+                    { key: "categories", label: "Categorias" },
+                    { key: "phones", label: "Telefones" },
+                    { key: "emails", label: "Emails" },
+                    { key: "addresses", label: "Enderecos" },
+                    { key: "comments", label: "Comentarios" },
+                  ].map((item) => (
+                    <Box
+                      key={item.key}
+                      sx={(theme) => ({
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        p: 1.5,
+                        borderRadius: "var(--radius-card)",
+                        border: 1,
+                        borderColor: "divider",
+                        backgroundColor: "background.paper",
+                        cursor: "pointer",
+                        ...interactiveCardSx(theme),
+                      })}
+                      onClick={() =>
+                        setDetailFields((prev) => ({
+                          ...prev,
+                          [item.key]: !prev[item.key as keyof typeof detailFields],
+                        }))
+                      }
+                    >
+                      <Typography variant="subtitle2">{item.label}</Typography>
+                      <ToggleCheckbox
+                        checked={Boolean(detailFields[item.key as keyof typeof detailFields])}
+                        onChange={(event) =>
+                          setDetailFields((prev) => ({
+                            ...prev,
+                            [item.key]: event.target.checked,
+                          }))
+                        }
+                        onClick={(event) => event.stopPropagation()}
+                      />
+                    </Box>
+                  ))}
                 </Box>
               </AccordionDetails>
             </Accordion>

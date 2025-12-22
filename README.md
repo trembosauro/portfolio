@@ -1,6 +1,6 @@
 # Superclient
 
-Aplicacao web para autenticacao, pipeline, financas e gestao de acessos.
+Aplicacao web para autenticacao, calendario, pipeline, financas, contatos e gestao de acessos.
 
 ## Requisitos
 - Node.js 18+ (ou superior)
@@ -28,12 +28,14 @@ pnpm dev
 
 ## Funcionalidades
 - Login e recuperacao de senha com fluxo dedicado
-- Dashboard (Home) com resumo de pipeline, financas e gestao
+- Dashboard (Home) com resumo de calendario, pipeline, financas e gestao
+- Calendario com agenda diaria, lembretes e repeticoes
 - Pipeline com colunas, cards e arraste entre etapas
 - Detalhes de tarefa com descricao rica, categorias e responsaveis
 - Dados da pipeline com metricas e graficos
 - Financas com categorias, filtros e visualizacao de gastos
 - Contatos com multiplos telefones/emails/enderecos e categorias
+- Suporte com FAQ, categorias e formulario de contato
 - Notificacoes com alertas e indicador no sino
 - Gestao de acessos com papeis, permissoes e modulos pagos
-- Perfil com preferencias, troca de conta e logout
+- Perfil com preferencias, idiomas, troca de conta e logout

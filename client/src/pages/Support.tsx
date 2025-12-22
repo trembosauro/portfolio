@@ -30,12 +30,17 @@ const faqItems = [
   {
     title: "Home (dashboard)",
     content:
-      "Mostra uma visao geral do pipeline, financas e gestao com indicadores principais e atalhos.",
+      "Mostra uma visao geral do pipeline, financas, agenda e gestao com indicadores principais e atalhos.",
+  },
+  {
+    title: "Calendario",
+    content:
+      "Organize lembretes por dia, selecione calendarios ativos e edite detalhes como horario, local, repeticao e lembretes.",
   },
   {
     title: "Pipeline",
     content:
-      "Organize tarefas em colunas, arraste cards entre etapas e visualize detalhes. Clique em adicionar tarefa para abrir o modal de edicao.",
+      "Organize tarefas em colunas, arraste cards entre etapas e visualize detalhes. Use categorias e filtros para encontrar rapidamente.",
   },
   {
     title: "Dados da pipeline",
@@ -50,7 +55,7 @@ const faqItems = [
   {
     title: "Categorias (pipeline, financas e contatos)",
     content:
-      "Cada area tem suas proprias categorias. Voce pode criar, editar cor/nome e remover categorias sem misturar os contextos.",
+      "Cada area tem suas proprias categorias, incluindo o calendario. Voce pode criar, editar cor/nome e remover categorias.",
   },
   {
     title: "Contatos",
@@ -63,6 +68,11 @@ const faqItems = [
       "Mostra alertas como aniversarios proximos e permite marcar como visto. O sino indica quando ha novidades.",
   },
   {
+    title: "Idiomas",
+    content:
+      "Altere o idioma em Perfil. O app confirma a troca e permite desfazer a alteracao.",
+  },
+  {
     title: "Gestao de acessos",
     content:
       "Controle papeis, permissoes e modulos pagos. Edite permissoes por papel e ative/desative modulos.",
@@ -70,7 +80,7 @@ const faqItems = [
   {
     title: "Perfil",
     content:
-      "Atualize dados pessoais, altere preferencias e faca logout. Em trocar de conta, selecione contas recentes ou faca login em outra.",
+      "Atualize dados pessoais, emails de login adicionais, preferencias e idioma. Em trocar de conta, selecione contas recentes ou faca login em outra.",
   },
   {
     title: "Sessao e seguranca",

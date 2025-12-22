@@ -47,7 +47,7 @@ import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import RestoreFromTrashRoundedIcon from "@mui/icons-material/RestoreFromTrashRounded";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
+import SettingsIconButton from "../components/SettingsIconButton";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import api from "../api";
 import ToggleCheckbox from "../components/ToggleCheckbox";
@@ -1925,22 +1925,10 @@ export default function Pipeline() {
             />
           </Stack>
           <Stack direction="row" spacing={2} sx={{ width: { xs: "100%", sm: "auto" } }}>
-            <Tooltip title="Configuracoes" placement="bottom">
-              <span>
-                <IconButton
-                  onClick={() => setTaskFieldSettingsOpen(true)}
-                  disabled={!permissions.pipeline_edit_tasks}
-                  sx={{
-                    border: 1,
-                      borderColor: "divider",
-                    borderRadius: 2,
-                    color: "text.primary",
-                  }}
-                >
-                  <SettingsRoundedIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
+            <SettingsIconButton
+              onClick={() => setTaskFieldSettingsOpen(true)}
+              disabled={!permissions.pipeline_edit_tasks}
+            />
           </Stack>
         </Box>
 

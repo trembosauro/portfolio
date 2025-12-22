@@ -42,7 +42,12 @@ type AccessModule = {
 type ModuleDialog =
   | {
       kind: "core";
-      key: "modulePipeline" | "moduleFinance" | "moduleContacts";
+      key:
+        | "modulePipeline"
+        | "moduleFinance"
+        | "moduleContacts"
+        | "moduleCalendar"
+        | "moduleNotes";
       nextValue: boolean;
     }
   | {
@@ -86,6 +91,28 @@ const coreModuleLabels = {
       "Filtros por tags e pesquisa rapida",
       "Copiar dados e abrir enderecos",
       "Historico com notas e observacoes",
+    ],
+  },
+  moduleCalendar: {
+    title: "Calendario",
+    price: "R$ 49/mes",
+    description: "Agenda visual e lembretes de tarefas.",
+    features: [
+      "Lista diaria de tarefas e lembretes",
+      "Categorias compartilhadas com pipeline",
+      "Criacao rapida de tarefas",
+      "Configuracao de campos da tarefa",
+    ],
+  },
+  moduleNotes: {
+    title: "Notas",
+    price: "R$ 29/mes",
+    description: "Notas com editor rico e categorias.",
+    features: [
+      "Editor com rich text",
+      "Categorias e subcategorias",
+      "Links organizados por nota",
+      "Busca rapida por titulo",
     ],
   },
 };
@@ -159,6 +186,8 @@ export default function Profile() {
     modulePipeline: true,
     moduleFinance: true,
     moduleContacts: true,
+    moduleCalendar: true,
+    moduleNotes: true,
     language: "pt-BR",
   });
   const [languageDraft, setLanguageDraft] = useState("pt-BR");
@@ -233,6 +262,8 @@ export default function Profile() {
         modulePipeline?: boolean;
         moduleFinance?: boolean;
         moduleContacts?: boolean;
+        moduleCalendar?: boolean;
+        moduleNotes?: boolean;
         language?: string;
       };
     };
@@ -266,6 +297,8 @@ export default function Profile() {
       modulePipeline: Boolean(prefs?.modulePipeline ?? true),
       moduleFinance: Boolean(prefs?.moduleFinance ?? true),
       moduleContacts: Boolean(prefs?.moduleContacts ?? true),
+      moduleCalendar: Boolean(prefs?.moduleCalendar ?? true),
+      moduleNotes: Boolean(prefs?.moduleNotes ?? true),
       language: prefs?.language || "pt-BR",
     });
     setLanguageDraft(prefs?.language || "pt-BR");
@@ -275,6 +308,8 @@ export default function Profile() {
         modulePipeline: Boolean(prefs?.modulePipeline ?? true),
         moduleFinance: Boolean(prefs?.moduleFinance ?? true),
         moduleContacts: Boolean(prefs?.moduleContacts ?? true),
+        moduleCalendar: Boolean(prefs?.moduleCalendar ?? true),
+        moduleNotes: Boolean(prefs?.moduleNotes ?? true),
         language: prefs?.language || "pt-BR",
       })
     );
@@ -405,10 +440,11 @@ export default function Profile() {
 
   const saveProfile = () => {
     const primaryPhone = sanitizeList(phones)[0] || "";
+    const primaryEmail = sanitizeList(emails)[0] || email;
     void api
       .put("/api/profile", {
         name,
-        email,
+        email: primaryEmail,
         phone: primaryPhone,
         team,
         role,
@@ -423,6 +459,8 @@ export default function Profile() {
           modulePipeline: preferences.modulePipeline,
           moduleFinance: preferences.moduleFinance,
           moduleContacts: preferences.moduleContacts,
+          moduleCalendar: preferences.moduleCalendar,
+          moduleNotes: preferences.moduleNotes,
           language: preferences.language,
           notifyMentions: preferences.notifyMentions,
           notifyPipelineUpdates: preferences.notifyPipelineUpdates,
@@ -459,6 +497,8 @@ export default function Profile() {
           modulePipeline: preferences.modulePipeline,
           moduleFinance: preferences.moduleFinance,
           moduleContacts: preferences.moduleContacts,
+          moduleCalendar: preferences.moduleCalendar,
+          moduleNotes: preferences.moduleNotes,
           language: preferences.language,
         })
       );
@@ -488,7 +528,12 @@ export default function Profile() {
   }, [preferences.language]);
 
   const requestModuleToggle = (
-    key: "modulePipeline" | "moduleFinance" | "moduleContacts",
+    key:
+      | "modulePipeline"
+      | "moduleFinance"
+      | "moduleContacts"
+      | "moduleCalendar"
+      | "moduleNotes",
     nextValue: boolean
   ) => {
     setModuleDialog({ kind: "core", key, nextValue });
@@ -631,13 +676,6 @@ export default function Profile() {
           </TextField>
         </Stack>
 
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-            gap: 2.5,
-          }}
-        >
         <Accordion
           expanded={expanded === "main"}
           onChange={(_, isExpanded) => setExpanded(isExpanded ? "main" : false)}
@@ -652,12 +690,6 @@ export default function Profile() {
                 fullWidth
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-              />
-              <TextField
-                label="Email"
-                fullWidth
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
               />
               <TextField
                 label="Time"
@@ -710,12 +742,15 @@ export default function Profile() {
 
               <Stack spacing={1.5}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  Emails
+                  Emails de login
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                  Adicione emails secundarios para entrar na mesma conta.
                 </Typography>
                 {emails.map((item, index) => (
                   <Stack key={`email-${index}`} direction="row" spacing={1} alignItems="center">
                     <TextField
-                      label={`Email ${index + 1}`}
+                      label={`Email de login ${index + 1}`}
                       fullWidth
                       value={item}
                       onChange={(event) =>
@@ -733,7 +768,7 @@ export default function Profile() {
                   onClick={() => addListItem(setEmails)}
                   sx={{ alignSelf: "flex-start", textTransform: "none", fontWeight: 600 }}
                 >
-                  Adicionar email
+                  Adicionar email de login
                 </Button>
               </Stack>
 
@@ -1121,7 +1156,11 @@ export default function Profile() {
                 }}
               >
                 {(Object.keys(coreModuleLabels) as Array<
-                  "modulePipeline" | "moduleFinance" | "moduleContacts"
+                  | "modulePipeline"
+                  | "moduleFinance"
+                  | "moduleContacts"
+                  | "moduleCalendar"
+                  | "moduleNotes"
                 >).map(
                   (key) => (
                     <Paper
@@ -1328,7 +1367,6 @@ export default function Profile() {
             </Stack>
           </AccordionDetails>
         </Accordion>
-        </Box>
       </Stack>
 
       <Dialog

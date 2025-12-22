@@ -33,12 +33,17 @@ import Financas from "./pages/Financas";
 import Dashboard from "./pages/Dashboard";
 import Contacts from "./pages/Contacts";
 import Notifications from "./pages/Notifications";
+import Calendar from "./pages/Calendar";
+import CalendarCompleted from "./pages/CalendarCompleted";
+import Notes from "./pages/Notes";
 
 const navItems = [
   { label: "Home", href: "/home" },
   { label: "Pipeline", href: "/pipeline" },
   { label: "Financas", href: "/financas" },
   { label: "Contatos", href: "/contatos" },
+  { label: "Calendario", href: "/calendario" },
+  { label: "Notas", href: "/notas" },
   { label: "Gestao", href: "/access" },
 ];
 
@@ -51,6 +56,8 @@ function App() {
     pipeline: true,
     finance: true,
     contacts: true,
+    calendar: true,
+    notes: true,
   });
   const [language, setLanguage] = useState("pt-BR");
   const [hasNotifications, setHasNotifications] = useState(false);
@@ -85,6 +92,8 @@ function App() {
               modulePipeline: Boolean(prefs.modulePipeline ?? true),
               moduleFinance: Boolean(prefs.moduleFinance ?? true),
               moduleContacts: Boolean(prefs.moduleContacts ?? true),
+              moduleCalendar: Boolean(prefs.moduleCalendar ?? true),
+              moduleNotes: Boolean(prefs.moduleNotes ?? true),
               language: typeof prefs.language === "string" ? prefs.language : "pt-BR",
             };
             window.localStorage.setItem("sc_prefs", JSON.stringify(nextPrefs));
@@ -92,6 +101,8 @@ function App() {
               pipeline: nextPrefs.modulePipeline,
               finance: nextPrefs.moduleFinance,
               contacts: nextPrefs.moduleContacts,
+              calendar: nextPrefs.moduleCalendar,
+              notes: nextPrefs.moduleNotes,
             });
             setLanguage(nextPrefs.language);
             document.documentElement.lang = nextPrefs.language;
@@ -113,7 +124,7 @@ function App() {
         }
         setIsLoggedIn(false);
         setUserName("");
-        setModuleAccess({ pipeline: true, finance: true, contacts: true });
+        setModuleAccess({ pipeline: true, finance: true, contacts: true, calendar: true, notes: true });
       }
     };
 
@@ -130,12 +141,16 @@ function App() {
           modulePipeline?: boolean;
           moduleFinance?: boolean;
           moduleContacts?: boolean;
+          moduleCalendar?: boolean;
+          moduleNotes?: boolean;
           language?: string;
         };
         setModuleAccess({
           pipeline: Boolean(parsed.modulePipeline ?? true),
           finance: Boolean(parsed.moduleFinance ?? true),
           contacts: Boolean(parsed.moduleContacts ?? true),
+          calendar: Boolean(parsed.moduleCalendar ?? true),
+          notes: Boolean(parsed.moduleNotes ?? true),
         });
         const nextLanguage = typeof parsed.language === "string" ? parsed.language : "pt-BR";
         setLanguage(nextLanguage);
@@ -200,6 +215,12 @@ function App() {
     if (!moduleAccess.contacts && location === "/contatos") {
       setLocation("/profile");
     }
+    if (!moduleAccess.calendar && (location === "/calendario" || location === "/calendario/concluidas")) {
+      setLocation("/profile");
+    }
+    if (!moduleAccess.notes && location === "/notas") {
+      setLocation("/profile");
+    }
   }, [isLoggedIn, location, moduleAccess, setLocation]);
 
   const isActive = (href: string) => {
@@ -226,6 +247,12 @@ function App() {
         if (item.href === "/contatos") {
           return moduleAccess.contacts;
         }
+        if (item.href === "/calendario") {
+          return moduleAccess.calendar;
+        }
+        if (item.href === "/notas") {
+          return moduleAccess.notes;
+        }
         return true;
       })
     : [{ label: "Home", href: "/login" }];
@@ -239,6 +266,9 @@ function App() {
     "/pipeline/dados": "Dados",
     "/financas": "Financas",
     "/contatos": "Contatos",
+    "/calendario": "Calendario",
+    "/calendario/concluidas": "Tarefas feitas",
+    "/notas": "Notas",
     "/notifications": "Notificacoes",
   };
   const showBreadcrumbs = !["/", "/login", "/signup"].includes(location);
@@ -259,6 +289,21 @@ function App() {
             Dados
           </Typography>,
         ]
+      : location === "/calendario/concluidas"
+        ? [
+            <Link
+              key="calendario"
+              component={RouterLink}
+              href="/calendario"
+              underline="hover"
+              color="inherit"
+            >
+              Calendario
+            </Link>,
+            <Typography key="concluidas" color="text.primary">
+              Tarefas feitas
+            </Typography>,
+          ]
       : [
           <Link
             key="home"
@@ -611,6 +656,9 @@ function App() {
               <Route path="/pipeline" component={Pipeline} />
               <Route path="/financas" component={Financas} />
               <Route path="/contatos" component={Contacts} />
+              <Route path="/calendario/concluidas" component={CalendarCompleted} />
+              <Route path="/calendario" component={Calendar} />
+              <Route path="/notas" component={Notes} />
               <Route path="/notifications" component={Notifications} />
               <Route>
                 <NotFound />

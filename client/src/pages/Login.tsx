@@ -18,21 +18,27 @@ import { useLocation } from "wouter";
 import api from "../api";
 
 const highlights = [
+  "Calendario com agenda diaria e lembretes",
   "Pipeline com tarefas por etapa e visao em tempo real",
-  "Financas com categorias, filtros e status claros",
-  "Gestao de acessos com papeis e permissao granular",
+  "Financas com categorias, filtros e indicadores",
+  "Suporte com FAQ e contato rapido",
 ];
 
 const plans = [
   {
     title: "Start",
-    description: "Para squads pequenos que querem agilidade.",
+    description: "Para times pequenos que querem velocidade.",
     detail: "Ate 10 usuarios ativos.",
   },
   {
     title: "Scale",
-    description: "Para times em crescimento com governanca.",
+    description: "Para operacoes em crescimento.",
     detail: "Ate 100 usuarios ativos.",
+  },
+  {
+    title: "Enterprise",
+    description: "Para empresas com fluxo complexo.",
+    detail: "Suporte dedicado e governanca avancada.",
   },
 ];
 
@@ -247,11 +253,11 @@ export default function Login() {
       <Box sx={{ pr: { md: 4 } }}>
         <Stack spacing={2.5}>
           <Typography variant="h3" sx={{ fontWeight: 700 }}>
-            Organize tarefas, gastos e acessos em um unico lugar.
+            Centralize agenda, tarefas, finanças e suporte em um unico lugar.
           </Typography>
           <Typography variant="body1" sx={{ color: "text.secondary", fontSize: 18 }}>
-            O Superclient entrega pipeline, financas e gestao em um fluxo simples,
-            com visao clara do que importa no dia a dia.
+            O Superclient conecta calendario, pipeline e gestao com visao clara do que
+            acontece no dia a dia e o que vem a seguir.
           </Typography>
           <Box
             sx={{
@@ -291,13 +297,13 @@ export default function Login() {
             </Typography>
             <Stack spacing={1}>
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                - Clareza total do trabalho com colunas, filtros e categorias.
+                - Agenda integrada com lembretes e repeticoes.
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                - Controle de gastos com dados completos e historico.
+                - Controle total do trabalho com colunas, filtros e categorias.
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                - Permissoes por papel para colaborar com seguranca.
+                - Permissoes por papel e modulos sob demanda.
               </Typography>
             </Stack>
           </Box>
