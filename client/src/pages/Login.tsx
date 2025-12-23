@@ -18,27 +18,39 @@ import { useLocation } from "wouter";
 import api from "../api";
 
 const highlights = [
-  "Calendário com agenda diária e lembretes",
-  "Pipeline com tarefas por etapa e visao em tempo real",
-  "Finanças com categorias, filtros e indicadores",
-  "Suporte com FAQ e contato rapido",
+  {
+    title: "Pipeline visual",
+    desc: "Arraste negócios entre etapas. Veja o que está parado e o que avança.",
+  },
+  {
+    title: "Agenda integrada",
+    desc: "Lembretes, tarefas e follow-ups no mesmo lugar que suas vendas.",
+  },
+  {
+    title: "Controle financeiro",
+    desc: "Entradas, saídas e categorias para saber onde o dinheiro vai.",
+  },
+  {
+    title: "Contatos organizados",
+    desc: "Campos personalizados, categorias e histórico em cada ficha.",
+  },
 ];
 
 const plans = [
   {
     title: "Start",
-    description: "Para times pequenos que querem velocidade.",
-    detail: "Ate 10 usuarios ativos.",
+    description: "Ideal para quem está começando ou trabalha sozinho.",
+    detail: "Até 3 usuários • Todos os módulos",
   },
   {
     title: "Scale",
-    description: "Para operacoes em crescimento.",
-    detail: "Ate 100 usuarios ativos.",
+    description: "Para times em crescimento que precisam de mais controle.",
+    detail: "Até 25 usuários • Permissões avançadas",
   },
   {
     title: "Enterprise",
-    description: "Para empresas com fluxo complexo.",
-    detail: "Suporte dedicado e governanca avancada.",
+    description: "Para operações complexas com governança e suporte dedicado.",
+    detail: "Usuários ilimitados • SLA garantido",
   },
 ];
 
@@ -258,14 +270,13 @@ export default function Login() {
       <Box sx={{ pr: { md: 4 } }}>
         <Stack spacing={2.5}>
           <Typography variant="h3" sx={{ fontWeight: 700 }}>
-            Centralize agenda, tarefas, finanças e suporte em um unico lugar.
+            Pare de perder negócios por falta de organização.
           </Typography>
           <Typography
             variant="body1"
             sx={{ color: "text.secondary", fontSize: 18 }}
           >
-            O Superclient conecta calendario, pipeline e gestao com visao clara
-            do que acontece no dia a dia e o que vem a seguir.
+            Pipeline, agenda, finanças e contatos integrados para você focar em vender — não em lembrar o que ficou para trás.
           </Typography>
           <Box
             sx={{
@@ -277,7 +288,7 @@ export default function Login() {
           >
             {highlights.map(item => (
               <Paper
-                key={item}
+                key={item.title}
                 elevation={0}
                 variant="outlined"
                 sx={{
@@ -285,8 +296,11 @@ export default function Login() {
                   backgroundColor: "background.paper",
                 }}
               >
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  {item}
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  {item.title}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+                  {item.desc}
                 </Typography>
               </Paper>
             ))}
@@ -300,24 +314,24 @@ export default function Login() {
               borderColor: "divider",
             }}
           >
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-              Por que times escolhem o Superclient
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+              Por que escolher o Superclient?
             </Typography>
-            <Stack spacing={1}>
+            <Stack spacing={1.5}>
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                - Agenda integrada com lembretes e repeticoes.
+                ✓ Nada escapa: cada lead, tarefa e follow-up fica registrado.
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                - Controle total do trabalho com colunas, filtros e categorias.
+                ✓ Visão clara: saiba exatamente o que fazer hoje e o que vem depois.
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                - Permissões por papel e módulos sob demanda.
+                ✓ Menos planilhas: tudo num lugar só, sem perder tempo alternando abas.
               </Typography>
             </Stack>
           </Box>
           <Box sx={{ mt: 2 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5 }}>
-              Comece agora e evolua quando precisar
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
+              Planos que crescem com você
             </Typography>
             <Stack spacing={2}>
               {plans.map(plan => (

@@ -25,7 +25,6 @@ import theme from "./theme";
 import { APP_RADIUS } from "./designTokens";
 import api from "./api";
 import Login from "./pages/Login";
-import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import AccessManagement from "./pages/AccessManagement";
 import NotFound from "./pages/NotFound";
@@ -833,7 +832,7 @@ function App() {
               }}
             >
               <Switch>
-                <Route path="/" component={Home} />
+                <Route path="/" component={Login} />
                 <Route path="/login" component={Login} />
                 <Route path="/signup" component={Login} />
                 <Route path="/home" component={Dashboard} />
