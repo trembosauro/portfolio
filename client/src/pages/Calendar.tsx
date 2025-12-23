@@ -71,6 +71,7 @@ import AppCard from "../components/layout/AppCard";
 import CardSection from "../components/layout/CardSection";
 import AppAccordion from "../components/layout/AppAccordion";
 import { CategoryChip } from "../components/CategoryChip";
+import CategoryFilter from "../components/CategoryFilter";
 import { loadUserStorage, saveUserStorage } from "../userStorage";
 
 type Category = {
@@ -1349,58 +1350,11 @@ export default function Calendar() {
           }}
         >
           <Stack spacing={2.5} sx={{ display: { xs: "none", md: "flex" } }}>
-            <Autocomplete
-              multiple
-              options={categories}
-              value={categories.filter(item =>
-                categoryFilter.includes(item.id)
-              )}
-              onChange={(_, value) =>
-                setCategoryFilter(value.map(item => item.id))
-              }
-              getOptionLabel={option => option.name}
-              disableCloseOnSelect
-              ListboxProps={{ style: { maxHeight: 240 } }}
-              renderOption={(props, option, { selected }) => (
-                <li {...props}>
-                  <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
-                  {option.name}
-                </li>
-              )}
-              renderInput={params => (
-                <TextField {...params} label="Filtrar categorias" fullWidth />
-              )}
-              renderTags={(value, getTagProps) => {
-                const visible = value.slice(0, 2);
-                const hiddenCount = value.length - visible.length;
-                return (
-                  <>
-                    {visible.map((option, index) => (
-                      <CategoryChip
-                        {...getTagProps({ index })}
-                        key={option.id}
-                        label={option.name}
-                        categoryColor={option.color}
-                        maxWidth={120}
-                      />
-                    ))}
-                    {hiddenCount > 0 ? (
-                      <Chip
-                        label={`+${hiddenCount}`}
-                        size="small"
-                        sx={{
-                          color: "text.secondary",
-                          border: 1,
-                          borderColor: "divider",
-                        }}
-                      />
-                    ) : null}
-                  </>
-                );
-              }}
-              sx={{
-                "& .MuiAutocomplete-inputRoot": { minHeight: 44 },
-              }}
+            <CategoryFilter
+              categories={categories}
+              selectedIds={categoryFilter}
+              onChange={setCategoryFilter}
+              fullWidth
             />
             <CardSection size="xs">
               <Stack spacing={2}>
@@ -2068,58 +2022,11 @@ export default function Calendar() {
               </IconButton>
             </Stack>
 
-            <Autocomplete
-              multiple
-              options={categories}
-              value={categories.filter(item =>
-                categoryFilter.includes(item.id)
-              )}
-              onChange={(_, value) =>
-                setCategoryFilter(value.map(item => item.id))
-              }
-              getOptionLabel={option => option.name}
-              disableCloseOnSelect
-              ListboxProps={{ style: { maxHeight: 240 } }}
-              renderOption={(props, option, { selected }) => (
-                <li {...props}>
-                  <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
-                  {option.name}
-                </li>
-              )}
-              renderInput={params => (
-                <TextField {...params} label="Filtrar categorias" fullWidth />
-              )}
-              renderTags={(value, getTagProps) => {
-                const visible = value.slice(0, 2);
-                const hiddenCount = value.length - visible.length;
-                return (
-                  <>
-                    {visible.map((option, index) => (
-                      <CategoryChip
-                        {...getTagProps({ index })}
-                        key={option.id}
-                        label={option.name}
-                        categoryColor={option.color}
-                        maxWidth={120}
-                      />
-                    ))}
-                    {hiddenCount > 0 ? (
-                      <Chip
-                        label={`+${hiddenCount}`}
-                        size="small"
-                        sx={{
-                          color: "text.secondary",
-                          border: 1,
-                          borderColor: "divider",
-                        }}
-                      />
-                    ) : null}
-                  </>
-                );
-              }}
-              sx={{
-                "& .MuiAutocomplete-inputRoot": { minHeight: 44 },
-              }}
+            <CategoryFilter
+              categories={categories}
+              selectedIds={categoryFilter}
+              onChange={setCategoryFilter}
+              fullWidth
             />
 
             <CardSection size="xs">

@@ -34,6 +34,7 @@ import { interactiveCardSx } from "../styles/interactiveCard";
 import PageContainer from "../components/layout/PageContainer";
 import CardSection from "../components/layout/CardSection";
 import AppAccordion from "../components/layout/AppAccordion";
+import CategoryFilter from "../components/CategoryFilter";
 import { loadUserStorage, saveUserStorage } from "../userStorage";
 
 type Contact = {
@@ -980,71 +981,11 @@ export default function Contacts() {
                   ) : null,
                 }}
               />
-              <Autocomplete
-                multiple
-                options={categories}
-                value={categories.filter(cat =>
-                  categoryFilters.includes(cat.id)
-                )}
-                onChange={(_, value) =>
-                  setCategoryFilters(value.map(cat => cat.id))
-                }
-                getOptionLabel={option => option.name}
-                disableCloseOnSelect
-                ListboxProps={{
-                  style: { maxHeight: 240 },
-                }}
-                renderOption={(props, option, { selected }) => (
-                  <li {...props}>
-                    <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
-                    {option.name}
-                  </li>
-                )}
-                renderInput={params => (
-                  <TextField {...params} label="Filtrar categorias" />
-                )}
-                renderTags={(value, getTagProps) => {
-                  const visible = value.slice(0, 2);
-                  const hiddenCount = value.length - visible.length;
-                  return (
-                    <>
-                      {visible.map((option, index) => (
-                        <Chip
-                          {...getTagProps({ index })}
-                          key={option.id}
-                          label={option.name}
-                          size="small"
-                          sx={{
-                            color: "#e6edf3",
-                            backgroundColor: darkenColor(option.color, 0.5),
-                            maxWidth: 120,
-                            "& .MuiChip-label": {
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              maxWidth: 100,
-                            },
-                          }}
-                        />
-                      ))}
-                      {hiddenCount > 0 ? (
-                        <Chip
-                          label={`+${hiddenCount}`}
-                          size="small"
-                          sx={{
-                            color: "text.secondary",
-                            border: 1,
-                            borderColor: "divider",
-                          }}
-                        />
-                      ) : null}
-                    </>
-                  );
-                }}
-                sx={{
-                  minWidth: { xs: "100%", sm: 320 },
-                  maxWidth: 420,
-                  "& .MuiAutocomplete-inputRoot": { minHeight: 44 },
-                }}
+              <CategoryFilter
+                categories={categories}
+                selectedIds={categoryFilters}
+                onChange={setCategoryFilters}
+                width={{ xs: "100%", sm: 320 }}
               />
             </Stack>
             {filteredContacts.length === 0 ? (

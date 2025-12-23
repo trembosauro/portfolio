@@ -54,6 +54,7 @@ import CardSection from "../components/layout/CardSection";
 import { APP_RADIUS } from "../designTokens";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import { CategoryChip } from "../components/CategoryChip";
+import CategoryFilter from "../components/CategoryFilter";
 import {
   DndContext,
   PointerSensor,
@@ -2014,78 +2015,11 @@ export default function Pipeline() {
                     ) : null,
                   }}
                 />
-                <Autocomplete
-                  multiple
-                  options={categories}
-                  value={categories.filter(cat =>
-                    categoryFilters.includes(cat.id)
-                  )}
-                  onChange={(_, value) =>
-                    setCategoryFilters(value.map(cat => cat.id))
-                  }
-                  getOptionLabel={option => option.name}
-                  disableCloseOnSelect
-                  ListboxProps={{ style: { maxHeight: 240 } }}
-                  sx={{
-                    width: 280,
-                    minWidth: 0,
-                    "& .MuiAutocomplete-inputRoot": {
-                      flexWrap: "nowrap",
-                      overflow: "hidden",
-                    },
-                    "& .MuiAutocomplete-tag": {
-                      flexShrink: 0,
-                      maxWidth: 120,
-                    },
-                    "& .MuiAutocomplete-input": {
-                      minWidth: 0,
-                    },
-                  }}
-                  renderOption={(props, option, { selected }) => (
-                    <li {...props}>
-                      <Checkbox
-                        checked={selected}
-                        size="small"
-                        sx={{ mr: 1 }}
-                      />
-                      {option.name}
-                    </li>
-                  )}
-                  renderInput={params => (
-                    <TextField
-                      {...params}
-                      label="Filtrar categorias"
-                      sx={{ width: 280, minWidth: 0 }}
-                    />
-                  )}
-                  renderTags={(value, getTagProps) => {
-                    const visible = value.slice(0, 2);
-                    const hiddenCount = value.length - visible.length;
-                    return (
-                      <>
-                        {visible.map((option, index) => (
-                          <CategoryChip
-                            {...getTagProps({ index })}
-                            key={option.id}
-                            label={option.name}
-                            categoryColor={option.color}
-                            maxWidth={120}
-                          />
-                        ))}
-                        {hiddenCount > 0 ? (
-                          <Chip
-                            label={`+${hiddenCount}`}
-                            size="small"
-                            sx={{
-                              color: "text.secondary",
-                              border: 1,
-                              borderColor: "divider",
-                            }}
-                          />
-                        ) : null}
-                      </>
-                    );
-                  }}
+                <CategoryFilter
+                  categories={categories}
+                  selectedIds={categoryFilters}
+                  onChange={setCategoryFilters}
+                  width={280}
                 />
               </Stack>
               <SettingsIconButton
@@ -2125,70 +2059,12 @@ export default function Pipeline() {
                 ) : null,
               }}
             />
-            <Autocomplete
+            <CategoryFilter
+              categories={categories}
+              selectedIds={categoryFilters}
+              onChange={setCategoryFilters}
+              width={{ xs: "100%", sm: 280 }}
               fullWidth
-              multiple
-              options={categories}
-              value={categories.filter(cat => categoryFilters.includes(cat.id))}
-              onChange={(_, value) =>
-                setCategoryFilters(value.map(cat => cat.id))
-              }
-              getOptionLabel={option => option.name}
-              disableCloseOnSelect
-              ListboxProps={{ style: { maxHeight: 240 } }}
-              renderOption={(props, option, { selected }) => (
-                <li {...props}>
-                  <Checkbox checked={selected} size="small" sx={{ mr: 1 }} />
-                  {option.name}
-                </li>
-              )}
-              renderInput={params => (
-                <TextField {...params} label="Filtrar categorias" fullWidth />
-              )}
-              renderTags={(value, getTagProps) => {
-                const visible = value.slice(0, 2);
-                const hiddenCount = value.length - visible.length;
-                return (
-                  <>
-                    {visible.map((option, index) => (
-                      <CategoryChip
-                        {...getTagProps({ index })}
-                        key={option.id}
-                        label={option.name}
-                        categoryColor={option.color}
-                        maxWidth={120}
-                      />
-                    ))}
-                    {hiddenCount > 0 ? (
-                      <Chip
-                        label={`+${hiddenCount}`}
-                        size="small"
-                        sx={{
-                          color: "text.secondary",
-                          border: 1,
-                          borderColor: "divider",
-                        }}
-                      />
-                    ) : null}
-                  </>
-                );
-              }}
-              sx={{
-                width: { xs: "100%", sm: 280 },
-                minWidth: 0,
-                "& .MuiAutocomplete-inputRoot": {
-                  minHeight: 44,
-                  flexWrap: "nowrap",
-                  overflow: "hidden",
-                },
-                "& .MuiAutocomplete-tag": {
-                  flexShrink: 0,
-                  maxWidth: 120,
-                },
-                "& .MuiAutocomplete-input": {
-                  minWidth: 0,
-                },
-              }}
             />
           </Stack>
         </Stack>
