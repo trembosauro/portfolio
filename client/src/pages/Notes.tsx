@@ -99,102 +99,72 @@ const DEFAULT_COLORS = [
 ];
 
 const defaultCategories: NoteCategory[] = [
-  { id: "note-cat-estrategia", name: "Estrategia", color: DEFAULT_COLORS[0] },
-  { id: "note-cat-reunioes", name: "Reuniões", color: DEFAULT_COLORS[1] },
-  { id: "note-cat-projeto", name: "Projeto", color: DEFAULT_COLORS[2] },
-  { id: "note-cat-aprendizado", name: "Aprendizado", color: DEFAULT_COLORS[3] },
+  { id: "note-cat-pessoal", name: "Pessoal", color: "#3b82f6" },
+  { id: "note-cat-trabalho", name: "Trabalho", color: "#f59e0b" },
+  { id: "note-cat-ideias", name: "Ideias", color: "#8b5cf6" },
+  { id: "note-cat-listas", name: "Listas", color: "#10b981" },
+  { id: "note-cat-projetos", name: "Projetos", color: "#ef4444" },
+  { id: "note-cat-estudos", name: "Estudos", color: "#06b6d4" },
 ];
 
 const defaultSubcategories: NoteSubcategory[] = [
-  {
-    id: "note-sub-plano",
-    name: "Plano de ação",
-    categoryId: "note-cat-estrategia",
-    color: DEFAULT_COLORS[0],
-  },
-  {
-    id: "note-sub-kpis",
-    name: "KPIs",
-    categoryId: "note-cat-estrategia",
-    color: DEFAULT_COLORS[1],
-  },
-  {
-    id: "note-sub-ata",
-    name: "Ata",
-    categoryId: "note-cat-reunioes",
-    color: DEFAULT_COLORS[2],
-  },
-  {
-    id: "note-sub-followup",
-    name: "Follow-up",
-    categoryId: "note-cat-reunioes",
-    color: DEFAULT_COLORS[3],
-  },
-  {
-    id: "note-sub-fluxos",
-    name: "Fluxos",
-    categoryId: "note-cat-projeto",
-    color: DEFAULT_COLORS[4],
-  },
-  {
-    id: "note-sub-research",
-    name: "Pesquisa",
-    categoryId: "note-cat-aprendizado",
-    color: DEFAULT_COLORS[5],
-  },
+  { id: "note-sub-diario", name: "Diário", categoryId: "note-cat-pessoal", color: "#3b82f6" },
+  { id: "note-sub-saude", name: "Saúde", categoryId: "note-cat-pessoal", color: "#22c55e" },
+  { id: "note-sub-financas", name: "Finanças", categoryId: "note-cat-pessoal", color: "#eab308" },
+  { id: "note-sub-reunioes", name: "Reuniões", categoryId: "note-cat-trabalho", color: "#f59e0b" },
+  { id: "note-sub-tarefas", name: "Tarefas", categoryId: "note-cat-trabalho", color: "#f97316" },
+  { id: "note-sub-brainstorm", name: "Brainstorm", categoryId: "note-cat-ideias", color: "#8b5cf6" },
+  { id: "note-sub-inspiracao", name: "Inspiração", categoryId: "note-cat-ideias", color: "#a855f7" },
+  { id: "note-sub-compras", name: "Compras", categoryId: "note-cat-listas", color: "#10b981" },
+  { id: "note-sub-metas", name: "Metas", categoryId: "note-cat-listas", color: "#14b8a6" },
+  { id: "note-sub-andamento", name: "Em andamento", categoryId: "note-cat-projetos", color: "#ef4444" },
+  { id: "note-sub-concluidos", name: "Concluídos", categoryId: "note-cat-projetos", color: "#22c55e" },
+  { id: "note-sub-cursos", name: "Cursos", categoryId: "note-cat-estudos", color: "#06b6d4" },
+  { id: "note-sub-livros", name: "Livros", categoryId: "note-cat-estudos", color: "#0ea5e9" },
 ];
 
 const defaultNotes: Note[] = [
+  // Pessoal
   {
     id: "note-1",
-    title: "Próximos passos do projeto",
-    categoryIds: ["note-cat-projeto"],
-    subcategoryIds: ["note-sub-fluxos"],
-    contentHtml:
-      "<p>Mapear entregas por etapa e alinhar milestones com o time.</p><ul><li>Kickoff</li><li>Design sprint</li><li>Entrega beta</li></ul>",
-    links: [
-      {
-        id: "note-link-1",
-        label: "Board do projeto",
-        url: "https://trello.com",
-      },
-    ],
-    updatedAt: new Date().toISOString(),
-    archived: false,
-    relatedNoteIds: [],
-  },
-  {
-    id: "note-2",
-    title: "Resumo da reunião de status",
-    categoryIds: ["note-cat-reunioes"],
-    subcategoryIds: ["note-sub-ata"],
-    contentHtml:
-      "<p>Principais alinhamentos:</p><ol><li>Priorizar backlog A</li><li>Revisar riscos da entrega</li></ol>",
-    links: [
-      { id: "note-link-2", label: "Gravação", url: "https://meet.google.com" },
-    ],
-    updatedAt: new Date().toISOString(),
-    archived: false,
-    relatedNoteIds: [],
-  },
-  {
-    id: "note-3",
-    title: "Mapa de riscos",
-    categoryIds: ["note-cat-projeto"],
-    subcategoryIds: ["note-sub-fluxos"],
-    contentHtml: "<p>Listar riscos e planos de mitigação.</p>",
+    title: "Reflexões do dia",
+    categoryIds: ["note-cat-pessoal"],
+    subcategoryIds: ["note-sub-diario"],
+    contentHtml: "<p>Hoje foi um dia produtivo. Consegui finalizar as tarefas pendentes e ainda tive tempo para organizar minha rotina da semana.</p><p>Coisas que funcionaram bem:</p><ul><li>Acordar mais cedo</li><li>Bloquear horários no calendário</li><li>Fazer pausas regulares</li></ul>",
     links: [],
     updatedAt: new Date().toISOString(),
     archived: false,
     relatedNoteIds: [],
   },
   {
+    id: "note-2",
+    title: "Rotina de exercícios",
+    categoryIds: ["note-cat-pessoal"],
+    subcategoryIds: ["note-sub-saude"],
+    contentHtml: "<p>Plano semanal de atividades físicas:</p><ul><li><strong>Segunda:</strong> Corrida 30min</li><li><strong>Terça:</strong> Musculação</li><li><strong>Quarta:</strong> Descanso ativo (caminhada)</li><li><strong>Quinta:</strong> Musculação</li><li><strong>Sexta:</strong> Corrida 30min</li><li><strong>Sábado:</strong> Esporte livre</li><li><strong>Domingo:</strong> Descanso</li></ul>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    archived: false,
+    relatedNoteIds: [],
+  },
+  {
+    id: "note-3",
+    title: "Controle de gastos do mês",
+    categoryIds: ["note-cat-pessoal"],
+    subcategoryIds: ["note-sub-financas"],
+    contentHtml: "<p>Orçamento mensal:</p><ul><li>Moradia: R$ 2.000</li><li>Alimentação: R$ 800</li><li>Transporte: R$ 400</li><li>Lazer: R$ 300</li><li>Reserva: R$ 500</li></ul><p>Meta: economizar 15% da renda.</p>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    archived: false,
+    relatedNoteIds: [],
+  },
+  // Trabalho
+  {
     id: "note-4",
-    title: "Checklist de kickoff",
-    categoryIds: ["note-cat-reunioes"],
-    subcategoryIds: ["note-sub-followup"],
-    contentHtml:
-      "<ul><li>Alinhar objetivos</li><li>Definir stakeholders</li></ul>",
+    title: "Ata de reunião semanal",
+    categoryIds: ["note-cat-trabalho"],
+    subcategoryIds: ["note-sub-reunioes"],
+    contentHtml: "<p><strong>Data:</strong> 23/12/2024</p><p><strong>Participantes:</strong> Time de produto</p><p><strong>Pauta:</strong></p><ol><li>Status das entregas</li><li>Bloqueios identificados</li><li>Próximos passos</li></ol><p><strong>Decisões:</strong></p><ul><li>Priorizar feature X</li><li>Adiar lançamento para janeiro</li></ul>",
     links: [],
     updatedAt: new Date().toISOString(),
     archived: false,
@@ -202,21 +172,22 @@ const defaultNotes: Note[] = [
   },
   {
     id: "note-5",
-    title: "Pesquisa com usuários",
-    categoryIds: ["note-cat-aprendizado"],
-    subcategoryIds: ["note-sub-research"],
-    contentHtml: "<p>Resumo das entrevistas e principais insights.</p>",
+    title: "Tarefas da semana",
+    categoryIds: ["note-cat-trabalho"],
+    subcategoryIds: ["note-sub-tarefas"],
+    contentHtml: "<p>Prioridades:</p><ul><li>Finalizar relatório trimestral</li><li>Revisar proposta comercial</li><li>Agendar 1:1 com gestor</li><li>Preparar apresentação para cliente</li></ul>",
     links: [],
     updatedAt: new Date().toISOString(),
     archived: false,
     relatedNoteIds: [],
   },
+  // Ideias
   {
     id: "note-6",
-    title: "Metas do trimestre",
-    categoryIds: ["note-cat-estrategia"],
-    subcategoryIds: ["note-sub-kpis"],
-    contentHtml: "<p>OKRs e metas do time.</p>",
+    title: "Ideias para o app",
+    categoryIds: ["note-cat-ideias"],
+    subcategoryIds: ["note-sub-brainstorm"],
+    contentHtml: "<p>Funcionalidades que poderiam agregar valor:</p><ul><li>Modo offline completo</li><li>Integração com calendário</li><li>Templates de notas</li><li>Busca por voz</li><li>Compartilhamento colaborativo</li></ul>",
     links: [],
     updatedAt: new Date().toISOString(),
     archived: false,
@@ -224,21 +195,25 @@ const defaultNotes: Note[] = [
   },
   {
     id: "note-7",
-    title: "Plano de ação semanal",
-    categoryIds: ["note-cat-estrategia"],
-    subcategoryIds: ["note-sub-plano"],
-    contentHtml: "<p>Prioridades e entregas da semana.</p>",
-    links: [],
+    title: "Referências de design",
+    categoryIds: ["note-cat-ideias"],
+    subcategoryIds: ["note-sub-inspiracao"],
+    contentHtml: "<p>Sites e apps com boas interfaces:</p><ul><li>Linear - minimalismo e foco</li><li>Notion - flexibilidade</li><li>Things - simplicidade</li><li>Craft - tipografia</li></ul>",
+    links: [
+      { id: "link-1", label: "Linear", url: "https://linear.app" },
+      { id: "link-2", label: "Notion", url: "https://notion.so" },
+    ],
     updatedAt: new Date().toISOString(),
     archived: false,
     relatedNoteIds: [],
   },
+  // Listas
   {
     id: "note-8",
-    title: "Roadmap de produto",
-    categoryIds: ["note-cat-projeto"],
-    subcategoryIds: ["note-sub-fluxos"],
-    contentHtml: "<p>Fases, dependências e entregas.</p>",
+    title: "Lista de compras",
+    categoryIds: ["note-cat-listas"],
+    subcategoryIds: ["note-sub-compras"],
+    contentHtml: "<p><strong>Supermercado:</strong></p><ul><li>Frutas e verduras</li><li>Leite e derivados</li><li>Pão integral</li><li>Café</li><li>Produtos de limpeza</li></ul><p><strong>Farmácia:</strong></p><ul><li>Vitaminas</li><li>Protetor solar</li></ul>",
     links: [],
     updatedAt: new Date().toISOString(),
     archived: false,
@@ -246,21 +221,67 @@ const defaultNotes: Note[] = [
   },
   {
     id: "note-9",
-    title: "Retrospectiva",
-    categoryIds: ["note-cat-reunioes"],
-    subcategoryIds: ["note-sub-ata"],
-    contentHtml: "<p>O que funcionou e o que melhorar.</p>",
+    title: "Metas do ano",
+    categoryIds: ["note-cat-listas"],
+    subcategoryIds: ["note-sub-metas"],
+    contentHtml: "<p><strong>Profissional:</strong></p><ul><li>Conseguir promoção</li><li>Fazer 2 cursos de especialização</li><li>Ampliar rede de contatos</li></ul><p><strong>Pessoal:</strong></p><ul><li>Viajar para 2 lugares novos</li><li>Ler 12 livros</li><li>Manter rotina de exercícios</li></ul>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    archived: false,
+    relatedNoteIds: [],
+  },
+  // Projetos
+  {
+    id: "note-10",
+    title: "Projeto de reforma",
+    categoryIds: ["note-cat-projetos"],
+    subcategoryIds: ["note-sub-andamento"],
+    contentHtml: "<p><strong>Escopo:</strong> Renovação do escritório</p><p><strong>Etapas:</strong></p><ol><li>Planejamento e orçamento</li><li>Compra de materiais</li><li>Execução</li><li>Acabamento</li></ol><p><strong>Status:</strong> Em fase de orçamento</p>",
     links: [],
     updatedAt: new Date().toISOString(),
     archived: false,
     relatedNoteIds: [],
   },
   {
-    id: "note-10",
-    title: "Leituras recomendadas",
-    categoryIds: ["note-cat-aprendizado"],
-    subcategoryIds: ["note-sub-research"],
-    contentHtml: "<p>Links e referências para estudo.</p>",
+    id: "note-11",
+    title: "Site pessoal",
+    categoryIds: ["note-cat-projetos"],
+    subcategoryIds: ["note-sub-concluidos"],
+    contentHtml: "<p>Portfolio online finalizado com sucesso.</p><p><strong>Tecnologias:</strong> React, Tailwind, Vercel</p><p><strong>Aprendizados:</strong></p><ul><li>Deploy automatizado</li><li>SEO básico</li><li>Performance web</li></ul>",
+    links: [{ id: "link-3", label: "Meu site", url: "https://meusite.com" }],
+    updatedAt: new Date().toISOString(),
+    archived: false,
+    relatedNoteIds: [],
+  },
+  // Estudos
+  {
+    id: "note-12",
+    title: "Anotações do curso de React",
+    categoryIds: ["note-cat-estudos"],
+    subcategoryIds: ["note-sub-cursos"],
+    contentHtml: "<p><strong>Módulo 1: Fundamentos</strong></p><ul><li>Componentes funcionais</li><li>Props e State</li><li>Hooks: useState, useEffect</li></ul><p><strong>Módulo 2: Avançado</strong></p><ul><li>Context API</li><li>Custom Hooks</li><li>Performance</li></ul>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    archived: false,
+    relatedNoteIds: [],
+  },
+  {
+    id: "note-13",
+    title: "Resenha: Atomic Habits",
+    categoryIds: ["note-cat-estudos"],
+    subcategoryIds: ["note-sub-livros"],
+    contentHtml: "<p><strong>Autor:</strong> James Clear</p><p><strong>Principais ideias:</strong></p><ul><li>Hábitos são compostos de gatilho, rotina e recompensa</li><li>Melhoria de 1% ao dia gera resultados exponenciais</li><li>Ambiente influencia comportamento</li><li>Identidade precede hábitos</li></ul><p><strong>Nota:</strong> 5/5</p>",
+    links: [],
+    updatedAt: new Date().toISOString(),
+    archived: false,
+    relatedNoteIds: [],
+  },
+  {
+    id: "note-14",
+    title: "Vocabulário em inglês",
+    categoryIds: ["note-cat-estudos"],
+    subcategoryIds: ["note-sub-cursos"],
+    contentHtml: "<p>Palavras novas desta semana:</p><ul><li><strong>Serendipity:</strong> descoberta feliz por acaso</li><li><strong>Resilience:</strong> capacidade de recuperação</li><li><strong>Endeavor:</strong> esforço, empreendimento</li><li><strong>Ubiquitous:</strong> onipresente</li></ul>",
     links: [],
     updatedAt: new Date().toISOString(),
     archived: false,
@@ -305,7 +326,7 @@ const emptyNote = (categoryId: string): Note => ({
 const defaultNoteFieldSettings = {
   showCategories: true,
   showSubcategories: true,
-  showLinks: true,
+  showLinks: false,
   showUpdatedAt: true,
   showCategoryCounts: true,
 };
@@ -326,6 +347,7 @@ export default function Notes() {
   const [activeSubcategory, setActiveSubcategory] = useState<string | null>(
     null
   );
+  const [mobileCategoriesExpanded, setMobileCategoriesExpanded] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [newCategoryColor, setNewCategoryColor] = useState(DEFAULT_COLORS[0]);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(
@@ -1051,56 +1073,193 @@ export default function Notes() {
                   Nova nota
                 </Button>
               </Stack>
+              <Stack
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ display: { xs: "flex", sm: "none" } }}
+              >
+                <Button
+                  component={RouterLink}
+                  href={archiveLink.href}
+                  variant="outlined"
+                  size="small"
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                    minWidth: 0,
+                    px: 1.25,
+                  }}
+                >
+                  {archiveLink.label}
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={addNote}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    whiteSpace: "nowrap",
+                    minWidth: 0,
+                    px: 1.25,
+                  }}
+                >
+                  Nova
+                </Button>
+              </Stack>
               <SettingsIconButton onClick={() => setSettingsOpen(true)} />
             </Stack>
           </Stack>
-
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            justifyContent="flex-end"
-            sx={{
-              width: "100%",
-              flexWrap: "nowrap",
-              overflow: "hidden",
-              display: { xs: "flex", sm: "none" },
-            }}
-          >
-            <Button
-              component={RouterLink}
-              href={archiveLink.href}
-              variant="outlined"
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-                minWidth: 0,
-                px: { xs: 1.25, sm: 1.75 },
-              }}
-            >
-              {archiveLink.label}
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={
-                <Box sx={{ display: { xs: "none", sm: "inline-flex" } }}>
-                  <AddRoundedIcon />
-                </Box>
-              }
-              onClick={addNote}
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                whiteSpace: "nowrap",
-                minWidth: 0,
-                px: { xs: 1.25, sm: 1.75 },
-              }}
-            >
-              Nova nota
-            </Button>
-          </Stack>
         </Stack>
+
+        {showSidebar ? (
+          <Box sx={{ display: { xs: "block", md: "none" } }}>
+            <AppAccordion
+              expanded={mobileCategoriesExpanded}
+              onChange={(_, expanded) => setMobileCategoriesExpanded(expanded)}
+              title="Categorias"
+            >
+              <Stack spacing={1}>
+                {categories.map(category => {
+                  const isActiveCategory = activeCategory === category.id;
+                  return (
+                    <Box key={category.id}>
+                      <Box
+                        onClick={() => {
+                          setActiveCategory(category.id);
+                          setActiveSubcategory(null);
+                          setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
+                          setMobileCategoriesExpanded(false);
+                        }}
+                        sx={theme => ({
+                          ...interactiveItemSx(theme),
+                          p: 1,
+                          border: 1,
+                          borderColor: isActiveCategory
+                            ? "primary.main"
+                            : "divider",
+                          cursor: "pointer",
+                        })}
+                      >
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          alignItems="center"
+                        >
+                          <Box
+                            sx={{
+                              width: 10,
+                              height: 10,
+                              borderRadius: "50%",
+                              backgroundColor: category.color,
+                            }}
+                          />
+                          <Typography variant="body2">
+                            {category.name}
+                          </Typography>
+                          {fieldSettings.showCategoryCounts ? (
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: "text.secondary",
+                                fontWeight: 600,
+                                ml: "auto",
+                              }}
+                            >
+                              {
+                                notes.filter(
+                                  note =>
+                                    note.archived === isArchiveView &&
+                                    note.categoryIds.includes(category.id)
+                                ).length
+                              }
+                            </Typography>
+                          ) : null}
+                        </Stack>
+                      </Box>
+
+                      {fieldSettings.showSubcategories &&
+                      isActiveCategory ? (
+                        <Box sx={{ mt: 1, pl: 2 }}>
+                          {activeSubcategories.length ? (
+                            <Stack spacing={0.75}>
+                              {activeSubcategories.map(subcategory => {
+                                const isActive =
+                                  activeSubcategory === subcategory.id;
+                                return (
+                                  <Box
+                                    key={subcategory.id}
+                                    onClick={() => {
+                                      setActiveSubcategory(prev =>
+                                        prev === subcategory.id
+                                          ? null
+                                          : subcategory.id
+                                      );
+                                      setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
+                                      setMobileCategoriesExpanded(false);
+                                    }}
+                                    sx={theme => ({
+                                      ...interactiveItemSx(theme),
+                                      px: 1,
+                                      py: 0.75,
+                                      border: 1,
+                                      borderColor: isActive
+                                        ? "primary.main"
+                                        : "divider",
+                                      cursor: "pointer",
+                                    })}
+                                  >
+                                    <Stack
+                                      direction="row"
+                                      spacing={1}
+                                      alignItems="center"
+                                    >
+                                      <Box
+                                        sx={{
+                                          width: 8,
+                                          height: 8,
+                                          borderRadius: "50%",
+                                          backgroundColor:
+                                            subcategory.color ||
+                                            darkenColor(
+                                              category.color,
+                                              0.7
+                                            ),
+                                        }}
+                                      />
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          color: "text.secondary",
+                                          fontWeight: 600,
+                                        }}
+                                      >
+                                        {subcategory.name}
+                                      </Typography>
+                                    </Stack>
+                                  </Box>
+                                );
+                              })}
+                            </Stack>
+                          ) : (
+                            <Typography
+                              variant="body2"
+                              sx={{ color: "text.secondary" }}
+                            >
+                              Sem subcategorias.
+                            </Typography>
+                          )}
+                        </Box>
+                      ) : null}
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </AppAccordion>
+          </Box>
+        ) : null}
 
         <Box
           sx={{
@@ -1112,7 +1271,7 @@ export default function Notes() {
           }}
         >
           {showSidebar ? (
-            <Stack spacing={2}>
+            <Stack spacing={2} sx={{ display: { xs: "none", md: "flex" } }}>
               {fieldSettings.showCategories ? (
                 <CardSection size="xs">
                   <Stack spacing={2}>
@@ -1424,55 +1583,21 @@ export default function Notes() {
                           },
                         }}
                       />
-                      <Stack direction="row" spacing={0.5}>
-                        <Tooltip title="Fechar nota" placement="top">
-                          <IconButton
-                            onClick={e => {
-                              e.stopPropagation();
-                              e.preventDefault();
-                              setSelectedNoteId(null);
-                              setExpandedNoteId(null);
-                              setLocation(
-                                isArchiveView ? "/notas/arquivo" : "/notas"
-                              );
-                            }}
-                          >
-                            <CloseRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip
-                          title={
-                            selectedNote.archived
-                              ? "Restaurar nota"
-                              : "Arquivar nota"
-                          }
-                          placement="top"
+                      <Tooltip title="Fechar nota" placement="top">
+                        <IconButton
+                          onClick={e => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setSelectedNoteId(null);
+                            setExpandedNoteId(null);
+                            setLocation(
+                              isArchiveView ? "/notas/arquivo" : "/notas"
+                            );
+                          }}
                         >
-                          <IconButton
-                            onClick={() =>
-                              requestNoteAction(
-                                selectedNote,
-                                selectedNote.archived ? "restore" : "archive"
-                              )
-                            }
-                          >
-                            {selectedNote.archived ? (
-                              <UnarchiveRoundedIcon fontSize="small" />
-                            ) : (
-                              <ArchiveRoundedIcon fontSize="small" />
-                            )}
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Remover nota" placement="top">
-                          <IconButton
-                            onClick={() =>
-                              requestNoteAction(selectedNote, "delete")
-                            }
-                          >
-                            <DeleteRoundedIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
+                          <CloseRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </Stack>
                     <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
                       {fieldSettings.showCategories ? (
@@ -1605,6 +1730,37 @@ export default function Notes() {
                       })
                     }
                   />
+
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      startIcon={<DeleteRoundedIcon />}
+                      onClick={() => requestNoteAction(selectedNote, "delete")}
+                      sx={{ textTransform: "none", fontWeight: 600 }}
+                    >
+                      Remover
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      startIcon={
+                        selectedNote.archived ? (
+                          <UnarchiveRoundedIcon />
+                        ) : (
+                          <ArchiveRoundedIcon />
+                        )
+                      }
+                      onClick={() =>
+                        requestNoteAction(
+                          selectedNote,
+                          selectedNote.archived ? "restore" : "archive"
+                        )
+                      }
+                      sx={{ textTransform: "none", fontWeight: 600 }}
+                    >
+                      {selectedNote.archived ? "Restaurar" : "Arquivar"}
+                    </Button>
+                  </Stack>
                 </Stack>
               </CardSection>
             ) : null}
