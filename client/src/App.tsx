@@ -599,7 +599,7 @@ function App() {
                   justifyContent: "center",
                 }}
               >
-                <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap" }}>
+                <Stack direction="row" spacing={0} sx={{ flexWrap: "wrap" }}>
                   {visibleNavItems.map(item => (
                     <Box
                       key={item.href}
