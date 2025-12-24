@@ -2,12 +2,12 @@ import {
   Box,
   Button,
   Divider,
-  Paper,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
 import { Link as RouterLink } from "wouter";
+import CardSection from "../components/layout/CardSection";
 
 const plans = [
   {
@@ -33,14 +33,7 @@ export default function Signup() {
         gap: { xs: 4, md: 6 },
       }}
     >
-      <Paper
-        elevation={0}
-        variant="outlined"
-        sx={{
-          p: { xs: 3, md: 4 },
-          backgroundColor: "background.paper",
-        }}
-      >
+      <CardSection size="lg">
         <Stack spacing={3}>
           <Stack spacing={1}>
             <Typography variant="h5">Criação de conta</Typography>
@@ -73,25 +66,18 @@ export default function Signup() {
             Entrar
           </Button>
         </Stack>
-      </Paper>
+      </CardSection>
 
       <Stack spacing={3}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-            Escolha um ritmo de crescimento
-          </Typography>
         </Box>
 
         <Stack spacing={2}>
           {plans.map((plan) => (
-            <Paper
+            <CardSection
               key={plan.title}
-              elevation={0}
-              variant="outlined"
-              sx={{
-                p: 3,
-                backgroundColor: "background.paper",
-              }}
+              size="flush"
+              sx={{ p: 3 }}
             >
               <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                 {plan.title}
@@ -102,18 +88,11 @@ export default function Signup() {
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
                 {plan.detail}
               </Typography>
-            </Paper>
+            </CardSection>
           ))}
         </Stack>
 
-        <Paper
-          elevation={0}
-          variant="outlined"
-          sx={{
-            p: 3,
-            backgroundColor: "background.paper",
-          }}
-        >
+        <CardSection size="flush" sx={{ p: 3 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1 }}>
             Pronto para governanca
           </Typography>
@@ -121,7 +100,7 @@ export default function Signup() {
             Controle perfis, acesso por módulo e convites por papel com fluxos
             auditaveis.
           </Typography>
-        </Paper>
+        </CardSection>
       </Stack>
     </Box>
   );

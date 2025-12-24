@@ -1,24 +1,14 @@
-import { Box, Button, Paper, Stack, Typography } from "@mui/material";
+import { Box, Button, Stack, Typography } from "@mui/material";
 import { Link as RouterLink } from "wouter";
+import CardSection from "../components/layout/CardSection";
 
 export default function NotFound() {
   return (
     <Box sx={{ maxWidth: 720, mx: "auto" }}>
-      <Paper
-        elevation={0}
-        sx={{
-          p: { xs: 3, md: 4 },
-          border: 1,
-                      borderColor: "divider",
-          backgroundColor: "background.paper",
-        }}
-      >
+      <CardSection size="lg">
         <Stack spacing={2.5} alignItems="flex-start">
           <Typography variant="overline" sx={{ color: "text.secondary" }}>
             404
-          </Typography>
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>
-            Pagina nao encontrada
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
             <Button
@@ -39,7 +29,7 @@ export default function NotFound() {
             </Button>
           </Stack>
         </Stack>
-      </Paper>
+      </CardSection>
     </Box>
   );
 }

@@ -95,19 +95,52 @@ export default function CalendarCompleted() {
 
   useEffect(() => {
     const stored = window.localStorage.getItem(STORAGE_TASKS);
-    if (!stored) {
-      setTasks([]);
-      return;
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as CalendarTask[];
+        if (Array.isArray(parsed) && parsed.some(t => t.done)) {
+          setTasks(parsed);
+          return;
+        }
+      } catch {}
     }
-    try {
-      const parsed = JSON.parse(stored) as CalendarTask[];
-      if (Array.isArray(parsed)) {
-        setTasks(parsed);
-      }
-    } catch {
-      window.localStorage.removeItem(STORAGE_TASKS);
-      setTasks([]);
-    }
+    // Inject fake completed tasks if none exist
+    const now = new Date();
+    const fakeTasks: CalendarTask[] = [
+      {
+        id: "done-1",
+        name: "Enviar relatório mensal",
+        date: formatDateKey(now),
+        allDay: true,
+        done: true,
+        calendarId: "1",
+        categoryIds: [],
+      },
+      {
+        id: "done-2",
+        name: "Reunião de alinhamento",
+        date: formatDateKey(new Date(now.getTime() - 86400000)),
+        allDay: false,
+        startTime: "10:00",
+        endTime: "11:00",
+        done: true,
+        calendarId: "1",
+        categoryIds: [],
+      },
+      {
+        id: "done-3",
+        name: "Atualizar documentação",
+        date: formatDateKey(new Date(now.getTime() - 2 * 86400000)),
+        allDay: false,
+        startTime: "14:00",
+        endTime: "15:00",
+        done: true,
+        calendarId: "2",
+        categoryIds: [],
+      },
+    ];
+    window.localStorage.setItem(STORAGE_TASKS, JSON.stringify(fakeTasks));
+    setTasks(fakeTasks);
   }, []);
 
   useEffect(() => {
@@ -241,9 +274,6 @@ export default function CalendarCompleted() {
           justifyContent="space-between"
         >
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 700 }}>
-              Tarefas feitas
-            </Typography>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
               Tudo que foi concluido no calendario.
             </Typography>

@@ -182,6 +182,22 @@ const faqItems = [
     content:
       "O sino no menu mostra notificações como aniversários próximos de contatos, lembretes de tarefas e alertas do sistema. Clique em uma notificação para ir direto ao item relacionado.",
   },
+  {
+    title: "Notificações do navegador (Chrome)",
+    content:
+      "Você pode ativar notificações do navegador para receber alertas na área de trabalho quando marcar uma tarefa como concluída. Para ativar, vá em Calendário > Configurações (ícone de engrenagem) > Notificações do navegador e clique em 'Ativar notificações'. O navegador pedirá permissão - clique em 'Permitir'. Se você bloqueou as notificações anteriormente, será necessário alterar nas configurações do navegador.",
+  },
+  {
+    title: "Tarefas concluídas nas notificações",
+    content:
+      "Quando você marca uma tarefa do calendário como concluída, ela aparece automaticamente na tela de Notificações na seção 'Tarefas concluídas'. Lá você pode ver todas as tarefas finalizadas recentemente com a informação de quando foram concluídas. Use os botões 'Marcar como visto' para limpar o indicador de novas notificações ou 'Limpar' para remover o histórico de tarefas concluídas.",
+  },
+  // Home e Dashboard
+  {
+    title: "Links rápidos na Home",
+    content:
+      "Os links rápidos são atalhos de navegação exibidos apenas na versão mobile do sistema. Eles foram projetados para agilizar a navegação em dispositivos móveis, permitindo acesso rápido aos principais módulos (Pipeline, Finanças, Contatos, Calendário, Notas, Gestão) com um único toque. No desktop, a navegação pelo menu lateral é mais prática, por isso os links rápidos ficam ocultos.",
+  },
   // Dúvidas Gerais
   {
     title: "Salvamento automático",
@@ -230,9 +246,6 @@ export default function Support() {
     <PageContainer>
       <PageStack maxWidth={1200}>
         <Stack spacing={2}>
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>
-            Suporte
-          </Typography>
           <Typography variant="body1" sx={{ color: "text.secondary" }}>
             Encontre respostas para suas dúvidas sobre o Superclient.
           </Typography>

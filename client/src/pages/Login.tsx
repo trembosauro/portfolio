@@ -9,7 +9,6 @@ import {
   FormControlLabel,
   IconButton,
   InputAdornment,
-  Paper,
   Stack,
   Tab,
   Tabs,
@@ -20,6 +19,7 @@ import VisibilityRoundedIcon from "@mui/icons-material/VisibilityRounded";
 import VisibilityOffRoundedIcon from "@mui/icons-material/VisibilityOffRounded";
 import { useLocation } from "wouter";
 import api from "../api";
+import CardSection from "../components/layout/CardSection";
 
 const highlights = [
   {
@@ -131,7 +131,7 @@ export default function Login() {
   const handleLogin = async () => {
     setLoginError("");
     if (!loginEmail || !loginPassword) {
-      setLoginError("Informe email e senha.");
+      setLoginError("Informe o email e a senha.");
       return;
     }
     try {
@@ -146,22 +146,22 @@ export default function Login() {
       const { code } = getErrorDetails(error);
       if (code === "session_conflict") {
         setLoginError(
-          "Sua conta foi usada em outro lugar. Todas as sessoes foram encerradas. Entre novamente ou redefina a senha."
+          "Detectamos acesso em outro dispositivo. As sessões foram encerradas por segurança. Entre novamente ou redefina a senha."
         );
         return;
       }
-      setLoginError("Email ou senha invalidos.");
+      setLoginError("Email ou senha inválidos.");
     }
   };
 
   const handleSignup = async () => {
     setSignupError("");
     if (!signupName || !signupEmail || !signupPassword || !signupConfirm) {
-      setSignupError("Preencha todos os campos.");
+      setSignupError("Preencha nome, email e senha.");
       return;
     }
     if (signupPassword !== signupConfirm) {
-      setSignupError("As senhas nao conferem.");
+      setSignupError("As senhas não conferem.");
       return;
     }
     try {
@@ -189,15 +189,15 @@ export default function Login() {
           const { code } = getErrorDetails(loginError);
           if (code === "session_conflict") {
             setSignupError(
-              "Sua conta foi usada em outro lugar. Todas as sessoes foram encerradas. Entre novamente ou redefina a senha."
+              "Detectamos acesso em outro dispositivo. As sessões foram encerradas por segurança. Entre novamente ou redefina a senha."
             );
             return;
           }
-          setSignupError("Email ja cadastrado.");
+          setSignupError("Esse email já está cadastrado.");
           return;
         }
       }
-      setSignupError("Nao foi possivel criar a conta.");
+      setSignupError("Não foi possível criar a conta agora.");
     }
   };
 
@@ -232,10 +232,10 @@ export default function Login() {
       const token = response?.data?.resetToken;
       if (token) {
         setRecoveryToken(token);
-        setRecoveryNotice("Use o codigo enviado para definir uma nova senha.");
+        setRecoveryNotice("Use o código enviado para definir uma nova senha.");
         setRecoveryStep("reset");
       } else {
-        setRecoveryNotice("Se o email existir, voce recebera um codigo.");
+        setRecoveryNotice("Se o email existir, você receberá um código.");
       }
     } catch {
       setRecoveryError("Não foi possível iniciar a recuperação.");
@@ -246,11 +246,11 @@ export default function Login() {
     setRecoveryError("");
     setRecoveryNotice("");
     if (!recoveryToken || !recoveryPassword || !recoveryConfirm) {
-      setRecoveryError("Preencha codigo e nova senha.");
+      setRecoveryError("Preencha o código e a nova senha.");
       return;
     }
     if (recoveryPassword !== recoveryConfirm) {
-      setRecoveryError("As senhas nao conferem.");
+      setRecoveryError("As senhas não conferem.");
       return;
     }
     try {
@@ -262,7 +262,7 @@ export default function Login() {
       setRecoveryStep("request");
       setRecoveryOpen(false);
     } catch {
-      setRecoveryError("Codigo invalido ou expirado.");
+      setRecoveryError("Código inválido ou expirado.");
     }
   };
 
@@ -279,13 +279,13 @@ export default function Login() {
       <Box sx={{ pr: { md: 4 } }}>
         <Stack spacing={2.5}>
           <Typography variant="h3" sx={{ fontWeight: 700 }}>
-            Pare de perder negócios por falta de organização.
+            Tenha clareza do que fazer a cada etapa.
           </Typography>
           <Typography
             variant="body1"
             sx={{ color: "text.secondary", fontSize: 18 }}
           >
-            Pipeline, agenda, finanças e contatos integrados para você focar em vender — não em lembrar o que ficou para trás.
+            Pipeline, agenda, finanças e contatos no mesmo lugar para você vender com mais consistência e acompanhar o que ficou pendente.
           </Typography>
           <Box
             sx={{
@@ -296,62 +296,46 @@ export default function Login() {
             }}
           >
             {highlights.map(item => (
-              <Paper
-                key={item.title}
-                elevation={0}
-                variant="outlined"
-                sx={{
-                  p: 2.5,
-                  backgroundColor: "background.paper",
-                }}
-              >
+              <CardSection key={item.title} size="flush" sx={{ p: 2.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                   {item.title}
                 </Typography>
-                <Typography variant="body2" sx={{ color: "text.secondary", mt: 0.5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "text.secondary", mt: 0.5 }}
+                >
                   {item.desc}
                 </Typography>
-              </Paper>
+              </CardSection>
             ))}
           </Box>
-          <Box
-            sx={{
-              mt: 3,
-              p: 3,
-              backgroundColor: "background.paper",
-              border: 1,
-              borderColor: "divider",
-            }}
-          >
+
+          <CardSection size="flush" sx={{ mt: 3, p: 3 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
-              Por que escolher o Superclient?
+              O que você ganha no dia a dia
             </Typography>
-            <Stack spacing={1.5}>
+            <Stack spacing={1.25}>
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                ✓ Nada escapa: cada lead, tarefa e follow-up fica registrado.
+                • Registro de leads, tarefas e próximos passos em um só lugar.
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                ✓ Visão clara: saiba exatamente o que fazer hoje e o que vem depois.
+                • Visibilidade do que está parado e do que precisa de atenção.
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                ✓ Menos planilhas: tudo num lugar só, sem perder tempo alternando abas.
+                • Menos planilhas e menos troca de abas durante o dia.
               </Typography>
             </Stack>
-          </Box>
+          </CardSection>
           <Box sx={{ mt: 2 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.5 }}>
-              Planos que crescem com você
+              Planos no seu ritmo
             </Typography>
             <Stack spacing={2}>
               {plans.map(plan => (
-                <Paper
+                <CardSection
                   key={plan.title}
-                  elevation={0}
-                  variant="outlined"
-                  sx={{
-                    p: 2.5,
-                    backgroundColor: "background.paper",
-                  }}
+                  size="flush"
+                  sx={{ p: 2.5 }}
                 >
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                     {plan.title}
@@ -368,21 +352,14 @@ export default function Login() {
                   >
                     {plan.detail}
                   </Typography>
-                </Paper>
+                </CardSection>
               ))}
             </Stack>
           </Box>
         </Stack>
       </Box>
 
-      <Paper
-        elevation={0}
-        variant="outlined"
-        sx={{
-          p: { xs: 3, md: 4 },
-          backgroundColor: "background.paper",
-        }}
-      >
+      <CardSection size="lg">
         <Stack
           spacing={3}
           component="form"
@@ -414,7 +391,7 @@ export default function Login() {
               <Stack spacing={1}>
                 <Typography variant="h5">Entrar</Typography>
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Use seu email e senha para continuar.
+                  Entre com seu email e senha.
                 </Typography>
               </Stack>
 
@@ -490,7 +467,7 @@ export default function Login() {
                       color: "text.secondary",
                     }}
                   >
-                    Recuperar senha
+                    Esqueci minha senha
                   </Button>
                 </Stack>
               </Stack>
@@ -525,9 +502,9 @@ export default function Login() {
           ) : (
             <>
               <Stack spacing={1}>
-                <Typography variant="h5">Criação de conta</Typography>
+                <Typography variant="h5">Criar conta</Typography>
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  Ative seu workspace e convide o time em minutos.
+                  Configure seu acesso e comece a usar.
                 </Typography>
               </Stack>
 
@@ -626,7 +603,7 @@ export default function Login() {
             </>
           )}
         </Stack>
-      </Paper>
+      </CardSection>
 
       <Dialog
         open={recoveryOpen}

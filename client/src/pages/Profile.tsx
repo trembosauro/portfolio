@@ -1,13 +1,13 @@
-﻿import { useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import {
   Box,
   Button,
+  Divider,
   Dialog,
   DialogContent,
   IconButton,
   MenuItem,
-  Paper,
   Snackbar,
   Stack,
   TextField,
@@ -20,10 +20,13 @@ import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import PageContainer from "../components/layout/PageContainer";
 import AppAccordion from "../components/layout/AppAccordion";
+import CardSection from "../components/layout/CardSection";
+import AppCard from "../components/layout/AppCard";
 import api from "../api";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import { changeLanguage } from "../i18n";
+import { usePageActions } from "../hooks/usePageActions";
 
 type StoredAccount = {
   name: string;
@@ -318,9 +321,13 @@ export default function Profile() {
           ? [profile.phone]
           : [];
     setPhones(ensureList(initialPhones));
-    setEmails(
-      ensureList(Array.isArray(profile?.emails) ? profile?.emails || [] : [])
-    );
+
+    const serverEmails = Array.isArray(profile?.emails) ? profile?.emails : [];
+    const primary = typeof user?.email === "string" ? user.email : "";
+    const mergedEmails = primary
+      ? [primary, ...serverEmails.filter(item => item !== primary)]
+      : serverEmails;
+    setEmails(ensureList(mergedEmails));
     setAddresses(
       ensureList(
         Array.isArray(profile?.addresses) ? profile?.addresses || [] : []
@@ -407,6 +414,10 @@ export default function Profile() {
     void syncProfile();
     void syncModules();
   }, []);
+
+  useEffect(() => {
+    setEmail(emails[0] || "");
+  }, [emails]);
 
   const handleLogout = () => {
     void api.post("/api/auth/logout").finally(() => {
@@ -664,7 +675,7 @@ export default function Profile() {
   const getLanguageLabel = (value: string) =>
     languageOptions.find(option => option.value === value)?.label || value;
 
-  const handleLanguageSelect = (nextLanguage: string) => {
+  const handleLanguageSelect = useCallback((nextLanguage: string) => {
     setLanguageDraft(nextLanguage);
     if (nextLanguage === preferences.language) {
       setPendingLanguage(null);
@@ -672,7 +683,11 @@ export default function Profile() {
     }
     setPendingLanguage(nextLanguage);
     setLanguageDialogOpen(true);
-  };
+  }, [preferences.language]);
+
+  const handleGoToAccess = useCallback(() => {
+    setLocation("/access");
+  }, [setLocation]);
 
   const handleLanguageConfirm = () => {
     if (!pendingLanguage || pendingLanguage === preferences.language) {
@@ -750,32 +765,50 @@ export default function Profile() {
     moduleDialog?.nextValue && moduleFeatures.length
   );
 
+  const languageSelect = useMemo(
+    () => (
+      <TextField
+        select
+        label="Idioma"
+        value={languageDraft}
+        onChange={event => handleLanguageSelect(event.target.value)}
+        size="small"
+        sx={{ minWidth: 260 }}
+      >
+        {languageOptions.map(option => (
+          <MenuItem key={option.value} value={option.value}>
+            {option.label}
+          </MenuItem>
+        ))}
+      </TextField>
+    ),
+    [languageDraft, handleLanguageSelect]
+  );
+
+  const profileActions = useMemo(
+    () => (
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Button
+          type="button"
+          variant="outlined"
+          size="small"
+          onClick={handleGoToAccess}
+          sx={{ textTransform: "none", fontWeight: 600 }}
+        >
+          {t("nav.access")}
+        </Button>
+        {languageSelect}
+      </Stack>
+    ),
+    [handleGoToAccess, languageSelect, t]
+  );
+
+  usePageActions(profileActions);
+
   return (
     <PageContainer>
       <Stack spacing={3}>
-        <Stack
-          direction={{ xs: "column", md: "row" }}
-          spacing={2}
-          alignItems={{ xs: "flex-start", md: "center" }}
-          justifyContent="space-between"
-        >
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>
-            Perfil
-          </Typography>
-          <TextField
-            select
-            label="Idioma"
-            value={languageDraft}
-            onChange={event => handleLanguageSelect(event.target.value)}
-            sx={{ minWidth: 260 }}
-          >
-            {languageOptions.map(option => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Stack>
+        <Box sx={{ display: { xs: "block", md: "none" } }}>{profileActions}</Box>
 
         <AppAccordion
           expanded={expanded === "main"}
@@ -854,10 +887,10 @@ export default function Profile() {
 
             <Stack spacing={1.5}>
               <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Emails de login
+                Emails
               </Typography>
               <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                Adicione emails secundarios para entrar na mesma conta.
+                Pelo menos 1 email e obrigatório.
               </Typography>
               {emails.map((item, index) => (
                 <Stack
@@ -867,7 +900,7 @@ export default function Profile() {
                   alignItems="center"
                 >
                   <TextField
-                    label={`Email de login ${index + 1}`}
+                    label={`Email ${index + 1}`}
                     fullWidth
                     value={item}
                     onChange={event =>
@@ -889,7 +922,7 @@ export default function Profile() {
                   fontWeight: 600,
                 }}
               >
-                Adicionar email de login
+                Adicionar email
               </Button>
             </Stack>
 
@@ -1016,7 +1049,7 @@ export default function Profile() {
                 gap: 2,
               }}
             >
-              <Paper
+              <AppCard
                 variant="outlined"
                 onClick={() =>
                   setPreferences(prev => ({
@@ -1060,8 +1093,8 @@ export default function Profile() {
                     Receba alertas relevantes no email.
                   </Typography>
                 </Stack>
-              </Paper>
-              <Paper
+              </AppCard>
+              <AppCard
                 variant="outlined"
                 onClick={() =>
                   setPreferences(prev => ({
@@ -1105,8 +1138,8 @@ export default function Profile() {
                     Avise quando voce for mencionado em tarefas.
                   </Typography>
                 </Stack>
-              </Paper>
-              <Paper
+              </AppCard>
+              <AppCard
                 variant="outlined"
                 onClick={() =>
                   setPreferences(prev => ({
@@ -1150,8 +1183,8 @@ export default function Profile() {
                     Movimentacoes e mudancas de status.
                   </Typography>
                 </Stack>
-              </Paper>
-              <Paper
+              </AppCard>
+              <AppCard
                 variant="outlined"
                 onClick={() =>
                   setPreferences(prev => ({
@@ -1195,8 +1228,8 @@ export default function Profile() {
                     Limites e variacoes relevantes.
                   </Typography>
                 </Stack>
-              </Paper>
-              <Paper
+              </AppCard>
+              <AppCard
                 variant="outlined"
                 onClick={() =>
                   setPreferences(prev => ({
@@ -1240,8 +1273,8 @@ export default function Profile() {
                     Relatório semanal da conta.
                   </Typography>
                 </Stack>
-              </Paper>
-              <Paper
+              </AppCard>
+              <AppCard
                 variant="outlined"
                 onClick={() =>
                   setPreferences(prev => ({
@@ -1285,7 +1318,7 @@ export default function Profile() {
                     Novos recursos e melhorias.
                   </Typography>
                 </Stack>
-              </Paper>
+              </AppCard>
             </Box>
           </Stack>
         </AppAccordion>
@@ -1314,7 +1347,7 @@ export default function Profile() {
                   | "moduleNotes"
                 >
               ).map(key => (
-                <Paper
+                <AppCard
                   key={key}
                   variant="outlined"
                   onClick={() => requestModuleToggle(key, !preferences[key])}
@@ -1358,7 +1391,7 @@ export default function Profile() {
                       {coreModuleLabels[key].price}
                     </Typography>
                   </Stack>
-                </Paper>
+                </AppCard>
               ))}
             </Box>
             <Stack spacing={1.5}>
@@ -1374,7 +1407,7 @@ export default function Profile() {
                   }}
                 >
                   {accessModulesToShow.map(module => (
-                    <Paper
+                    <AppCard
                       key={module.id}
                       variant="outlined"
                       onClick={() =>
@@ -1421,7 +1454,7 @@ export default function Profile() {
                           {module.description}
                         </Typography>
                       </Stack>
-                    </Paper>
+                      </AppCard>
                   ))}
                 </Box>
               ) : (
@@ -1461,113 +1494,125 @@ export default function Profile() {
           </Stack>
         </AppAccordion>
 
-        <AppAccordion
-          expanded={expanded === "account"}
-          onChange={(_, isExpanded) =>
-            setExpanded(isExpanded ? "account" : false)
-          }
-          title="Conta"
-        >
-          <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={2.5}
-            alignItems={{ xs: "stretch", md: "center" }}
-          >
-            <Paper
-              variant="outlined"
-              onClick={() =>
-                setPreferences(prev => ({
-                  ...prev,
-                  singleSession: !prev.singleSession,
-                }))
-              }
-              sx={theme => ({
-                p: 2.5,
-                cursor: "pointer",
-                flex: 1,
-                maxWidth: { xs: "100%", md: 420 },
-                ...interactiveCardSx(theme),
-              })}
+        <CardSection size="md">
+          <Stack spacing={2.5}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              Conta
+            </Typography>
+            <Divider />
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={2.5}
+              alignItems={{ xs: "stretch", md: "center" }}
             >
-              <Stack spacing={1.5}>
-                <Box
+              <AppCard
+                variant="outlined"
+                onClick={() =>
+                  setPreferences(prev => ({
+                    ...prev,
+                    singleSession: !prev.singleSession,
+                  }))
+                }
+                sx={theme => ({
+                  p: 2.5,
+                  cursor: "pointer",
+                  flex: 1,
+                  maxWidth: { xs: "100%", md: 420 },
+                  ...interactiveCardSx(theme),
+                })}
+              >
+                <Stack spacing={1.5}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 2,
+                    }}
+                  >
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Sessao unica
+                    </Typography>
+                    <ToggleCheckbox
+                      checked={preferences.singleSession}
+                      onChange={event =>
+                        setPreferences(prev => ({
+                          ...prev,
+                          singleSession: event.target.checked,
+                        }))
+                      }
+                      onClick={event => event.stopPropagation()}
+                    />
+                  </Box>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Desconecte outras sessoes ao entrar novamente.
+                  </Typography>
+                </Stack>
+              </AppCard>
+
+              <Stack
+                direction="column"
+                spacing={1.5}
+                alignItems="stretch"
+                sx={{ display: { xs: "none", md: "flex" } }}
+              >
+                <Button
+                  color="error"
+                  variant="contained"
+                  size="large"
+                  onClick={handleLogout}
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 2,
+                    textTransform: "none",
+                    fontWeight: 600,
+                    minWidth: 180,
+                    height: 48,
                   }}
                 >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                    Sessao unica
-                  </Typography>
-                  <ToggleCheckbox
-                    checked={preferences.singleSession}
-                    onChange={event =>
-                      setPreferences(prev => ({
-                        ...prev,
-                        singleSession: event.target.checked,
-                      }))
-                    }
-                    onClick={event => event.stopPropagation()}
-                  />
-                </Box>
-                <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                  Desconecte outras sessoes ao entrar novamente.
-                </Typography>
+                  Sair
+                </Button>
+                <Button
+                  variant="outlined"
+                  size="large"
+                  onClick={handleSwitchAccount}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 600,
+                    minWidth: 180,
+                    height: 48,
+                  }}
+                >
+                  Trocar de conta
+                </Button>
               </Stack>
-            </Paper>
+            </Stack>
+
             <Stack
-              direction="row"
+              direction={{ xs: "column", sm: "row" }}
               spacing={2}
-              alignItems="center"
-              sx={{ display: { xs: "none", md: "flex" } }}
+              sx={{ display: { xs: "flex", md: "none" } }}
             >
               <Button
                 color="error"
                 variant="contained"
                 size="large"
+                fullWidth
                 onClick={handleLogout}
-                sx={{ textTransform: "none", fontWeight: 600, minWidth: 160, height: 48 }}
+                sx={{ textTransform: "none", fontWeight: 600 }}
               >
                 Sair
               </Button>
               <Button
                 variant="outlined"
                 size="large"
+                fullWidth
                 onClick={handleSwitchAccount}
-                sx={{ textTransform: "none", fontWeight: 600, minWidth: 160, height: 48 }}
+                sx={{ textTransform: "none", fontWeight: 600 }}
               >
                 Trocar de conta
               </Button>
             </Stack>
           </Stack>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            sx={{ display: { xs: "flex", md: "none" }, mt: 2 }}
-          >
-            <Button
-              color="error"
-              variant="contained"
-              size="large"
-              fullWidth
-              onClick={handleLogout}
-              sx={{ textTransform: "none", fontWeight: 600 }}
-            >
-              Sair
-            </Button>
-            <Button
-              variant="outlined"
-              size="large"
-              fullWidth
-              onClick={handleSwitchAccount}
-              sx={{ textTransform: "none", fontWeight: 600 }}
-            >
-              Trocar de conta
-            </Button>
-          </Stack>
-        </AppAccordion>
+        </CardSection>
       </Stack>
 
       <Dialog
@@ -1729,7 +1774,7 @@ export default function Profile() {
                 </Typography>
                 <Stack spacing={1}>
                   {switchAccounts.map(account => (
-                    <Paper
+                    <AppCard
                       key={account.email}
                       variant="outlined"
                       onClick={() => {
@@ -1790,7 +1835,7 @@ export default function Profile() {
                           </Typography>
                         ) : null}
                       </Stack>
-                    </Paper>
+                    </AppCard>
                   ))}
                 </Stack>
               </Stack>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Box, TextField, Button, List, ListItem, ListItemText, Paper } from '@mui/material';
+import { Box, TextField, Button, List, ListItem, ListItemText } from '@mui/material';
+import AppCard from "./layout/AppCard";
 
 interface Message {
   sender: 'user' | 'bot';
@@ -37,7 +38,7 @@ const ChatPanel = ({ onNewData }: { onNewData: () => void }) => {
   };
 
   return (
-    <Paper style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <AppCard sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2 }}>
         <List>
           {messages.map((msg, index) => (
@@ -60,7 +61,7 @@ const ChatPanel = ({ onNewData }: { onNewData: () => void }) => {
           Send
         </Button>
       </Box>
-    </Paper>
+    </AppCard>
   );
 };
 

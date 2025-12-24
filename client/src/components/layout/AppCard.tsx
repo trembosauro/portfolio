@@ -1,9 +1,14 @@
+import { forwardRef } from "react";
 import { Paper } from "@mui/material";
 import type { PaperProps } from "@mui/material";
 
-export default function AppCard({ sx, ...props }: PaperProps) {
+const AppCard = forwardRef<HTMLDivElement, PaperProps>(function AppCard(
+  { sx, ...props },
+  ref
+) {
   return (
     <Paper
+      ref={ref}
       elevation={0}
       {...props}
       sx={[
@@ -16,4 +21,6 @@ export default function AppCard({ sx, ...props }: PaperProps) {
       ].filter(Boolean)}
     />
   );
-}
+});
+
+export default AppCard;

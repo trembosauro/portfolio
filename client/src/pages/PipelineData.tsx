@@ -7,7 +7,6 @@ import {
   Divider,
   IconButton,
   MenuItem,
-  Paper,
   Stack,
   TextField,
   Typography,
@@ -24,6 +23,7 @@ import {
 } from "recharts";
 import api from "../api";
 import { interactiveCardSx } from "../styles/interactiveCard";
+import CardSection from "../components/layout/CardSection";
 
 type PipelineSummary = {
   id: string;
@@ -278,9 +278,6 @@ export default function PipelineData() {
       <Stack spacing={3}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-              Dados
-            </Typography>
           </Box>
           <Button
             component={RouterLink}
@@ -294,16 +291,10 @@ export default function PipelineData() {
 
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
           {pipeline.map(item => (
-            <Paper
+            <CardSection
               key={item.id}
-              elevation={0}
-              sx={{
-                p: 2.5,
-                flex: 1,
-                border: 1,
-                borderColor: "divider",
-                backgroundColor: "background.paper",
-              }}
+              size="flush"
+              sx={{ p: 2.5, flex: 1 }}
             >
               <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
                 {item.stage}
@@ -316,93 +307,48 @@ export default function PipelineData() {
                   {item.value}
                 </Typography>
               ) : null}
-            </Paper>
+            </CardSection>
           ))}
         </Stack>
 
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2.5,
-              flex: 1,
-              border: 1,
-              borderColor: "divider",
-              backgroundColor: "background.paper",
-            }}
-          >
+          <CardSection size="flush" sx={{ p: 2.5, flex: 1 }}>
             <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
               Tarefas pendentes
             </Typography>
             <Typography variant="h5" sx={{ fontWeight: 700 }}>
               {taskStatusTotals.pending}
             </Typography>
-          </Paper>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2.5,
-              flex: 1,
-              border: 1,
-              borderColor: "divider",
-              backgroundColor: "background.paper",
-            }}
-          >
+          </CardSection>
+          <CardSection size="flush" sx={{ p: 2.5, flex: 1 }}>
             <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
               Tarefas em andamento
             </Typography>
             <Typography variant="h5" sx={{ fontWeight: 700 }}>
               {taskStatusTotals.inProgress}
             </Typography>
-          </Paper>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2.5,
-              flex: 1,
-              border: 1,
-              borderColor: "divider",
-              backgroundColor: "background.paper",
-            }}
-          >
+          </CardSection>
+          <CardSection size="flush" sx={{ p: 2.5, flex: 1 }}>
             <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
               Tarefas concluidas
             </Typography>
             <Typography variant="h5" sx={{ fontWeight: 700 }}>
               {taskStatusTotals.completed}
             </Typography>
-          </Paper>
+          </CardSection>
         </Stack>
 
         {showValueFields ? (
           <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                flex: 1,
-                border: 1,
-                borderColor: "divider",
-                backgroundColor: "background.paper",
-              }}
-            >
+            <CardSection size="flush" sx={{ p: 2.5, flex: 1 }}>
               <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
                 Valor total
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>
                 {formatValue(pipelineTotals.totalValue)}
               </Typography>
-            </Paper>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.5,
-                flex: 1,
-                border: 1,
-                borderColor: "divider",
-                backgroundColor: "background.paper",
-              }}
-            >
+            </CardSection>
+            <CardSection size="flush" sx={{ p: 2.5, flex: 1 }}>
               <Typography variant="subtitle2" sx={{ color: "text.secondary" }}>
                 Ticket medio
               </Typography>
@@ -414,19 +360,11 @@ export default function PipelineData() {
                   ? `Maior etapa: ${pipelineTotals.topStage.stage}`
                   : "Sem dados"}
               </Typography>
-            </Paper>
+            </CardSection>
           </Stack>
         ) : null}
 
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            border: 1,
-            borderColor: "divider",
-            backgroundColor: "background.paper",
-          }}
-        >
+        <CardSection size="flush" sx={{ p: 3 }}>
           <Stack spacing={2}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               Evolucao por etapa
@@ -472,19 +410,10 @@ export default function PipelineData() {
               </ResponsiveContainer>
             </Box>
           </Stack>
-        </Paper>
+        </CardSection>
 
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              flex: 1,
-              border: 1,
-              borderColor: "divider",
-              backgroundColor: "background.paper",
-            }}
-          >
+          <CardSection size="flush" sx={{ p: 3, flex: 1 }}>
             <Stack spacing={2.5}>
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
                 Oportunidades chave
@@ -517,7 +446,7 @@ export default function PipelineData() {
                 ))}
               </Stack>
             </Stack>
-          </Paper>
+          </CardSection>
         </Stack>
       </Stack>
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Paper, Typography, List, ListItem, ListItemText, Button, Divider } from '@mui/material';
+import { Typography, List, ListItem, ListItemText, Button, Divider } from '@mui/material';
+import AppCard from "./layout/AppCard";
 
 interface Client {
   id: number;
@@ -36,7 +37,7 @@ const DataPanel = ({ refresh }: { refresh: boolean }) => {
   }, [refresh]);
 
   return (
-    <Paper style={{ height: '100%', padding: '1rem', overflowY: 'auto' }}>
+    <AppCard sx={{ height: '100%', p: '1rem', overflowY: 'auto' }}>
       <Typography variant="h6" gutterBottom>
         Clients
       </Typography>
@@ -61,7 +62,7 @@ const DataPanel = ({ refresh }: { refresh: boolean }) => {
             )
         })}
       </List>
-    </Paper>
+    </AppCard>
   );
 };
 

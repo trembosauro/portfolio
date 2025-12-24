@@ -9,7 +9,6 @@ import {
   IconButton,
   InputAdornment,
   MenuItem,
-  Paper,
   Stack,
   TextField,
   Typography,
@@ -19,6 +18,8 @@ import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AppAccordion from "../components/layout/AppAccordion";
+import CardSection from "../components/layout/CardSection";
+import SettingsIconButton from "../components/SettingsIconButton";
 
 type RolePermissionKey =
   | "pipeline_view"
@@ -35,14 +36,20 @@ type AccessUser = {
   email: string;
 };
 
+type AccessRole = {
+  name: string;
+};
+
 const ROLE_PERMISSION_STORAGE_KEY = "sc_role_permissions";
 const USER_ROLE_STORAGE_KEY = "sc_user_roles";
 
-const roles = [
-  { name: "Administrador", members: 4, color: "default" },
-  { name: "Gestor", members: 12, color: "default" },
-  { name: "Analista", members: 18, color: "default" },
-  { name: "Leitor", members: 36, color: "default" },
+const ROLE_STORAGE_KEY = "sc_roles";
+
+const seedRoles: AccessRole[] = [
+  { name: "Administrador" },
+  { name: "Gestor" },
+  { name: "Analista" },
+  { name: "Leitor" },
 ];
 
 const rolePermissionItems: Array<{
@@ -91,11 +98,33 @@ const invites = [
 ];
 
 export default function AccessManagement() {
+  const [roles, setRoles] = useState<AccessRole[]>(() => {
+    const stored = window.localStorage.getItem(ROLE_STORAGE_KEY);
+    if (!stored) {
+      return seedRoles;
+    }
+    try {
+      const parsed = JSON.parse(stored) as Array<{ name?: unknown }>;
+      const normalized = Array.isArray(parsed)
+        ? parsed
+            .map(item => ({ name: String(item?.name || "").trim() }))
+            .filter(role => Boolean(role.name))
+        : [];
+      const unique = Array.from(
+        new Map(normalized.map(role => [role.name.toLowerCase(), role])).values()
+      );
+      return unique.length ? unique : seedRoles;
+    } catch {
+      window.localStorage.removeItem(ROLE_STORAGE_KEY);
+      return seedRoles;
+    }
+  });
   const [moduleStates, setModuleStates] = useState(() =>
     modules.map(() => true)
   );
   const [permissionDialogOpen, setPermissionDialogOpen] = useState(false);
   const [activeRole, setActiveRole] = useState<string | null>(null);
+  const [roleSettingsOpen, setRoleSettingsOpen] = useState(false);
   const [moduleConfirm, setModuleConfirm] = useState<{
     index: number;
     nextValue: boolean;
@@ -109,6 +138,14 @@ export default function AccessManagement() {
   const [users, setUsers] = useState<AccessUser[]>([]);
   const [userRoles, setUserRoles] = useState<Record<string, string>>({});
   const [userFilter, setUserFilter] = useState("");
+  const [newRoleName, setNewRoleName] = useState("");
+  const [newRoleError, setNewRoleError] = useState("");
+  const [roleNameDrafts, setRoleNameDrafts] = useState<Record<string, string>>(
+    {}
+  );
+  const [roleDeleteConfirm, setRoleDeleteConfirm] = useState<string | null>(
+    null
+  );
   const toggleModule = (index: number) => {
     setModuleStates(prev => {
       const next = [...prev];
@@ -129,7 +166,19 @@ export default function AccessManagement() {
     return defaultMap;
   }, []);
 
+  const defaultRoleName = roles[0]?.name || "Administrador";
+
+  const membersByRole = useMemo(() => {
+    const counts = new Map<string, number>();
+    users.forEach(user => {
+      const roleName = userRoles[user.email] || defaultRoleName;
+      counts.set(roleName, (counts.get(roleName) || 0) + 1);
+    });
+    return counts;
+  }, [defaultRoleName, userRoles, users]);
+
   useEffect(() => {
+    window.localStorage.setItem(ROLE_STORAGE_KEY, JSON.stringify(roles));
     const storedRoles = window.localStorage.getItem(
       ROLE_PERMISSION_STORAGE_KEY
     );
@@ -140,7 +189,12 @@ export default function AccessManagement() {
           RolePermissionMap
         >;
         if (parsed) {
-          setRolePermissions({ ...defaultRolePermissions, ...parsed });
+          const merged = { ...defaultRolePermissions, ...parsed };
+          const allowed = new Set(roles.map(role => role.name));
+          const sanitized = Object.fromEntries(
+            Object.entries(merged).filter(([roleName]) => allowed.has(roleName))
+          ) as Record<string, RolePermissionMap>;
+          setRolePermissions(sanitized);
         }
       } catch {
         window.localStorage.removeItem(ROLE_PERMISSION_STORAGE_KEY);
@@ -162,6 +216,10 @@ export default function AccessManagement() {
       }
     }
   }, [defaultRolePermissions]);
+
+  useEffect(() => {
+    window.localStorage.setItem(ROLE_STORAGE_KEY, JSON.stringify(roles));
+  }, [roles]);
 
   useEffect(() => {
     window.localStorage.setItem(
@@ -222,6 +280,110 @@ export default function AccessManagement() {
     setPermissionDialogOpen(true);
   };
 
+  const ensureUniqueRoleName = (raw: string, ignoreName?: string) => {
+    const candidate = raw.trim();
+    if (!candidate) {
+      return { ok: false as const, name: "", error: "Informe um nome." };
+    }
+    const lower = candidate.toLowerCase();
+    const ignoreLower = ignoreName?.toLowerCase();
+    const exists = roles.some(role => {
+      const roleLower = role.name.toLowerCase();
+      if (ignoreLower && roleLower === ignoreLower) {
+        return false;
+      }
+      return roleLower === lower;
+    });
+    if (exists) {
+      return {
+        ok: false as const,
+        name: candidate,
+        error: "Já existe um cargo com esse nome.",
+      };
+    }
+    return { ok: true as const, name: candidate };
+  };
+
+  const handleCreateRole = () => {
+    const next = ensureUniqueRoleName(newRoleName);
+    if (!next.ok) {
+      setNewRoleError(next.error);
+      return;
+    }
+    setNewRoleError("");
+    setRoles(prev => [...prev, { name: next.name }]);
+    setRolePermissions(prev => {
+      const defaults = rolePermissionItems.reduce((acc, item) => {
+        acc[item.key] = true;
+        return acc;
+      }, {} as RolePermissionMap);
+      return { ...prev, [next.name]: prev[next.name] ?? defaults };
+    });
+    setNewRoleName("");
+  };
+
+  const commitRoleRename = (from: string, toRaw: string) => {
+    const next = ensureUniqueRoleName(toRaw, from);
+    if (!next.ok) {
+      setRoleNameDrafts(prev => ({ ...prev, [from]: from }));
+      return;
+    }
+    const to = next.name;
+    if (to === from) {
+      return;
+    }
+    setRoles(prev => prev.map(role => (role.name === from ? { name: to } : role)));
+    setRolePermissions(prev => {
+      const existing = prev[from];
+      const { [from]: _removed, ...rest } = prev;
+      return existing ? { ...rest, [to]: existing } : rest;
+    });
+    setUserRoles(prev => {
+      const nextMap: Record<string, string> = {};
+      Object.entries(prev).forEach(([email, roleName]) => {
+        nextMap[email] = roleName === from ? to : roleName;
+      });
+      return nextMap;
+    });
+    setRoleNameDrafts(prev => {
+      const { [from]: _removed, ...rest } = prev;
+      return { ...rest, [to]: to };
+    });
+    if (activeRole === from) {
+      setActiveRole(to);
+    }
+  };
+
+  const deleteRole = (roleName: string) => {
+    if (roles.length <= 1) {
+      return;
+    }
+    const fallback = roles.find(role => role.name !== roleName)?.name || defaultRoleName;
+    setRoles(prev => prev.filter(role => role.name !== roleName));
+    setRolePermissions(prev => {
+      const { [roleName]: _removed, ...rest } = prev;
+      return rest;
+    });
+    setUserRoles(prev => {
+      const nextMap: Record<string, string> = {};
+      Object.entries(prev).forEach(([email, assigned]) => {
+        nextMap[email] = assigned === roleName ? fallback : assigned;
+      });
+      return nextMap;
+    });
+    if (activeRole === roleName) {
+      setPermissionDialogOpen(false);
+      setActiveRole(null);
+    }
+  };
+
+  const requestRoleDelete = (roleName: string) => {
+    if (roles.length <= 1) {
+      return;
+    }
+    setRoleDeleteConfirm(roleName);
+  };
+
   const toggleRolePermission = (index: number) => {
     if (!activeRole) {
       return;
@@ -246,23 +408,25 @@ export default function AccessManagement() {
   };
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: "auto" }}>
+    <Box sx={{ maxWidth: 1100, mx: "auto", width: "100%" }}>
       <Stack spacing={3}>
         <Stack spacing={1}>
-          <Typography variant="h4">Gestão de acessos e convites</Typography>
         </Stack>
 
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            border: 1,
-            borderColor: "divider",
-            backgroundColor: "background.paper",
-          }}
-        >
+        <CardSection size="lg">
           <Stack spacing={2.5}>
-            <Typography variant="h6">Papéis do workspace</Typography>
+            <Stack
+              direction={{ xs: "column", md: "row" }}
+              spacing={2}
+              alignItems={{ xs: "flex-start", md: "center" }}
+              justifyContent="space-between"
+            >
+              <Typography variant="h6">Cargos</Typography>
+              <SettingsIconButton
+                title="Configurar cargos"
+                onClick={() => setRoleSettingsOpen(true)}
+              />
+            </Stack>
             <Stack
               direction={{ xs: "column", md: "row" }}
               spacing={3}
@@ -270,23 +434,18 @@ export default function AccessManagement() {
               sx={{ flexWrap: "wrap" }}
             >
               {roles.map(role => (
-                <Paper
+                <CardSection
                   key={role.name}
-                  elevation={0}
-                  sx={{
-                    p: 2.5,
-                    border: 1,
-                    borderColor: "divider",
-                    minWidth: 200,
-                  }}
+                  size="flush"
+                  sx={{ p: 2.5, minWidth: 200 }}
                 >
                   <Stack spacing={1}>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
                       {role.name}
                     </Typography>
                     <Chip
-                      label={`${role.members} membros`}
-                      color={role.color as "primary" | "secondary" | "default"}
+                      label={`${membersByRole.get(role.name) || 0} membros`}
+                      color={"default"}
                       size="medium"
                       sx={{ fontSize: 20, height: 36 }}
                     />
@@ -295,25 +454,215 @@ export default function AccessManagement() {
                       onClick={() => openRolePermissions(role.name)}
                       sx={{ alignSelf: "flex-start" }}
                     >
-                      Editar permissoes
+                      Editar permissões
                     </Button>
                   </Stack>
-                </Paper>
+                </CardSection>
               ))}
             </Stack>
           </Stack>
-        </Paper>
+        </CardSection>
+
+        <Dialog
+          open={roleSettingsOpen}
+          onClose={() => {
+            setRoleSettingsOpen(false);
+            setNewRoleError("");
+          }}
+          disableScrollLock
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              backgroundColor: "background.paper",
+              border: 1,
+              borderColor: "divider",
+            },
+          }}
+        >
+          <DialogContent>
+            <Stack spacing={2.5}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 2,
+                }}
+              >
+                <Box>
+                  <Typography variant="h6">Configurar cargos</Typography>
+                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                    Crie, renomeie ou exclua cargos.
+                  </Typography>
+                </Box>
+                <IconButton
+                  onClick={() => {
+                    setRoleSettingsOpen(false);
+                    setNewRoleError("");
+                  }}
+                  aria-label="Fechar"
+                >
+                  <CloseRoundedIcon fontSize="small" />
+                </IconButton>
+              </Box>
+
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={1.5}
+                alignItems={{ xs: "stretch", sm: "center" }}
+              >
+                <TextField
+                  label="Novo cargo"
+                  value={newRoleName}
+                  onChange={event => {
+                    setNewRoleName(event.target.value);
+                    setNewRoleError("");
+                  }}
+                  error={Boolean(newRoleError)}
+                  helperText={newRoleError || ""}
+                  size="small"
+                  fullWidth
+                />
+                <Button
+                  variant="outlined"
+                  onClick={handleCreateRole}
+                  sx={{ whiteSpace: "nowrap" }}
+                >
+                  Criar
+                </Button>
+              </Stack>
+
+              <Divider />
+
+              <Stack spacing={1.5}>
+                {roles.map(role => (
+                  <CardSection key={`role-settings-${role.name}`} size="flush" sx={{ p: 2 }}>
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={1.5}
+                      alignItems={{ xs: "stretch", sm: "center" }}
+                      justifyContent="space-between"
+                    >
+                      <TextField
+                        label="Cargo"
+                        value={roleNameDrafts[role.name] ?? role.name}
+                        onChange={event =>
+                          setRoleNameDrafts(prev => ({
+                            ...prev,
+                            [role.name]: event.target.value,
+                          }))
+                        }
+                        onBlur={() =>
+                          commitRoleRename(
+                            role.name,
+                            (roleNameDrafts[role.name] ?? role.name).trim()
+                          )
+                        }
+                        onKeyDown={event => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            commitRoleRename(
+                              role.name,
+                              (roleNameDrafts[role.name] ?? role.name).trim()
+                            );
+                          }
+                        }}
+                        size="small"
+                        fullWidth
+                      />
+                      <Button
+                        variant="text"
+                        color="error"
+                        onClick={() => requestRoleDelete(role.name)}
+                        disabled={roles.length <= 1}
+                        sx={{ whiteSpace: "nowrap" }}
+                      >
+                        Excluir
+                      </Button>
+                    </Stack>
+                  </CardSection>
+                ))}
+              </Stack>
+
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                alignItems={{ xs: "stretch", sm: "center" }}
+                justifyContent="flex-end"
+              >
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setRoleSettingsOpen(false);
+                    setNewRoleError("");
+                  }}
+                >
+                  Fechar
+                </Button>
+              </Stack>
+            </Stack>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={Boolean(roleDeleteConfirm)}
+          onClose={() => setRoleDeleteConfirm(null)}
+          disableScrollLock
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogContent>
+            <Stack spacing={2}>
+              <Box>
+                <Typography variant="h6">Excluir cargo</Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  {roleDeleteConfirm
+                    ? `Você confirma a exclusão do cargo ${roleDeleteConfirm}? Usuários nesse cargo serão movidos para ${
+                        roles.find(role => role.name !== roleDeleteConfirm)?.name ||
+                        defaultRoleName
+                      }.`
+                    : ""}
+                </Typography>
+              </Box>
+              <Stack
+                direction={{ xs: "column", sm: "row" }}
+                spacing={2}
+                alignItems={{ xs: "stretch", sm: "center" }}
+                justifyContent="flex-end"
+              >
+                <Button variant="outlined" onClick={() => setRoleDeleteConfirm(null)}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={() => {
+                    if (!roleDeleteConfirm) {
+                      return;
+                    }
+                    const name = roleDeleteConfirm;
+                    setRoleDeleteConfirm(null);
+                    deleteRole(name);
+                  }}
+                >
+                  Excluir
+                </Button>
+              </Stack>
+            </Stack>
+          </DialogContent>
+        </Dialog>
 
         <AppAccordion
           expanded={expandedAccordion === "users"}
           onChange={(_, isExpanded) =>
             setExpandedAccordion(isExpanded ? "users" : false)
           }
-          title="Usuários e papéis"
+          title="Usuários e cargos"
         >
           <Stack spacing={2.5}>
             <TextField
-              label="Buscar usuario"
+              label="Buscar usuário"
               fullWidth
               value={userFilter}
               onChange={event => setUserFilter(event.target.value)}
@@ -333,7 +682,7 @@ export default function AccessManagement() {
             />
             {filteredUsers.length === 0 ? (
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                Nenhum usuario encontrado.
+                Nenhum usuário encontrado.
               </Typography>
             ) : (
               <Stack
@@ -341,15 +690,10 @@ export default function AccessManagement() {
                 sx={{ maxHeight: 360, overflowY: "auto", pr: 1 }}
               >
                 {filteredUsers.map(user => (
-                  <Paper
+                  <CardSection
                     key={user.id}
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      border: 1,
-                      borderColor: "divider",
-                      backgroundColor: "background.paper",
-                    }}
+                    size="flush"
+                    sx={{ p: 2 }}
                   >
                     <Stack
                       direction={{ xs: "column", md: "row" }}
@@ -373,8 +717,12 @@ export default function AccessManagement() {
                       </Box>
                       <TextField
                         select
-                        label="Papel"
-                        value={userRoles[user.email] || "Administrador"}
+                        label="Cargo"
+                        value={
+                          roles.some(role => role.name === (userRoles[user.email] || defaultRoleName))
+                            ? (userRoles[user.email] || defaultRoleName)
+                            : defaultRoleName
+                        }
                         onChange={event =>
                           setUserRoles(prev => ({
                             ...prev,
@@ -390,7 +738,7 @@ export default function AccessManagement() {
                         ))}
                       </TextField>
                     </Stack>
-                  </Paper>
+                  </CardSection>
                 ))}
               </Stack>
             )}
@@ -412,13 +760,12 @@ export default function AccessManagement() {
             }}
           >
             {modules.map((module, index) => (
-              <Paper
+              <CardSection
                 key={module.name}
-                elevation={0}
                 onClick={() => requestModuleToggle(index)}
+                size="flush"
                 sx={theme => ({
                   p: 2.5,
-                  borderColor: "divider",
                   cursor: "pointer",
                   ...interactiveCardSx(theme),
                 })}
@@ -448,7 +795,7 @@ export default function AccessManagement() {
                     {module.description}
                   </Typography>
                 </Stack>
-              </Paper>
+              </CardSection>
             ))}
           </Box>
         </AppAccordion>
@@ -459,6 +806,7 @@ export default function AccessManagement() {
             setPermissionDialogOpen(false);
             setActiveRole(null);
           }}
+          disableScrollLock
           maxWidth="sm"
           fullWidth
           PaperProps={{
@@ -469,7 +817,7 @@ export default function AccessManagement() {
             },
           }}
         >
-          <DialogContent>
+          <DialogContent sx={{ scrollbarGutter: "stable" }}>
             <Stack spacing={2.5}>
               <Box
                 sx={{
@@ -483,8 +831,8 @@ export default function AccessManagement() {
                   <Typography variant="h6">Editar permissões</Typography>
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
                     {activeRole
-                      ? `Papel: ${activeRole}`
-                      : "Selecione um papel."}
+                      ? `Cargo: ${activeRole}`
+                      : "Selecione um cargo."}
                   </Typography>
                 </Box>
                 <IconButton
@@ -505,13 +853,12 @@ export default function AccessManagement() {
                 }}
               >
                 {rolePermissionItems.map((permission, index) => (
-                  <Paper
+                  <CardSection
                     key={permission.key}
-                    elevation={0}
                     onClick={() => toggleRolePermission(index)}
+                    size="flush"
                     sx={theme => ({
                       p: 2.5,
-                      borderColor: "divider",
                       cursor: "pointer",
                       ...interactiveCardSx(theme),
                     })}
@@ -551,7 +898,7 @@ export default function AccessManagement() {
                         {permission.description}
                       </Typography>
                     </Stack>
-                  </Paper>
+                  </CardSection>
                 ))}
               </Box>
               <Stack
@@ -590,10 +937,15 @@ export default function AccessManagement() {
               }}
             >
               <TextField label="Email" type="email" fullWidth />
-              <TextField label="Papel" select fullWidth defaultValue="Gestor">
-                {["Administrador", "Gestor", "Analista", "Leitor"].map(role => (
-                  <MenuItem key={role} value={role}>
-                    {role}
+              <TextField
+                label="Cargo"
+                select
+                fullWidth
+                defaultValue={roles.some(role => role.name === "Gestor") ? "Gestor" : defaultRoleName}
+              >
+                {roles.map(role => (
+                  <MenuItem key={role.name} value={role.name}>
+                    {role.name}
                   </MenuItem>
                 ))}
               </TextField>
@@ -618,10 +970,11 @@ export default function AccessManagement() {
         <Dialog
           open={Boolean(moduleConfirm)}
           onClose={() => setModuleConfirm(null)}
+          disableScrollLock
           maxWidth="xs"
           fullWidth
         >
-          <DialogContent>
+          <DialogContent sx={{ scrollbarGutter: "stable" }}>
             <Stack spacing={2}>
               <Box>
                 <Typography variant="h6">
@@ -684,7 +1037,7 @@ export default function AccessManagement() {
                       variant="caption"
                       sx={{ color: "text.secondary" }}
                     >
-                      Papel: {invite.role}
+                      Cargo: {invite.role}
                     </Typography>
                   </Stack>
                   <Stack direction="row" spacing={1} alignItems="center">

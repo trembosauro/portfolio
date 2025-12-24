@@ -25,6 +25,9 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+}
+
 * {
   box-sizing: border-box;
 }

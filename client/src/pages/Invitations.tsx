@@ -4,11 +4,11 @@ import {
   Chip,
   Divider,
   MenuItem,
-  Paper,
   Stack,
   TextField,
   Typography,
 } from "@mui/material";
+import CardSection from "../components/layout/CardSection";
 
 const invites = [
   { email: "carlos@empresa.com", role: "Gestor", status: "Pendente" },
@@ -21,18 +21,9 @@ export default function Invitations() {
     <Box sx={{ maxWidth: 1050, mx: "auto" }}>
       <Stack spacing={3}>
         <Stack spacing={1}>
-          <Typography variant="h4">Convites</Typography>
         </Stack>
 
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            border: 1,
-                      borderColor: "divider",
-            backgroundColor: "background.paper",
-          }}
-        >
+        <CardSection size="lg">
           <Stack spacing={2.5}>
             <Typography variant="h6">Enviar convite</Typography>
             <Box
@@ -62,17 +53,9 @@ export default function Invitations() {
               Enviar convite
             </Button>
           </Stack>
-        </Paper>
+        </CardSection>
 
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            border: 1,
-                      borderColor: "divider",
-            backgroundColor: "background.paper",
-          }}
-        >
+        <CardSection size="lg">
           <Stack spacing={2}>
             <Typography variant="h6">Convites recentes</Typography>
             {invites.map((invite, index) => (
@@ -111,7 +94,7 @@ export default function Invitations() {
               </Box>
             ))}
           </Stack>
-        </Paper>
+        </CardSection>
       </Stack>
     </Box>
   );

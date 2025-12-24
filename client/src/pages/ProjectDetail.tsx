@@ -166,9 +166,6 @@ export default function ProjectDetail() {
       <PageContainer>
         <Stack spacing={2.5} sx={{ width: "100%", maxWidth: 900, mx: "auto" }}>
           <Stack spacing={0.75}>
-            <Typography variant="h4" sx={{ fontWeight: 800 }}>
-              Projeto não encontrado
-            </Typography>
             <Typography variant="body1" sx={{ color: "text.secondary" }}>
               Esse link não existe ou foi removido.
             </Typography>
@@ -205,12 +202,6 @@ export default function ProjectDetail() {
         </Box>
 
         <Stack spacing={1}>
-          <Typography
-            variant="h4"
-            sx={{ fontWeight: 900, letterSpacing: -0.3 }}
-          >
-            {data.title}
-          </Typography>
           <Typography variant="body1" sx={{ color: "text.secondary" }}>
             {data.subtitle}
           </Typography>

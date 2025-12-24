@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import {
   Avatar,
@@ -38,6 +39,7 @@ import Notifications from "./pages/Notifications";
 import Calendar from "./pages/Calendar";
 import CalendarCompleted from "./pages/CalendarCompleted";
 import Notes from "./pages/Notes";
+import { PageActionsProvider, usePageActionsContext } from "./contexts/PageActionsContext";
 
 // Keys para tradução - os labels serão traduzidos no render
 const navItems = [
@@ -278,13 +280,12 @@ function App() {
       })
     : [
         { labelKey: "nav.home", href: "/" },
-        { labelKey: "nav.support", href: "/support" },
       ];
 
   const breadcrumbMap: Record<string, string> = {
     "/home": t("nav.home"),
     "/profile": t("profile.title"),
-    "/access": t("common.actions"),
+    "/access": t("nav.access"),
     "/support": t("nav.support"),
     "/pipeline": t("nav.pipeline"),
     "/pipeline/dados": t("common.details"),
@@ -386,6 +387,21 @@ function App() {
             Home
           </Typography>,
         ]
+      : location === "/access"
+        ? [
+            <Link
+              key="profile"
+              component={RouterLink}
+              href="/profile"
+              underline="hover"
+              color="inherit"
+            >
+              {t("profile.title")}
+            </Link>,
+            <Typography key="access" color="text.primary">
+              {t("nav.access")}
+            </Typography>,
+          ]
       : location === "/pipeline/dados"
         ? [
             <Link
@@ -502,34 +518,35 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box
-        sx={{
-          minHeight: "100vh",
-          position: "relative",
-          overflow: "hidden",
-          background:
-            "radial-gradient(circle at top, #13202c 0%, #0b0f14 45%, #07090d 100%)",
-        }}
-      >
+      <PageActionsProvider>
         <Box
           sx={{
-            position: "absolute",
-            inset: 0,
-            opacity: 0.7,
-            background:
-              "radial-gradient(circle at 20% 20%, rgba(45, 212, 191, 0.18) 0%, transparent 45%), radial-gradient(circle at 80% 10%, rgba(244, 114, 182, 0.12) 0%, transparent 42%)",
-            pointerEvents: "none",
-          }}
-        />
-        <Box
-          sx={{
-            position: "relative",
-            zIndex: 1,
-            display: "flex",
-            flexDirection: "column",
             minHeight: "100vh",
+            position: "relative",
+            overflow: "hidden",
+            background:
+              "radial-gradient(circle at top, #13202c 0%, #0b0f14 45%, #07090d 100%)",
           }}
         >
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              opacity: 0.7,
+              background:
+                "radial-gradient(circle at 20% 20%, rgba(45, 212, 191, 0.18) 0%, transparent 45%), radial-gradient(circle at 80% 10%, rgba(244, 114, 182, 0.12) 0%, transparent 42%)",
+              pointerEvents: "none",
+            }}
+          />
+          <Box
+            sx={{
+              position: "relative",
+              zIndex: 1,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: "100vh",
+            }}
+          >
           <Box
             component="header"
             sx={{
@@ -792,35 +809,7 @@ function App() {
             }}
           >
             {showBreadcrumbs ? (
-              <Box sx={{ maxWidth: 1200, mx: "auto", width: "100%" }}>
-                <Breadcrumbs
-                  aria-label="breadcrumb"
-                  separator="›"
-                  sx={{
-                    mb: 1,
-                    color: "text.secondary",
-                    display: "flex",
-                    width: "100%",
-                    justifyContent: "flex-start",
-                    alignItems: "center",
-                    flexWrap: "nowrap",
-                    whiteSpace: "nowrap",
-                    "& .MuiBreadcrumbs-ol": {
-                      flexWrap: "nowrap",
-                      alignItems: "center",
-                    },
-                    "& .MuiBreadcrumbs-li": {
-                      display: "inline-flex",
-                    },
-                    "& .MuiBreadcrumbs-separator": {
-                      mx: 1,
-                      color: "text.secondary",
-                    },
-                  }}
-                >
-                  {breadcrumbItems}
-                </Breadcrumbs>
-              </Box>
+              <AppBreadcrumbRow breadcrumbItems={breadcrumbItems} />
             ) : null}
             <Box
               sx={{
@@ -924,7 +913,73 @@ function App() {
           {switchNotice}
         </Alert>
       </Snackbar>
+    </PageActionsProvider>
     </ThemeProvider>
+  );
+}
+
+function AppBreadcrumbRow({ breadcrumbItems }: { breadcrumbItems: ReactNode }) {
+  const { actions } = usePageActionsContext();
+
+  return (
+    <Box
+      sx={{
+        maxWidth: 1200,
+        mx: "auto",
+        width: "100%",
+        display: { xs: "block", md: "flex" },
+        alignItems: { md: "center" },
+        justifyContent: { md: "space-between" },
+        gap: { md: 2 },
+        mb: 1,
+      }}
+    >
+      <Breadcrumbs
+        aria-label="breadcrumb"
+        separator="›"
+        sx={{
+          color: "text.secondary",
+          display: "flex",
+          width: { xs: "100%", md: "auto" },
+          flex: { md: "1 1 auto" },
+          minWidth: 0,
+          justifyContent: "flex-start",
+          alignItems: "center",
+          flexWrap: "nowrap",
+          whiteSpace: "nowrap",
+          "& .MuiBreadcrumbs-ol": {
+            flexWrap: "nowrap",
+            alignItems: "center",
+            minWidth: 0,
+          },
+          "& .MuiBreadcrumbs-li": {
+            display: "inline-flex",
+            minWidth: 0,
+          },
+          "& .MuiBreadcrumbs-separator": {
+            mx: 1,
+            color: "text.secondary",
+          },
+        }}
+      >
+        {breadcrumbItems}
+      </Breadcrumbs>
+
+      {actions ? (
+        <Box
+          sx={{
+            display: { xs: "none", md: "flex" },
+            alignItems: "center",
+            justifyContent: "flex-end",
+            flexWrap: "nowrap",
+            minWidth: 0,
+            flex: "0 0 auto",
+          }}
+        >
+          {actions}
+        </Box>
+      ) : null}
+    </Box>
   );
 }
 
