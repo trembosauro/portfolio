@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Autocomplete,
   Alert,
@@ -41,6 +48,7 @@ import Looks3RoundedIcon from "@mui/icons-material/Looks3Rounded";
 import UnarchiveRoundedIcon from "@mui/icons-material/UnarchiveRounded";
 import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
 import FormatUnderlinedRoundedIcon from "@mui/icons-material/FormatUnderlinedRounded";
+import ShuffleRoundedIcon from "@mui/icons-material/ShuffleRounded";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Extension } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
@@ -60,6 +68,7 @@ import PageContainer from "../components/layout/PageContainer";
 import SettingsDialog from "../components/SettingsDialog";
 import { Link as RouterLink, useLocation } from "wouter";
 import { loadUserStorage, saveUserStorage } from "../userStorage";
+import emojibasePtData from "emojibase-data/pt/data.json";
 
 type NoteLink = {
   id: string;
@@ -114,7 +123,9 @@ const DEFAULT_COLORS = [
   "#312e81",
 ];
 
-const NOTE_EMOJIS: { emoji: string; label: string }[] = [
+type NoteEmoji = { emoji: string; label: string };
+
+const BASE_NOTE_EMOJIS: NoteEmoji[] = [
   // Escrita e documentos
   { emoji: "📝", label: "memo nota escrita" },
   { emoji: "📒", label: "caderno amarelo" },
@@ -225,6 +236,34 @@ const NOTE_EMOJIS: { emoji: string; label: string }[] = [
   { emoji: "🍷", label: "vinho" },
   { emoji: "🍻", label: "cerveja brinde" },
 ];
+
+const NOTE_EMOJIS: NoteEmoji[] = (() => {
+  const seen = new Set<string>();
+  const combined: NoteEmoji[] = [
+    ...BASE_NOTE_EMOJIS,
+    ...(emojibasePtData as Array<{ emoji?: string; label?: string }>).flatMap(item => {
+      if (!item?.emoji) {
+        return [];
+      }
+      return [
+        {
+          emoji: item.emoji,
+          label: typeof item.label === "string" ? item.label : "",
+        },
+      ];
+    }),
+  ];
+  return combined.filter(item => {
+    if (!item.emoji) {
+      return false;
+    }
+    if (seen.has(item.emoji)) {
+      return false;
+    }
+    seen.add(item.emoji);
+    return true;
+  });
+})();
 
 const getRandomEmoji = () =>
   NOTE_EMOJIS[Math.floor(Math.random() * NOTE_EMOJIS.length)]!.emoji;
@@ -457,6 +496,15 @@ export default function Notes() {
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   const [emojiPickerAnchor, setEmojiPickerAnchor] = useState<HTMLElement | null>(null);
   const [emojiSearch, setEmojiSearch] = useState("");
+  const deferredEmojiSearch = useDeferredValue(emojiSearch);
+  const [emojiVisibleCount, setEmojiVisibleCount] = useState(420);
+
+  useEffect(() => {
+    if (!emojiPickerAnchor) {
+      return;
+    }
+    setEmojiVisibleCount(420);
+  }, [deferredEmojiSearch, emojiPickerAnchor]);
   const restoreDefaultsSnapshotRef = useRef<{
     fieldSettings: typeof fieldSettings;
     settingsAccordion: typeof settingsAccordion;
@@ -1351,7 +1399,9 @@ export default function Notes() {
                           minWidth: 56,
                           width: 56,
                           height: 56,
-                          fontSize: "1.75rem",
+                          minHeight: 56,
+                          fontSize: "1.5rem",
+                          lineHeight: 1,
                           p: 0,
                           borderColor: "divider",
                           "&:hover": { borderColor: "primary.main" },
@@ -1383,15 +1433,41 @@ export default function Notes() {
                               flexDirection: "column",
                             }}
                           >
-                            <TextField
-                              size="small"
-                              placeholder="Buscar emoji..."
-                              value={emojiSearch}
-                              onChange={e => setEmojiSearch(e.target.value)}
-                              autoFocus
-                              fullWidth
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
                               sx={{ mb: 1.5 }}
-                            />
+                            >
+                              <TextField
+                                size="small"
+                                placeholder="Buscar emoji..."
+                                value={emojiSearch}
+                                onChange={e => setEmojiSearch(e.target.value)}
+                                autoFocus
+                                fullWidth
+                              />
+                              <Tooltip title="Emoji aleatório" placement="top">
+                                <IconButton
+                                  aria-label="Emoji aleatório"
+                                  size="small"
+                                  onClick={() => {
+                                    updateNote({
+                                      ...selectedNote,
+                                      emoji: getRandomEmoji(),
+                                      updatedAt: new Date().toISOString(),
+                                    });
+                                  }}
+                                  sx={{
+                                    border: "1px solid",
+                                    borderColor: "divider",
+                                    borderRadius: 1.5,
+                                  }}
+                                >
+                                  <ShuffleRoundedIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
                             <Box
                               sx={{
                                 display: "flex",
@@ -1401,13 +1477,31 @@ export default function Notes() {
                                 overflowX: "hidden",
                                 flex: 1,
                               }}
+                              onScroll={event => {
+                                const target = event.currentTarget;
+                                const nearBottom =
+                                  target.scrollTop + target.clientHeight >=
+                                  target.scrollHeight - 120;
+                                if (!nearBottom) {
+                                  return;
+                                }
+                                setEmojiVisibleCount(current =>
+                                  Math.min(current + 420, NOTE_EMOJIS.length)
+                                );
+                              }}
                             >
-                              {NOTE_EMOJIS.filter(item =>
-                                emojiSearch
-                                  ? item.label.toLowerCase().includes(emojiSearch.toLowerCase()) ||
-                                    item.emoji === emojiSearch
-                                  : true
-                              ).map(item => (
+                              {NOTE_EMOJIS.filter(item => {
+                                const term = deferredEmojiSearch.trim().toLowerCase();
+                                if (!term) {
+                                  return true;
+                                }
+                                return (
+                                  item.emoji === deferredEmojiSearch ||
+                                  item.label.toLowerCase().includes(term)
+                                );
+                              })
+                                .slice(0, emojiVisibleCount)
+                                .map(item => (
                                 <Button
                                   key={item.emoji}
                                   variant="text"
@@ -1449,10 +1543,14 @@ export default function Notes() {
                         }
                         fullWidth
                         sx={{
+                          "& .MuiInputBase-root": {
+                            height: 56,
+                            alignItems: "center",
+                          },
                           "& .MuiInputBase-input": {
-                            fontSize: "1.35rem",
-                            fontWeight: 700,
-                            lineHeight: 1.3,
+                            fontSize: "1.25rem",
+                            fontWeight: 600,
+                            lineHeight: 1.25,
                           },
                         }}
                       />

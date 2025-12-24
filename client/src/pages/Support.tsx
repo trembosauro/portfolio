@@ -9,12 +9,13 @@ import {
   Typography,
 } from "@mui/material";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link as RouterLink } from "wouter";
 import PageContainer from "../components/layout/PageContainer";
 import PageStack from "../components/layout/PageStack";
 import AppAccordion from "../components/layout/AppAccordion";
 import CardSection from "../components/layout/CardSection";
+import api from "../api";
 
 const faqItems = [
   // Autenticação e Acesso
@@ -226,11 +227,31 @@ const supportCategories = [
 ];
 
 export default function Support() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [query, setQuery] = useState("");
   const [contactExpanded, setContactExpanded] = useState(false);
   const [supportEmail, setSupportEmail] = useState("");
   const [supportCategory, setSupportCategory] = useState("duvidas");
   const [supportMessage, setSupportMessage] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get("/api/auth/me")
+      .then(() => {
+        if (active) {
+          setIsLoggedIn(true);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setIsLoggedIn(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   const filteredItems = useMemo(() => {
     const term = query.trim().toLowerCase();
     if (!term) {
@@ -249,14 +270,20 @@ export default function Support() {
           <Typography variant="body1" sx={{ color: "text.secondary" }}>
             Encontre respostas para suas dúvidas sobre o Superclient.
           </Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25} sx={{ mt: 1 }}>
-            <Button component={RouterLink} href="/signup" variant="contained">
-              Criar conta
-            </Button>
-            <Button component={RouterLink} href="/login" variant="outlined">
-              Entrar
-            </Button>
-          </Stack>
+          {!isLoggedIn ? (
+            <Stack
+              direction={{ xs: "column", sm: "row" }}
+              spacing={1.25}
+              sx={{ mt: 1 }}
+            >
+              <Button component={RouterLink} href="/signup" variant="contained">
+                Criar conta
+              </Button>
+              <Button component={RouterLink} href="/login" variant="outlined">
+                Entrar
+              </Button>
+            </Stack>
+          ) : null}
         </Stack>
 
         <TextField

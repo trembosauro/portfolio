@@ -44,11 +44,11 @@ import { PageActionsProvider, usePageActionsContext } from "./contexts/PageActio
 // Keys para tradução - os labels serão traduzidos no render
 const navItems = [
   { labelKey: "nav.home", href: "/home" },
-  { labelKey: "nav.pipeline", href: "/pipeline" },
-  { labelKey: "nav.finances", href: "/financas" },
-  { labelKey: "nav.contacts", href: "/contatos" },
   { labelKey: "nav.calendar", href: "/calendario" },
   { labelKey: "nav.notes", href: "/notas" },
+  { labelKey: "nav.finances", href: "/financas" },
+  { labelKey: "nav.contacts", href: "/contatos" },
+  { labelKey: "nav.pipeline", href: "/pipeline" },
 ];
 
 function App() {
