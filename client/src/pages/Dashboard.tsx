@@ -161,7 +161,7 @@ const defaultDashboardItems = {
 };
 
 export default function Dashboard() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [columns, setColumns] = useState<Column[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -549,7 +549,7 @@ export default function Dashboard() {
           <AppCard sx={{ p: { xs: 2, md: 2.5 }, display: { xs: "block", md: "none" } }}>
             <Stack
               direction="row"
-              spacing={1}
+              spacing={0}
               flexWrap="wrap"
               useFlexGap
               sx={{ alignItems: "center" }}
@@ -562,6 +562,26 @@ export default function Dashboard() {
                   clickable
                   label={link.label}
                   variant="outlined"
+                  sx={theme => ({
+                    fontWeight: 600,
+                    borderRadius: theme.shape.borderRadius,
+                    minHeight: 36,
+                    "& .MuiChip-label": {
+                      paddingLeft: theme.spacing(1.25),
+                      paddingRight: theme.spacing(1.25),
+                      paddingTop: theme.spacing(0.75),
+                      paddingBottom: theme.spacing(0.75),
+                    },
+                    ...(location === link.href
+                      ? { backgroundColor: theme.palette.action.selected }
+                      : null),
+                    "&:hover": {
+                      backgroundColor: theme.palette.action.hover,
+                    },
+                    "&:active": {
+                      backgroundColor: theme.palette.action.selected,
+                    },
+                  })}
                 />
               ))}
             </Stack>
