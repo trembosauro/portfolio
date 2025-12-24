@@ -29,8 +29,8 @@ export default function Header() {
           </li>
         </ul>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-2">
+        <div className="flex items-center gap-0">
+          <div className="hidden md:flex items-center gap-0">
             <a
               href="https://www.linkedin.com/in/ukahue/"
               target="_blank"
