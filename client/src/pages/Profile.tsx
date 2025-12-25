@@ -21,6 +21,7 @@ import PhotoCameraRoundedIcon from "@mui/icons-material/PhotoCameraRounded";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
+import { TextField as TextFieldVE } from "../ui/TextField";
 import AppAccordion from "../components/layout/AppAccordion";
 import CardSection from "../components/layout/CardSection";
 import AppCard from "../components/layout/AppCard";
@@ -993,7 +994,7 @@ export default function Profile() {
                 </Button>
               )}
             </Box>
-            <TextField
+            <TextFieldVE
               label="Nome"
               fullWidth
               value={name}
