@@ -32,6 +32,7 @@ import SettingsIconButton from "../components/SettingsIconButton";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
+import { TextField as TextFieldVE } from "../ui/TextField";
 import CardSection from "../components/layout/CardSection";
 import CategoryFilter from "../components/CategoryFilter";
 import SettingsDialog from "../components/SettingsDialog";
@@ -969,13 +970,13 @@ export default function Contacts() {
               spacing={2}
               alignItems={{ xs: "stretch", sm: "center" }}
             >
-              <TextField
+              <TextFieldVE
                 label="Buscar contatos"
                 value={contactQuery}
                 onChange={event => setContactQuery(event.target.value)}
                 sx={{ width: { xs: "100%", sm: 360 }, maxWidth: { sm: 360 } }}
-                InputProps={{
-                  endAdornment: contactQuery ? (
+                endAdornment={
+                  contactQuery ? (
                     <InputAdornment position="end">
                       <IconButton
                         size="small"
@@ -985,8 +986,8 @@ export default function Contacts() {
                         <CloseRoundedIcon fontSize="small" />
                       </IconButton>
                     </InputAdornment>
-                  ) : null,
-                }}
+                  ) : null
+                }
               />
               <CategoryFilter
                 categories={categories}
