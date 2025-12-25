@@ -46,6 +46,7 @@ import ToggleCheckbox from "../components/ToggleCheckbox";
 import CategoryFilter from "../components/CategoryFilter";
 import CardSection from "../components/layout/CardSection";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
+import { SearchField } from "../ui/SearchField";
 import SettingsDialog from "../components/SettingsDialog";
 import { interactiveCardSx } from "../styles/interactiveCard";
 type Category = {
@@ -945,24 +946,11 @@ export default function Financas() {
           Detalhe dos gastos
         </Typography>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <TextField
-            label="Buscar gastos"
+          <SearchField
+            placeholder="Buscar gastos"
             value={expenseQuery}
             onChange={event => setExpenseQuery(event.target.value)}
-            sx={{ minWidth: { xs: "100%", sm: 240 } }}
-            InputProps={{
-              endAdornment: expenseQuery ? (
-                <InputAdornment position="end">
-                  <IconButton
-                    size="small"
-                    onClick={() => setExpenseQuery("")}
-                    aria-label="Limpar busca"
-                  >
-                    <CloseRoundedIcon fontSize="small" />
-                  </IconButton>
-                </InputAdornment>
-              ) : null,
-            }}
+            onClear={() => setExpenseQuery("")}
           />
           <CategoryFilter
             categories={categories}
