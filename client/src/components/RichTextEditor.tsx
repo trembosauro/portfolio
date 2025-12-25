@@ -600,15 +600,28 @@ export default function RichTextEditor({
                   editor?.chain().focus().setImage({ src: dataUrl }).run();
                   continue;
                 }
-                const safeHref = escapeHtml(dataUrl);
-                const safeName = escapeHtml(file.name || "arquivo");
-                const safeDownload = escapeHtml(file.name || "arquivo");
+                // For non-image files, insert as downloadable link showing only filename
+                const fileName = file.name || "arquivo";
                 editor
                   ?.chain()
                   .focus()
-                  .insertContent(
-                    `<a href="${safeHref}" download="${safeDownload}">${safeName}</a>&nbsp;`
-                  )
+                  .insertContent([
+                    {
+                      type: "text",
+                      marks: [
+                        {
+                          type: "link",
+                          attrs: {
+                            href: dataUrl,
+                            target: "_blank",
+                            rel: "noopener noreferrer",
+                          },
+                        },
+                      ],
+                      text: `📎 ${fileName}`,
+                    },
+                    { type: "text", text: " " },
+                  ])
                   .run();
               } catch {
                 // ignore
@@ -646,15 +659,28 @@ export default function RichTextEditor({
                 editor?.chain().focus().setImage({ src: dataUrl }).run();
                 return;
               }
-              const safeHref = escapeHtml(dataUrl);
-              const safeName = escapeHtml(file.name || "arquivo");
-              const safeDownload = escapeHtml(file.name || "arquivo");
+              // For non-image files, insert as downloadable link showing only filename
+              const fileName = file.name || "arquivo";
               editor
                 ?.chain()
                 .focus()
-                .insertContent(
-                  `<a href="${safeHref}" download="${safeDownload}">${safeName}</a>&nbsp;`
-                )
+                .insertContent([
+                  {
+                    type: "text",
+                    marks: [
+                      {
+                        type: "link",
+                        attrs: {
+                          href: dataUrl,
+                          target: "_blank",
+                          rel: "noopener noreferrer",
+                        },
+                      },
+                    ],
+                    text: `📎 ${fileName}`,
+                  },
+                  { type: "text", text: " " },
+                ])
                 .run();
             })
             .catch(() => {
