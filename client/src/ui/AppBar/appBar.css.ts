@@ -28,6 +28,7 @@ export const appBarInner = style({
 export const brandSlot = style({
   display: 'flex',
   alignItems: 'center',
+  flex: 1,
 });
 
 export const navSlot = style({
@@ -46,19 +47,16 @@ export const navSlot = style({
 export const actionsSlot = style({
   display: 'flex',
   alignItems: 'center',
-  gap: 'var(--sc-header-actions-gap, 8px)',
+  gap: '8px',
 });
 
-export const mobileActions = style({
-  display: 'flex',
+export const mobileRightGroup = style({
+  display: 'inline-flex',
   alignItems: 'center',
-  gap: '6px',
-  
-  '@media': {
-    '(min-width: 960px)': {
-      display: 'none',
-    },
-  },
+  justifyContent: 'flex-end',
+  gap: '8px',
+  flex: 'none',
+  width: 'auto',
 });
 
 export const menuButton = style({
@@ -84,5 +82,11 @@ export const menuButton = style({
   ':focus-visible': {
     outline: '2px solid var(--md-sys-color-primary)',
     outlineOffset: '2px',
+  },
+  
+  '@media': {
+    '(min-width: 960px)': {
+      display: 'none',
+    },
   },
 });

@@ -6,7 +6,7 @@ import {
   brandSlot as brandSlotClass, 
   navSlot as navSlotClass, 
   actionsSlot as actionsSlotClass, 
-  mobileActions,
+  mobileRightGroup,
   menuButton,
 } from './appBar.css';
 
@@ -40,13 +40,12 @@ export function AppBar({
           </nav>
         )}
 
-        {actionsSlotProp && (
-          <div className={actionsSlotClass}>
-            {actionsSlotProp}
-          </div>
-        )}
-        
-        <div className={mobileActions}>
+        <div className={mobileRightGroup}>
+          {actionsSlotProp && (
+            <div className={actionsSlotClass}>
+              {actionsSlotProp}
+            </div>
+          )}
           {mobileActionsSlot}
           {showMobileMenuButton && (
             <button
