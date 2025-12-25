@@ -664,6 +664,34 @@ function App() {
             mobileActionsSlot={
               <>
                 {isLoggedIn && (
+                  <IconButton
+                    component={RouterLink}
+                    href="/notifications"
+                    sx={{
+                      color: "text.primary",
+                      border: isActive("/notifications")
+                        ? "1px solid rgba(34, 201, 166, 0.6)"
+                        : "1px solid rgba(255,255,255,0.12)",
+                      backgroundColor: isActive("/notifications")
+                        ? "rgba(34, 201, 166, 0.12)"
+                        : "rgba(7, 9, 13, 0.45)",
+                      "&:hover": {
+                        backgroundColor: isActive("/notifications")
+                          ? "rgba(34, 201, 166, 0.18)"
+                          : "rgba(7, 9, 13, 0.6)",
+                      },
+                    }}
+                  >
+                    <Badge
+                      variant="dot"
+                      color="error"
+                      invisible={!hasNotifications}
+                    >
+                      <NotificationsNoneRoundedIcon fontSize="small" />
+                    </Badge>
+                  </IconButton>
+                )}
+                {isLoggedIn && (
                   <Button
                     component={RouterLink}
                     href="/profile"
@@ -729,32 +757,6 @@ function App() {
                 {t(item.labelKey)}
               </MenuItem>
             ))}
-            {isLoggedIn ? (
-              <MenuItem
-                onClick={() => {
-                  setLocation("/notifications");
-                  handleMobileMenuClose();
-                }}
-                sx={{
-                  fontWeight: 600,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  ...(isActive("/notifications")
-                    ? { backgroundColor: "action.selected" }
-                    : null),
-                }}
-              >
-                Notificações
-                {hasNotifications && (
-                  <Badge
-                    variant="dot"
-                    color="error"
-                    sx={{ ml: 1 }}
-                  />
-                )}
-              </MenuItem>
-            ) : null}
             {isLoggedIn ? (
               <MenuItem
                 onClick={() => {
