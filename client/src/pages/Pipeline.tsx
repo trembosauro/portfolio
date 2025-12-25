@@ -2219,6 +2219,7 @@ export default function Pipeline() {
             onClear={() => setTaskQuery("")}
             fullWidth
             ariaLabel="Buscar tasks"
+            className={pipelineStyles.searchFieldStable}
           />
         </div>
         <div className={pipelineStyles.filterWrap}>

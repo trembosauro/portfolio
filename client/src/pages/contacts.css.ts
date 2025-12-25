@@ -28,6 +28,14 @@ export const searchWrap = style({
   },
 });
 
+export const searchFieldStable = style({
+  selectors: {
+    "& input": {
+      paddingRight: "48px",
+    },
+  },
+});
+
 export const categoryWrap = style({
   flex: "0 1 320px",
   minWidth: "240px",
