@@ -6,11 +6,19 @@ export const topRow = style({
   justifyContent: 'space-between',
   gap: 'var(--md-sys-spacing-16, 16px)',
   marginBottom: 'var(--md-sys-spacing-16, 16px)',
+  flexWrap: 'wrap',
+  
+  '@media': {
+    '(min-width: 960px)': {
+      flexWrap: 'nowrap',
+    },
+  },
 });
 
 export const breadcrumbArea = style({
   flex: 1,
   minWidth: 0,
+  overflow: 'hidden',
 });
 
 export const actionsArea = style({
@@ -18,7 +26,22 @@ export const actionsArea = style({
   display: 'flex',
   alignItems: 'center',
   gap: 'var(--sc-page-actions-gap, 8px)',
-  whiteSpace: 'nowrap',
+  flexWrap: 'nowrap',
+  overflowX: 'auto',
+  scrollbarWidth: 'thin',
+  
+  '::-webkit-scrollbar': {
+    height: '4px',
+  },
+  
+  '::-webkit-scrollbar-track': {
+    backgroundColor: 'transparent',
+  },
+  
+  '::-webkit-scrollbar-thumb': {
+    backgroundColor: 'color-mix(in srgb, var(--md-sys-color-on-surface) 20%, transparent)',
+    borderRadius: '2px',
+  },
 });
 
 export const titleRow = style({
