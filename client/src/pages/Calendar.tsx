@@ -1754,9 +1754,9 @@ export default function Calendar() {
                     gap: 0.5,
                   }}
                 >
-                  {weekLabels.map(label => (
+                  {weekLabels.map((label, index) => (
                     <Typography
-                      key={label}
+                      key={`weekday-${index}`}
                       variant="caption"
                       sx={{ textAlign: "center", color: "text.secondary" }}
                     >
@@ -1827,6 +1827,7 @@ export default function Calendar() {
                 <Autocomplete
                   freeSolo
                   options={availableYears}
+                  getOptionLabel={option => String(option)}
                   value={selectedMonth.getFullYear()}
                   inputValue={yearInputValue}
                   onInputChange={(_, value) => setYearInputValue(value)}
@@ -2603,9 +2604,9 @@ export default function Calendar() {
                     gap: 0.5,
                   }}
                 >
-                  {weekLabels.map(label => (
+                  {weekLabels.map((label, index) => (
                     <Typography
-                      key={label}
+                      key={`weekday-mobile-${index}`}
                       variant="caption"
                       sx={{ textAlign: "center", color: "text.secondary" }}
                     >
@@ -2677,6 +2678,7 @@ export default function Calendar() {
                 <Autocomplete
                   freeSolo
                   options={availableYears}
+                  getOptionLabel={option => String(option)}
                   value={selectedMonth.getFullYear()}
                   inputValue={yearInputValue}
                   onInputChange={(_, value) => setYearInputValue(value)}
@@ -3220,9 +3222,9 @@ export default function Calendar() {
                 gap: 0.5,
               }}
             >
-              {weekLabels.map(label => (
+              {weekLabels.map((label, index) => (
                 <Typography
-                  key={`picker-${label}`}
+                  key={`picker-weekday-${index}`}
                   variant="caption"
                   sx={{ textAlign: "center", color: "text.secondary" }}
                 >
