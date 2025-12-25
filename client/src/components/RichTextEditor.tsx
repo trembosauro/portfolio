@@ -174,6 +174,11 @@ const ImageResizeOverlay = Extension.create({
                 return false;
               }
 
+              // Only handle images that belong to this editor instance.
+              if (!view.dom.contains(img)) {
+                return false;
+              }
+
               const { state } = view;
               let imagePos: number | null = null;
               try {
@@ -194,15 +199,22 @@ const ImageResizeOverlay = Extension.create({
               }
 
               // Normalize to the actual image node position.
-              // Depending on DOM mapping, posAtDOM/posAtCoords may land next to the node.
-              const nodeAt = state.doc.nodeAt(imagePos);
-              if (nodeAt?.type.name !== "image") {
-                const before = state.doc.nodeAt(Math.max(0, imagePos - 1));
-                const after = state.doc.nodeAt(imagePos + 1);
-                if (before?.type.name === "image") {
-                  imagePos = imagePos - 1;
-                } else if (after?.type.name === "image") {
-                  imagePos = imagePos + 1;
+              // Depending on DOM mapping, posAtDOM/posAtCoords may land near the node.
+              const resolved = state.doc.resolve(imagePos);
+              if (resolved.nodeAfter?.type.name === "image") {
+                imagePos = resolved.pos;
+              } else if (resolved.nodeBefore?.type.name === "image") {
+                imagePos = resolved.pos - resolved.nodeBefore.nodeSize;
+              } else {
+                for (let delta = -2; delta <= 2; delta += 1) {
+                  const probe = imagePos + delta;
+                  if (probe < 0 || probe > state.doc.content.size) {
+                    continue;
+                  }
+                  if (state.doc.nodeAt(probe)?.type.name === "image") {
+                    imagePos = probe;
+                    break;
+                  }
                 }
               }
 
@@ -1240,6 +1252,13 @@ export default function RichTextEditor({
             return;
           }
           if (event.button !== 0) {
+            return;
+          }
+
+          // Clicking images should be handled by the editor (selection/resize),
+          // not by link interception.
+          const imgTarget = (event.target as HTMLElement | null)?.closest?.("img");
+          if (imgTarget) {
             return;
           }
 
