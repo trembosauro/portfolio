@@ -284,14 +284,14 @@ export default function Support() {
           ) : null}
         </Stack>
 
-        <MuiTextField
+        <TextField
           fullWidth
           label="Buscar dúvida"
           placeholder="Digite uma palavra-chave"
           value={query}
           onChange={event => setQuery(event.target.value)}
-          InputProps={{
-            endAdornment: query ? (
+          endAdornment={
+            query ? (
               <InputAdornment position="end">
                 <IconButton
                   size="small"
@@ -301,8 +301,8 @@ export default function Support() {
                   <CloseRoundedIcon fontSize="small" />
                 </IconButton>
               </InputAdornment>
-            ) : null,
-          }}
+            ) : null
+          }
         />
 
         <Box
