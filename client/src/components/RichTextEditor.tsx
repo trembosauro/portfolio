@@ -163,9 +163,17 @@ const ImageResizeOverlay = Extension.create({
           },
         },
         view: (view: EditorView) => {
-          const container = view.dom.parentElement as HTMLElement | null;
+          const viewDom = view.dom as unknown as HTMLElement;
+          const container =
+            (viewDom.closest?.(".tiptap") as HTMLElement | null) || viewDom;
           if (!container) {
             return { update: () => {}, destroy: () => {} };
+          }
+
+          // Ensure our overlay is positioned relative to the same element
+          // that scrolls and defines the editor coordinate space.
+          if (getComputedStyle(container).position === "static") {
+            container.style.position = "relative";
           }
 
           const overlay = document.createElement("div");
