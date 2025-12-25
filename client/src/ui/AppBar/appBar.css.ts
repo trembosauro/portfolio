@@ -52,11 +52,37 @@ export const actionsSlot = style({
 export const mobileActions = style({
   display: 'flex',
   alignItems: 'center',
-  gap: 'var(--sc-header-actions-gap, 8px)',
+  gap: '6px',
   
   '@media': {
     '(min-width: 960px)': {
       display: 'none',
     },
+  },
+});
+
+export const menuButton = style({
+  padding: '8px',
+  color: 'var(--md-sys-color-on-surface)',
+  backgroundColor: 'transparent',
+  border: 'none',
+  borderRadius: '9999px',
+  cursor: 'pointer',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  transition: 'background-color 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+  
+  ':hover': {
+    backgroundColor: 'color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent)',
+  },
+  
+  ':active': {
+    backgroundColor: 'color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent)',
+  },
+  
+  ':focus-visible': {
+    outline: '2px solid var(--md-sys-color-primary)',
+    outlineOffset: '2px',
   },
 });

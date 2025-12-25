@@ -1,13 +1,13 @@
 import { ReactNode } from 'react';
 import MenuIcon from '@mui/icons-material/Menu';
-import { IconButton as MuiIconButton } from '@mui/material';
 import { 
   appBar, 
   appBarInner, 
   brandSlot as brandSlotClass, 
   navSlot as navSlotClass, 
   actionsSlot as actionsSlotClass, 
-  mobileActions 
+  mobileActions,
+  menuButton,
 } from './appBar.css';
 
 export interface AppBarProps {
@@ -49,20 +49,13 @@ export function AppBar({
         <div className={mobileActions}>
           {mobileActionsSlot}
           {showMobileMenuButton && (
-            <MuiIconButton
+            <button
               aria-label="Abrir menu"
               onClick={onMenuClick}
-              sx={{
-                color: 'text.primary',
-                border: '1px solid rgba(255,255,255,0.12)',
-                backgroundColor: 'rgba(7, 9, 13, 0.45)',
-                '&:hover': {
-                  backgroundColor: 'rgba(7, 9, 13, 0.6)',
-                },
-              }}
+              className={menuButton}
             >
               <MenuIcon fontSize="small" />
-            </MuiIconButton>
+            </button>
           )}
         </div>
       </div>
