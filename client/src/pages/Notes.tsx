@@ -887,11 +887,44 @@ export default function Notes() {
   };
 
   const updateNote = (next: Note) => {
-    setNotes(prev =>
-      prev.map(note =>
+    setNotes(prev => {
+      const updated = prev.map(note =>
         note.id === next.id ? { ...next, isDraft: false } : note
-      )
-    );
+      );
+      
+      // If emoji or title changed, update parent's HTML to reflect the new link text
+      if (next.parentId) {
+        const oldNote = prev.find(n => n.id === next.id);
+        if (oldNote && (oldNote.emoji !== next.emoji || oldNote.title !== next.title)) {
+          return updated.map(note => {
+            if (note.id === next.parentId) {
+              const oldLabel = `${oldNote.emoji || ""} ${oldNote.title || "Página"}`.trim();
+              const newLabel = `${next.emoji || ""} ${next.title || "Página"}`.trim();
+              const href = `/notas/${next.id}`;
+              
+              // Replace old link text with new one in HTML
+              let newHtml = note.contentHtml;
+              const linkPattern = new RegExp(
+                `(<a[^>]*href="${href.replace(/\//g, '\\/')}"[^>]*>)([^<]*)(</a>)`,
+                'gi'
+              );
+              newHtml = newHtml.replace(linkPattern, `$1${newLabel}$3`);
+              
+              if (newHtml !== note.contentHtml) {
+                return {
+                  ...note,
+                  contentHtml: newHtml,
+                  updatedAt: new Date().toISOString(),
+                };
+              }
+            }
+            return note;
+          });
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const addNote = useCallback(() => {
