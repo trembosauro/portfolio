@@ -755,7 +755,6 @@ function App() {
             sx={{
               flex: 1,
               px: { xs: 2, md: 3 },
-              pt: { xs: 3, sm: 4, md: 6 },
               pb: { xs: 4, md: 6 },
               display: "flex",
               flexDirection: "column",
