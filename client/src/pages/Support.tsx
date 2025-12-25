@@ -17,6 +17,7 @@ import AppAccordion from "../components/layout/AppAccordion";
 import CardSection from "../components/layout/CardSection";
 import api from "../api";
 import { TextField } from "../ui/TextField";
+import { SearchField } from "../ui/SearchField";
 
 const faqItems = [
   // Autenticação e Acesso
@@ -284,25 +285,12 @@ export default function Support() {
           ) : null}
         </Stack>
 
-        <TextField
+        <SearchField
           fullWidth
-          label="Buscar dúvida"
-          placeholder="Digite uma palavra-chave"
+          placeholder="Buscar dúvida"
           value={query}
           onChange={event => setQuery(event.target.value)}
-          endAdornment={
-            query ? (
-              <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  onClick={() => setQuery("")}
-                  aria-label="Limpar busca"
-                >
-                  <CloseRoundedIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ) : null
-          }
+          onClear={() => setQuery("")}
         />
 
         <Box
