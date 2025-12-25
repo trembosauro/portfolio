@@ -45,7 +45,7 @@ export default function Signup() {
 
           <Stack spacing={2}>
             <TextField label="Nome completo" fullWidth />
-            <MuiTextField label="Email" type="email" fullWidth />
+            <TextField label="Email" type="email" fullWidth />
             <MuiTextField label="Senha" type="password" fullWidth />
             <MuiTextField label="Confirmar senha" type="password" fullWidth />
           </Stack>
