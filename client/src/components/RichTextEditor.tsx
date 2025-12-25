@@ -16,9 +16,6 @@ import {
 } from "@mui/material";
 import {
   EditorContent,
-  ReactNodeViewRenderer,
-  NodeViewWrapper,
-  type NodeViewProps,
   useEditor,
 } from "@tiptap/react";
 import { Extension } from "@tiptap/core";
@@ -44,248 +41,9 @@ import LooksTwoRoundedIcon from "@mui/icons-material/LooksTwoRounded";
 import { APP_RADIUS } from "../designTokens";
 import AppCard from "./layout/AppCard";
 
-function ResizableImageNodeView({
-  node,
-  selected,
-  updateAttributes,
-  editor,
-  getPos,
-}: NodeViewProps) {
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const imgRef = useRef<HTMLImageElement | null>(null);
-  const [isResizing, setIsResizing] = useState(false);
-  const dragRef = useRef<
-    | {
-        startX: number;
-        startWidth: number;
-        containerWidth: number;
-        dir: "e" | "w";
-        pointerId: number;
-        lastWidth?: number;
-      }
-    | null
-  >(null);
-
-  const endResizeByPointerId = (pointerId: number) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== pointerId) {
-      return;
-    }
-
-    const finalWidth =
-      typeof drag.lastWidth === "number" && Number.isFinite(drag.lastWidth)
-        ? Math.round(drag.lastWidth)
-        : Math.round(drag.startWidth);
-
-    updateAttributes({ width: String(finalWidth) });
-    dragRef.current = null;
-    setIsResizing(false);
-  };
-
-  useEffect(() => {
-    if (!isResizing) {
-      return;
-    }
-
-    const onMove = (event: PointerEvent) => {
-      const drag = dragRef.current;
-      if (!drag || drag.pointerId !== event.pointerId) {
-        return;
-      }
-
-      const delta = event.clientX - drag.startX;
-      const signedDelta = drag.dir === "e" ? delta : -delta;
-      const minWidth = 96;
-      const maxWidth = Math.max(minWidth, drag.containerWidth);
-      const nextWidth = Math.max(
-        minWidth,
-        Math.min(maxWidth, drag.startWidth + signedDelta)
-      );
-
-      drag.lastWidth = nextWidth;
-      const img = imgRef.current;
-      if (img) {
-        img.style.width = `${Math.round(nextWidth)}px`;
-      }
-    };
-
-    const onUp = (event: PointerEvent) => {
-      endResizeByPointerId(event.pointerId);
-    };
-
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onUp);
-    window.addEventListener("pointercancel", onUp);
-
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      window.removeEventListener("pointercancel", onUp);
-    };
-  }, [isResizing]);
-
-  const startResize = (event: React.PointerEvent, dir: "e" | "w") => {
-    event.preventDefault();
-    event.stopPropagation();
-
-    editor?.commands.focus();
-
-    const img = imgRef.current;
-    const wrapper = wrapperRef.current;
-    if (!img || !wrapper) {
-      return;
-    }
-
-    const rect = img.getBoundingClientRect();
-    const parentRect = wrapper.parentElement?.getBoundingClientRect();
-
-    dragRef.current = {
-      startX: event.clientX,
-      startWidth: rect.width,
-      containerWidth: parentRect?.width || rect.width,
-      dir,
-      pointerId: event.pointerId,
-    };
-
-    setIsResizing(true);
-
-    // Lock current width so it doesn't jump during drag.
-    img.style.width = `${Math.round(rect.width)}px`;
-
-    try {
-      (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    } catch {
-      // ignore
-    }
-  };
-
-  const endResize = (event: React.PointerEvent) => {
-    endResizeByPointerId(event.pointerId);
-  };
-
-  const handleSx = {
-    position: "absolute" as const,
-    top: 0,
-    bottom: 0,
-    width: 18,
-    cursor: "ew-resize",
-    zIndex: 2,
-    borderRadius: APP_RADIUS,
-    backgroundColor: "transparent",
-    touchAction: "none" as const,
-  };
-
-  const widthAttrRaw = (node.attrs as any).width;
-  const widthPx =
-    typeof widthAttrRaw === "string" && widthAttrRaw.trim()
-      ? Number(widthAttrRaw)
-      : null;
-  const widthStyle = Number.isFinite(widthPx as number)
-    ? `${Math.max(1, Math.round(widthPx as number))}px`
-    : undefined;
-
-  return (
-    <NodeViewWrapper
-      as="div"
-      ref={wrapperRef}
-      onPointerDown={(event: React.PointerEvent) => {
-        if (event.button !== 0) {
-          return;
-        }
-        editor?.commands.focus();
-        if (typeof getPos === "function") {
-          try {
-            const pos = getPos();
-            if (typeof pos === "number") {
-              editor?.commands.setNodeSelection(pos);
-            }
-          } catch {
-            // ignore
-          }
-        }
-      }}
-      style={{
-        display: "block",
-        position: "relative",
-        maxWidth: "100%",
-        borderRadius: APP_RADIUS,
-        overflow: "hidden",
-      }}
-    >
-      <img
-        ref={imgRef}
-        src={String((node.attrs as any).src || "")}
-        alt={String((node.attrs as any).alt || "")}
-        title={String((node.attrs as any).title || "")}
-        className={selected ? "ProseMirror-selectednode" : undefined}
-        style={{
-          display: "block",
-          maxWidth: "100%",
-          width: widthStyle,
-          height: "auto",
-          borderRadius: APP_RADIUS,
-          touchAction: "none",
-        }}
-        draggable={false}
-      />
-
-      {selected || isResizing ? (
-        <>
-          <Box
-            onPointerDown={event => startResize(event, "w")}
-            onPointerUp={endResize}
-            onPointerCancel={endResize}
-            sx={theme => ({
-              ...handleSx,
-              left: 0,
-              backgroundColor: "action.hover",
-              borderRight: `1px solid ${theme.palette.divider}`,
-            })}
-          />
-          <Box
-            onPointerDown={event => startResize(event, "e")}
-            onPointerUp={endResize}
-            onPointerCancel={endResize}
-            sx={theme => ({
-              ...handleSx,
-              right: 0,
-              backgroundColor: "action.hover",
-              borderLeft: `1px solid ${theme.palette.divider}`,
-            })}
-          />
-          <Box
-            sx={{
-              position: "absolute",
-              top: "50%",
-              left: 6,
-              transform: "translateY(-50%)",
-              width: 6,
-              height: 28,
-              borderRadius: 999,
-              bgcolor: "text.secondary",
-              opacity: 0.55,
-              pointerEvents: "none",
-            }}
-          />
-          <Box
-            sx={{
-              position: "absolute",
-              top: "50%",
-              right: 6,
-              transform: "translateY(-50%)",
-              width: 6,
-              height: 28,
-              borderRadius: 999,
-              bgcolor: "text.secondary",
-              opacity: 0.55,
-              pointerEvents: "none",
-            }}
-          />
-        </>
-      ) : null}
-    </NodeViewWrapper>
-  );
-}
+import { Plugin, PluginKey, NodeSelection } from "prosemirror-state";
+import type { EditorView } from "prosemirror-view";
+import type { Node as ProseMirrorNode } from "prosemirror-model";
 
 function extractDroppedImageSrc(dataTransfer: DataTransfer | null | undefined) {
   if (!dataTransfer) {
@@ -320,7 +78,7 @@ function extractDroppedImageSrc(dataTransfer: DataTransfer | null | undefined) {
   return null;
 }
 
-const ResizableImage = Image.extend({
+const ImageWithWidth = Image.extend({
   addAttributes() {
     return {
       ...(this.parent?.() || {}),
@@ -350,8 +108,240 @@ const ResizableImage = Image.extend({
       },
     };
   },
-  addNodeView() {
-    return ReactNodeViewRenderer(ResizableImageNodeView);
+});
+
+const imageResizePluginKey = new PluginKey("imageResizeOverlay");
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function createResizeHandle(side: "w" | "e") {
+  const el = document.createElement("div");
+  el.dataset.side = side;
+  el.style.position = "absolute";
+  el.style.top = "0";
+  el.style.bottom = "0";
+  el.style.width = "18px";
+  el.style.cursor = "ew-resize";
+  el.style.pointerEvents = "auto";
+  el.style.borderRadius = `${APP_RADIUS}px`;
+  el.style.border = "1px solid currentColor";
+  el.style.background = "transparent";
+  el.style.opacity = "0.65";
+  el.style.touchAction = "none";
+  if (side === "w") {
+    el.style.left = "0";
+  } else {
+    el.style.right = "0";
+  }
+  return el;
+}
+
+const ImageResizeOverlay = Extension.create({
+  name: "imageResizeOverlay",
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: imageResizePluginKey,
+        props: {
+          handleClickOn: (
+            view: EditorView,
+            _pos: number,
+            node: ProseMirrorNode,
+            nodePos: number
+          ) => {
+            if (node.type.name !== "image") {
+              return false;
+            }
+            view.dispatch(
+              view.state.tr.setSelection(
+                NodeSelection.create(view.state.doc, nodePos)
+              )
+            );
+            return true;
+          },
+        },
+        view: (view: EditorView) => {
+          const container = view.dom.parentElement as HTMLElement | null;
+          if (!container) {
+            return { update: () => {}, destroy: () => {} };
+          }
+
+          const overlay = document.createElement("div");
+          overlay.style.position = "absolute";
+          overlay.style.pointerEvents = "none";
+          overlay.style.zIndex = "10";
+          overlay.style.display = "none";
+          overlay.style.color = "inherit";
+
+          const leftHandle = createResizeHandle("w");
+          const rightHandle = createResizeHandle("e");
+          overlay.appendChild(leftHandle);
+          overlay.appendChild(rightHandle);
+
+          container.appendChild(overlay);
+
+          let active:
+            | {
+                pointerId: number;
+                side: "w" | "e";
+                startX: number;
+                startWidth: number;
+                maxWidth: number;
+                minWidth: number;
+                pos: number;
+                img: HTMLImageElement;
+              }
+            | null = null;
+
+          const updateOverlay = () => {
+            const sel = view.state.selection;
+            if (!(sel instanceof NodeSelection) || sel.node.type.name !== "image") {
+              overlay.style.display = "none";
+              return;
+            }
+
+            const pos = sel.from;
+            const dom = view.nodeDOM(pos);
+            const img =
+              dom instanceof HTMLImageElement
+                ? dom
+                : (dom && (dom as HTMLElement).querySelector?.("img")) || null;
+            if (!(img instanceof HTMLImageElement)) {
+              overlay.style.display = "none";
+              return;
+            }
+
+            const imgRect = img.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            const left = imgRect.left - containerRect.left + container.scrollLeft;
+            const top = imgRect.top - containerRect.top + container.scrollTop;
+
+            overlay.style.display = "block";
+            overlay.style.left = `${Math.round(left)}px`;
+            overlay.style.top = `${Math.round(top)}px`;
+            overlay.style.width = `${Math.round(imgRect.width)}px`;
+            overlay.style.height = `${Math.round(imgRect.height)}px`;
+          };
+
+          const stop = () => {
+            active = null;
+            window.removeEventListener("pointermove", onMove);
+            window.removeEventListener("pointerup", onUp);
+            window.removeEventListener("pointercancel", onUp);
+          };
+
+          const onMove = (event: PointerEvent) => {
+            if (!active || event.pointerId !== active.pointerId) {
+              return;
+            }
+            const delta = event.clientX - active.startX;
+            const signedDelta = active.side === "e" ? delta : -delta;
+            const nextWidth = clampNumber(
+              active.startWidth + signedDelta,
+              active.minWidth,
+              active.maxWidth
+            );
+            active.img.style.width = `${Math.round(nextWidth)}px`;
+            updateOverlay();
+          };
+
+          const onUp = (event: PointerEvent) => {
+            if (!active || event.pointerId !== active.pointerId) {
+              return;
+            }
+            const widthPx = Number.parseInt(active.img.style.width || "", 10);
+            const finalWidth =
+              Number.isFinite(widthPx) && widthPx > 0
+                ? widthPx
+                : Math.round(active.startWidth);
+
+            const { state, dispatch } = view;
+            const nodeAt = state.doc.nodeAt(active.pos);
+            if (nodeAt && nodeAt.type.name === "image") {
+              dispatch(
+                state.tr.setNodeMarkup(active.pos, undefined, {
+                  ...nodeAt.attrs,
+                  width: String(finalWidth),
+                })
+              );
+            }
+            stop();
+            updateOverlay();
+          };
+
+          const start = (event: PointerEvent, side: "w" | "e") => {
+            const sel = view.state.selection;
+            if (!(sel instanceof NodeSelection) || sel.node.type.name !== "image") {
+              return;
+            }
+
+            const pos = sel.from;
+            const dom = view.nodeDOM(pos);
+            const img =
+              dom instanceof HTMLImageElement
+                ? dom
+                : (dom && (dom as HTMLElement).querySelector?.("img")) || null;
+            if (!(img instanceof HTMLImageElement)) {
+              return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+            view.focus();
+
+            const rect = img.getBoundingClientRect();
+            const minWidth = 96;
+            const maxWidth = Math.max(minWidth, container.clientWidth);
+            img.style.width = `${Math.round(rect.width)}px`;
+
+            active = {
+              pointerId: event.pointerId,
+              side,
+              startX: event.clientX,
+              startWidth: rect.width,
+              maxWidth,
+              minWidth,
+              pos,
+              img,
+            };
+
+            try {
+              (event.target as HTMLElement | null)?.setPointerCapture?.(
+                event.pointerId
+              );
+            } catch {
+              // ignore
+            }
+
+            window.addEventListener("pointermove", onMove);
+            window.addEventListener("pointerup", onUp);
+            window.addEventListener("pointercancel", onUp);
+          };
+
+          leftHandle.addEventListener("pointerdown", event => start(event, "w"));
+          rightHandle.addEventListener("pointerdown", event => start(event, "e"));
+
+          const onScroll = () => updateOverlay();
+          const onResize = () => updateOverlay();
+          container.addEventListener("scroll", onScroll);
+          window.addEventListener("resize", onResize);
+
+          updateOverlay();
+
+          return {
+            update: () => updateOverlay(),
+            destroy: () => {
+              stop();
+              container.removeEventListener("scroll", onScroll);
+              window.removeEventListener("resize", onResize);
+              overlay.remove();
+            },
+          };
+        },
+      }),
+    ];
   },
 });
 
@@ -457,7 +447,8 @@ export default function RichTextEditor({
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
       }),
-      ResizableImage,
+      ImageWithWidth,
+      ImageResizeOverlay,
       Placeholder.configure({
         placeholder: placeholder || "Escreva...",
       }),
@@ -1092,6 +1083,7 @@ export default function RichTextEditor({
             flex: 1,
             minHeight: 0,
             overflowY: "auto",
+            position: "relative",
             outline: "none",
             padding: "16px",
           },
@@ -1206,7 +1198,7 @@ export default function RichTextEditor({
           event.stopPropagation();
         }}
       >
-        <EditorContent editor={editor} />
+        <EditorContent editor={editor} className="tiptap" />
       </Box>
 
       <Popper
