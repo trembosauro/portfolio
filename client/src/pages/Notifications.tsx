@@ -213,16 +213,7 @@ export default function Notifications() {
   };
 
   return (
-    <PageContainer
-      breadcrumbSlot={
-        <>
-          <RouterLink href="/">
-            <a style={{ color: 'inherit', textDecoration: 'none' }}>Início</a>
-          </RouterLink>
-          <span>Notificações</span>
-        </>
-      }
-    >
+    <PageContainer>
       <Stack spacing={3}>
         <CardSection>
           <Stack spacing={2}>
