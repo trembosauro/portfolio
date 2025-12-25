@@ -61,36 +61,26 @@ function ResizableImageNodeView({
         containerWidth: number;
         dir: "e" | "w";
         pointerId: number;
+        lastWidth?: number;
       }
     | null
   >(null);
-  const rafRef = useRef<number | null>(null);
-
-  const setWidth = (nextWidth: number) => {
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-    }
-    rafRef.current = requestAnimationFrame(() => {
-      updateAttributes({ width: String(Math.round(nextWidth)) });
-    });
-  };
 
   const endResizeByPointerId = (pointerId: number) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== pointerId) {
       return;
     }
+
+    const finalWidth =
+      typeof drag.lastWidth === "number" && Number.isFinite(drag.lastWidth)
+        ? Math.round(drag.lastWidth)
+        : Math.round(drag.startWidth);
+
+    updateAttributes({ width: String(finalWidth) });
     dragRef.current = null;
     setIsResizing(false);
   };
-
-  useEffect(() => {
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
-    };
-  }, []);
 
   useEffect(() => {
     if (!isResizing) {
@@ -112,7 +102,11 @@ function ResizableImageNodeView({
         Math.min(maxWidth, drag.startWidth + signedDelta)
       );
 
-      setWidth(nextWidth);
+      drag.lastWidth = nextWidth;
+      const img = imgRef.current;
+      if (img) {
+        img.style.width = `${Math.round(nextWidth)}px`;
+      }
     };
 
     const onUp = (event: PointerEvent) => {
@@ -135,16 +129,6 @@ function ResizableImageNodeView({
     event.stopPropagation();
 
     editor?.commands.focus();
-    if (typeof getPos === "function") {
-      try {
-        const pos = getPos();
-        if (typeof pos === "number") {
-          editor?.commands.setNodeSelection(pos);
-        }
-      } catch {
-        // ignore
-      }
-    }
 
     const img = imgRef.current;
     const wrapper = wrapperRef.current;
@@ -164,6 +148,9 @@ function ResizableImageNodeView({
     };
 
     setIsResizing(true);
+
+    // Lock current width so it doesn't jump during drag.
+    img.style.width = `${Math.round(rect.width)}px`;
 
     try {
       (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
