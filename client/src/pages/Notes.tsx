@@ -728,7 +728,13 @@ export default function Notes() {
       return;
     }
     window.localStorage.setItem(STORAGE_NOTES, JSON.stringify(notes));
-    void saveUserStorage(STORAGE_NOTES, notes);
+    
+    // Debounce: save to backend after 500ms of no changes
+    const timeoutId = setTimeout(() => {
+      void saveUserStorage(STORAGE_NOTES, notes);
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
   }, [notes]);
 
   useEffect(() => {
