@@ -975,7 +975,6 @@ export default function Contacts() {
                   onChange={event => setContactQuery(event.target.value)}
                   onClear={() => setContactQuery("")}
                   fullWidth
-                  className={contactStyles.searchFieldStable}
                 />
               </div>
               <div className={contactStyles.categoryWrap}>

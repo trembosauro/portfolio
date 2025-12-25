@@ -955,7 +955,6 @@ export default function Financas() {
               onChange={event => setExpenseQuery(event.target.value)}
               onClear={() => setExpenseQuery("")}
               fullWidth
-              className={financasStyles.searchFieldStable}
             />
           </div>
           <div className={financasStyles.filterWrap}>

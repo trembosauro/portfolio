@@ -1,22 +1,32 @@
 import { style } from "@vanilla-extract/css";
 
 export const filtersRow = style({
-  display: "grid",
-  gap: "var(--md-sys-spacing-16, 16px)",
-  alignItems: "stretch",
-  width: "100%",
+  display: "flex",
+  gap: "16px",
+  alignItems: "center",
+  minWidth: 0,
   "@media": {
     "(max-width: 959px)": {
-      gridTemplateColumns: "1fr",
+      flexWrap: "wrap",
     },
     "(min-width: 960px)": {
-      gridTemplateColumns: "minmax(320px, 520px) minmax(240px, 420px)",
+      flexWrap: "nowrap",
     },
   },
 });
 
 export const searchWrap = style({
+  flex: "1 1 420px",
   minWidth: 0,
+  "@media": {
+    "(max-width: 959px)": {
+      minWidth: "240px",
+    },
+    "(min-width: 960px)": {
+      minWidth: "240px",
+      maxWidth: "520px",
+    },
+  },
   selectors: {
     "& > *": {
       width: "100%",
@@ -25,16 +35,18 @@ export const searchWrap = style({
   },
 });
 
-export const searchFieldStable = style({
-  selectors: {
-    "& input": {
-      paddingRight: "48px",
+export const categoryWrap = style({
+  flex: "1 1 320px",
+  minWidth: 0,
+  "@media": {
+    "(max-width: 959px)": {
+      minWidth: "240px",
+    },
+    "(min-width: 960px)": {
+      minWidth: "240px",
+      maxWidth: "420px",
     },
   },
-});
-
-export const categoryWrap = style({
-  minWidth: 0,
   selectors: {
     "& > *": {
       width: "100%",
