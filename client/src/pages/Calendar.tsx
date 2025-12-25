@@ -2202,6 +2202,7 @@ export default function Calendar() {
         onClose={handleCloseView}
         maxWidth={false}
         fullWidth
+        disableRestoreFocus
         PaperProps={{
           sx: {
             width: { xs: "calc(100% - 32px)", sm: "80%", md: "70%" },
@@ -2517,6 +2518,7 @@ export default function Calendar() {
         fullScreen={isSmDown}
         fullWidth
         maxWidth="sm"
+        disableRestoreFocus
       >
         <DialogContent>
           <Stack spacing={2.5}>
@@ -2757,6 +2759,7 @@ export default function Calendar() {
         onClose={handleCloseEdit}
         maxWidth={false}
         fullWidth
+        disableRestoreFocus
         PaperProps={{
           sx: {
             width: { xs: "calc(100% - 32px)", sm: "80%", md: "70%" },
