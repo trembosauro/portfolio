@@ -3,7 +3,6 @@ import {
   Button,
   Divider,
   Stack,
-  TextField as MuiTextField,
   Typography,
 } from "@mui/material";
 import { Link as RouterLink } from "wouter";
@@ -46,8 +45,8 @@ export default function Signup() {
           <Stack spacing={2}>
             <TextField label="Nome completo" fullWidth />
             <TextField label="Email" type="email" fullWidth />
-            <MuiTextField label="Senha" type="password" fullWidth />
-            <MuiTextField label="Confirmar senha" type="password" fullWidth />
+            <TextField label="Senha" type="password" fullWidth />
+            <TextField label="Confirmar senha" type="password" fullWidth />
           </Stack>
 
           <Button variant="contained" size="large" fullWidth>
