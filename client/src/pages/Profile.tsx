@@ -12,10 +12,12 @@ import {
   Stack,
   TextField,
   Typography,
+  Avatar,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
+import PhotoCameraRoundedIcon from "@mui/icons-material/PhotoCameraRounded";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import PageContainer from "../components/layout/PageContainer";
@@ -195,6 +197,7 @@ export default function Profile() {
   >(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [profilePhoto, setProfilePhoto] = useState("");
   const [team, setTeam] = useState("");
   const [role, setRole] = useState("");
   const [timezone, setTimezone] = useState("");
@@ -259,6 +262,26 @@ export default function Profile() {
   const coreModulesTotal = allCoreModulesEnabled
     ? CORE_MODULE_BUNDLE_TOTAL_BRL
     : enabledCoreModulesCount * CORE_MODULE_PRICE_BRL;
+
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+      return;
+    }
+    
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        setProfilePhoto(dataUrl);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      // ignore error
+    }
+  };
 
   const loadAccounts = () => {
     const stored = window.localStorage.getItem(ACCOUNT_STORAGE_KEY);
@@ -393,11 +416,17 @@ export default function Profile() {
     );
     window.dispatchEvent(new Event("prefs-change"));
     if (typeof user?.email === "string" && user.email) {
-      window.localStorage.setItem(
-        "sc_user",
-        JSON.stringify({ name: user.name || "", email: user.email })
-      );
+      const userData = { 
+        name: user.name || "", 
+        email: user.email, 
+        profilePhoto: (user as { profilePhoto?: string }).profilePhoto || "" 
+      };
+      window.localStorage.setItem("sc_user", JSON.stringify(userData));
       persistAccount({ name: user.name ?? null, email: user.email });
+    }
+    const userPhoto = (user as { profilePhoto?: string })?.profilePhoto;
+    if (typeof userPhoto === "string") {
+      setProfilePhoto(userPhoto);
     }
   };
 
@@ -405,12 +434,15 @@ export default function Profile() {
     const stored = window.localStorage.getItem("sc_user");
     if (stored) {
       try {
-        const parsed = JSON.parse(stored) as { name?: string; email?: string };
+        const parsed = JSON.parse(stored) as { name?: string; email?: string; profilePhoto?: string };
         if (parsed?.name) {
           setName(parsed.name);
         }
         if (parsed?.email) {
           setEmail(parsed.email);
+        }
+        if (parsed?.profilePhoto) {
+          setProfilePhoto(parsed.profilePhoto);
         }
       } catch {
         window.localStorage.removeItem("sc_user");
@@ -528,6 +560,7 @@ export default function Profile() {
       .put("/api/profile", {
         name,
         email: primaryEmail,
+        profilePhoto,
         phone: primaryPhone,
         team,
         role,
@@ -555,10 +588,12 @@ export default function Profile() {
       .then(response => {
         const user = response?.data?.user;
         if (user?.email) {
-          window.localStorage.setItem(
-            "sc_user",
-            JSON.stringify({ name: user.name || "", email: user.email })
-          );
+          const userData = {
+            name: user.name || "",
+            email: user.email,
+            profilePhoto: (user as { profilePhoto?: string }).profilePhoto || ""
+          };
+          window.localStorage.setItem("sc_user", JSON.stringify(userData));
         }
       })
       .catch(() => {
@@ -842,6 +877,44 @@ export default function Profile() {
           title="Dados principais"
         >
           <Stack spacing={2.5}>
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+              <Avatar
+                src={profilePhoto}
+                alt={name || "Perfil"}
+                sx={{
+                  width: 120,
+                  height: 120,
+                  fontSize: "3rem",
+                  bgcolor: "primary.main",
+                }}
+              >
+                {!profilePhoto && (name?.[0]?.toUpperCase() || "?")}
+              </Avatar>
+              <Button
+                variant="outlined"
+                component="label"
+                startIcon={<PhotoCameraRoundedIcon />}
+                sx={{ textTransform: "none" }}
+              >
+                Alterar foto
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                />
+              </Button>
+              {profilePhoto && (
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => setProfilePhoto("")}
+                  sx={{ textTransform: "none" }}
+                >
+                  Remover foto
+                </Button>
+              )}
+            </Box>
             <TextField
               label="Nome"
               fullWidth
