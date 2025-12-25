@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { Box, Button, Pagination, Stack, Typography, useMediaQuery } from "@mui/material";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import AssignmentTurnedInRoundedIcon from "@mui/icons-material/AssignmentTurnedInRounded";
-
+import { Link as RouterLink } from "wouter";
 import CakeRoundedIcon from "@mui/icons-material/CakeRounded";
-import PageContainer from "../components/layout/PageContainer";
+import { PageContainer } from "../ui/PageContainer/PageContainer";
 import CardSection from "../components/layout/CardSection";
 import { loadUserStorage, saveUserStorage } from "../userStorage";
 import { interactiveCardSx } from "../styles/interactiveCard";
@@ -213,7 +213,16 @@ export default function Notifications() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer
+      breadcrumbSlot={
+        <>
+          <RouterLink href="/">
+            <a style={{ color: 'inherit', textDecoration: 'none' }}>Início</a>
+          </RouterLink>
+          <span>Notificações</span>
+        </>
+      }
+    >
       <Stack spacing={3}>
         <CardSection>
           <Stack spacing={2}>

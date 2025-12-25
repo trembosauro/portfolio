@@ -16,7 +16,6 @@ export const cardHeader = style({
   justifyContent: 'space-between',
   gap: '16px',
   padding: 'var(--sc-card-header-padding)',
-  borderBottom: '1px solid var(--sc-card-border)',
 });
 
 export const cardHeaderContent = style({
