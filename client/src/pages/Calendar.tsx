@@ -1827,7 +1827,7 @@ export default function Calendar() {
                   freeSolo
                   options={availableYears}
                   getOptionLabel={option => String(option)}
-                  value={selectedMonth.getFullYear()}
+                  value={String(selectedMonth.getFullYear())}
                   inputValue={yearInputValue}
                   onInputChange={(_, value) => setYearInputValue(value)}
                   onChange={(_, nextValue) => {
@@ -2677,7 +2677,7 @@ export default function Calendar() {
                   freeSolo
                   options={availableYears}
                   getOptionLabel={option => String(option)}
-                  value={selectedMonth.getFullYear()}
+                  value={String(selectedMonth.getFullYear())}
                   inputValue={yearInputValue}
                   onInputChange={(_, value) => setYearInputValue(value)}
                   onChange={(_, nextValue) => {
