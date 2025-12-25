@@ -161,6 +161,60 @@ const ImageResizeOverlay = Extension.create({
             );
             return true;
           },
+          handleDOMEvents: {
+            mousedown: (view: EditorView, event: Event) => {
+              const mouseEvent = event as MouseEvent;
+              const target = mouseEvent.target as HTMLElement | null;
+              const img = target?.closest?.("img") as HTMLImageElement | null;
+              if (!img) {
+                return false;
+              }
+
+              const coords = view.posAtCoords({
+                left: mouseEvent.clientX,
+                top: mouseEvent.clientY,
+              });
+              if (!coords) {
+                return false;
+              }
+
+              const { state } = view;
+              const $pos = state.doc.resolve(coords.pos);
+              const nodeAfter = $pos.nodeAfter;
+              const nodeBefore = $pos.nodeBefore;
+
+              let imagePos: number | null = null;
+              if (nodeAfter?.type.name === "image") {
+                imagePos = $pos.pos;
+              } else if (nodeBefore?.type.name === "image") {
+                imagePos = $pos.pos - nodeBefore.nodeSize;
+              }
+
+              if (imagePos == null) {
+                return false;
+              }
+
+              view.focus();
+              view.dispatch(
+                state.tr.setSelection(NodeSelection.create(state.doc, imagePos))
+              );
+
+              mouseEvent.preventDefault();
+              mouseEvent.stopPropagation();
+              return true;
+            },
+            dragstart: (_view: EditorView, event: Event) => {
+              const dragEvent = event as DragEvent;
+              const target = dragEvent.target as HTMLElement | null;
+              const img = target?.closest?.("img") as HTMLImageElement | null;
+              if (!img) {
+                return false;
+              }
+              // Prevent native image dragging from breaking selection/resize UX.
+              dragEvent.preventDefault();
+              return true;
+            },
+          },
         },
         view: (view: EditorView) => {
           const viewDom = view.dom as unknown as HTMLElement;
