@@ -1,5 +1,30 @@
 import { style } from '@vanilla-extract/css';
 
+export const topRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 'var(--md-sys-spacing-16, 16px)',
+  marginBottom: 'var(--md-sys-spacing-16, 16px)',
+});
+
+export const breadcrumbArea = style({
+  flex: 1,
+  minWidth: 0,
+});
+
+export const actionsArea = style({
+  flex: 'none',
+  display: 'flex',
+  alignItems: 'center',
+  gap: 'var(--sc-page-actions-gap, 8px)',
+  whiteSpace: 'nowrap',
+});
+
+export const titleRow = style({
+  marginBottom: 'var(--sc-page-header-gap, 16px)',
+});
+
 export const pageHeaderContainer = style({
   display: 'flex',
   alignItems: 'center',

@@ -41,6 +41,7 @@ import Calendar from "./pages/Calendar";
 import CalendarCompleted from "./pages/CalendarCompleted";
 import Notes from "./pages/Notes";
 import AppBreadcrumbRow from "./components/AppBreadcrumbRow";
+import { BreadcrumbProvider } from "./contexts/BreadcrumbContext";
 
 // Keys para tradução - os labels serão traduzidos no render
 const navItems = [
@@ -761,9 +762,6 @@ function App() {
               minHeight: 0,
             }}
           >
-            {showBreadcrumbs ? (
-              <AppBreadcrumbRow breadcrumbItems={breadcrumbItems} />
-            ) : null}
             <Box
               sx={{
                 flex: 1,
@@ -772,32 +770,41 @@ function App() {
                 flexDirection: "column",
               }}
             >
-              <Switch>
-                <Route path="/" component={Login} />
-                <Route path="/login" component={Login} />
-                <Route path="/signup" component={Login} />
-                <Route path="/home" component={Dashboard} />
-                <Route path="/profile" component={Profile} />
-                <Route path="/access" component={AccessManagement} />
-                <Route path="/support" component={Support} />
-                <Route path="/pipeline/dados" component={PipelineData} />
-                <Route path="/pipeline" component={Pipeline} />
-                <Route path="/financas" component={Financas} />
-                <Route path="/contatos" component={Contacts} />
-                <Route
-                  path="/calendario/concluidas"
-                  component={CalendarCompleted}
-                />
-                <Route path="/calendario" component={Calendar} />
-                <Route path="/notas/arquivo/:noteId" component={Notes} />
-                <Route path="/notas/arquivo" component={Notes} />
-                <Route path="/notas/:noteId" component={Notes} />
-                <Route path="/notas" component={Notes} />
-                <Route path="/notifications" component={Notifications} />
-                <Route>
-                  <NotFound />
-                </Route>
-              </Switch>
+              <BreadcrumbProvider
+                value={{
+                  breadcrumbItems: [], // Not used anymore
+                  breadcrumbComponent: showBreadcrumbs ? (
+                    <AppBreadcrumbRow breadcrumbItems={breadcrumbItems} />
+                  ) : null,
+                }}
+              >
+                <Switch>
+                  <Route path="/" component={Login} />
+                  <Route path="/login" component={Login} />
+                  <Route path="/signup" component={Login} />
+                  <Route path="/home" component={Dashboard} />
+                  <Route path="/profile" component={Profile} />
+                  <Route path="/access" component={AccessManagement} />
+                  <Route path="/support" component={Support} />
+                  <Route path="/pipeline/dados" component={PipelineData} />
+                  <Route path="/pipeline" component={Pipeline} />
+                  <Route path="/financas" component={Financas} />
+                  <Route path="/contatos" component={Contacts} />
+                  <Route
+                    path="/calendario/concluidas"
+                    component={CalendarCompleted}
+                  />
+                  <Route path="/calendario" component={Calendar} />
+                  <Route path="/notas/arquivo/:noteId" component={Notes} />
+                  <Route path="/notas/arquivo" component={Notes} />
+                  <Route path="/notas/:noteId" component={Notes} />
+                  <Route path="/notas" component={Notes} />
+                  <Route path="/notifications" component={Notifications} />
+                  <Route>
+                    <NotFound />
+                  </Route>
+                </Switch>
+              </BreadcrumbProvider>
             </Box>
           </Box>
 
