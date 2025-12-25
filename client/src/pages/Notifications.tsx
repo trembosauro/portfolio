@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Box, Button, Stack, Typography, useMediaQuery } from "@mui/material";
+import { Box, Button, Pagination, Stack, Typography, useMediaQuery } from "@mui/material";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import AssignmentTurnedInRoundedIcon from "@mui/icons-material/AssignmentTurnedInRounded";
 
@@ -9,6 +9,8 @@ import CardSection from "../components/layout/CardSection";
 import { loadUserStorage, saveUserStorage } from "../userStorage";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import { useLocation } from "wouter";
+
+const ITEMS_PER_PAGE = 9;
 
 type Contact = {
   id: string;
@@ -63,6 +65,7 @@ const getUpcomingBirthdays = (contacts: Contact[]) => {
 export default function Notifications() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [completedTasks, setCompletedTasks] = useState<CompletedTaskNotification[]>([]);
+  const [page, setPage] = useState(1);
 
   const loadCompletedTasks = useCallback(async () => {
     // Tentar carregar do banco de dados primeiro
@@ -199,6 +202,15 @@ export default function Notifications() {
   }, [completedTasks, upcoming]);
 
   const hasAnyNotification = allNotifications.length > 0;
+  const totalPages = Math.ceil(allNotifications.length / ITEMS_PER_PAGE);
+  const paginatedNotifications = allNotifications.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (_: unknown, value: number) => {
+    setPage(value);
+  };
 
   return (
     <PageContainer>
@@ -210,57 +222,75 @@ export default function Notifications() {
                 Nenhuma notificação recente.
               </Typography>
             ) : (
-              <Box
-                sx={{
-                  display: 'grid',
-                  gridTemplateColumns: {
-                    xs: '1fr',
-                    sm: '1fr 1fr',
-                    md: is1080 ? '1fr 1fr 1fr' : (isMd ? '1fr 1fr 1fr' : '1fr 1fr'),
-                  },
-                  gap: 2,
-                  '@media (max-width:1080px)': {
-                    gridTemplateColumns: '1fr 1fr 1fr',
-                  },
-                }}
-              >
-                {allNotifications.map(notification => (
-                  <CardSection
-                    size="xs"
-                    key={notification.id}
-                    sx={{
-                      minHeight: 64,
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: 1.5,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        mt: 0.5,
-                        color: notification.icon === 'task' ? 'text.secondary' : 'primary.main',
-                      }}
+              <>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: {
+                      xs: '1fr',
+                      sm: '1fr 1fr',
+                      md: is1080 ? '1fr 1fr 1fr' : (isMd ? '1fr 1fr 1fr' : '1fr 1fr'),
+                    },
+                    gap: 2,
+                    '@media (max-width:1080px)': {
+                      gridTemplateColumns: '1fr 1fr 1fr',
+                    },
+                  }}
+                >
+                  {paginatedNotifications.map(notification => (
+                    <CardSection
+                      size="xs"
+                      key={notification.id}
+                      onClick={notification.onClick}
+                      sx={theme => ({
+                        minHeight: 64,
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 1.5,
+                        cursor: notification.onClick ? "pointer" : "default",
+                        ...(notification.onClick ? interactiveCardSx(theme) : {}),
+                      })}
                     >
-                      {notification.icon === 'task' ? (
-                        <AssignmentTurnedInRoundedIcon fontSize="small" />
-                      ) : (
-                        <CakeRoundedIcon fontSize="small" />
-                      )}
-                    </Box>
-                    <Stack sx={{ flex: 1, minWidth: 0 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        {notification.title}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{ color: "text.secondary" }}
+                      <Box
+                        sx={{
+                          mt: 0.5,
+                          color: notification.icon === 'task' ? 'text.secondary' : 'primary.main',
+                        }}
                       >
-                        {notification.subtitle}
-                      </Typography>
-                    </Stack>
-                  </CardSection>
-                ))}
-              </Box>
+                        {notification.icon === 'task' ? (
+                          <AssignmentTurnedInRoundedIcon fontSize="small" />
+                        ) : (
+                          <CakeRoundedIcon fontSize="small" />
+                        )}
+                      </Box>
+                      <Stack sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                          {notification.title}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "text.secondary" }}
+                        >
+                          {notification.subtitle}
+                        </Typography>
+                      </Stack>
+                    </CardSection>
+                  ))}
+                </Box>
+
+                {totalPages > 1 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                    <Pagination
+                      count={totalPages}
+                      page={page}
+                      onChange={handlePageChange}
+                      color="primary"
+                      shape="rounded"
+                      size="medium"
+                    />
+                  </Box>
+                )}
+              </>
             )}
           </Stack>
         </CardSection>
