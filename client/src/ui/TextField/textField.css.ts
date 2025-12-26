@@ -115,16 +115,44 @@ export const inputWrapperDisabled = style({
 export const input = style({
   flex: '1 1 auto',
   minWidth: 0,
+  width: '100%',
   backgroundColor: 'transparent',
   border: '0',
   outline: '0',
   boxShadow: 'none',
   color: 'var(--sc-input-text-color)',
   fontSize: '16px',
+  fontFamily: 'inherit',
   lineHeight: '1.4375em',
   padding: 0,
   height: 'auto',
+  margin: 0,
   boxSizing: 'border-box',
+  
+  '@media': {
+    '(prefers-reduced-motion: no-preference)': {
+      transition: 'none',
+    },
+  },
+  
+  selectors: {
+    '&[type="text"]': {
+      appearance: 'none',
+      WebkitAppearance: 'none',
+      MozAppearance: 'none',
+    },
+    '&[type="search"]': {
+      appearance: 'none',
+      WebkitAppearance: 'none',
+      MozAppearance: 'none',
+    },
+    '&::-webkit-search-decoration': {
+      display: 'none',
+    },
+    '&::-webkit-search-cancel-button': {
+      display: 'none',
+    },
+  },
   
   '::placeholder': {
     color: 'transparent',
@@ -135,10 +163,17 @@ export const input = style({
     border: '0',
     outline: '0',
     boxShadow: 'none',
+    backgroundColor: 'transparent',
+  },
+  
+  ':hover': {
+    backgroundColor: 'transparent',
   },
   
   ':disabled': {
     cursor: 'not-allowed',
+    opacity: 1,
+    backgroundColor: 'transparent',
   },
 });
 
