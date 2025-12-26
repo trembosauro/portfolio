@@ -46,7 +46,6 @@ import ToggleCheckbox from "../components/ToggleCheckbox";
 import CategoryFilter from "../components/CategoryFilter";
 import CardSection from "../components/layout/CardSection";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
-import { SearchField } from "../ui/SearchField";
 import { Select } from "../ui/Select";
 import SettingsDialog from "../components/SettingsDialog";
 import { interactiveCardSx } from "../styles/interactiveCard";
@@ -946,13 +945,38 @@ export default function Financas() {
       >
         <div className={financasStyles.filtersRow}>
           <div className={financasStyles.searchWrap}>
-            <SearchField
+            <TextField
               className={financasStyles.searchFill}
               placeholder="Buscar gastos"
+              label="Buscar gastos"
+              variant="outlined"
+              size="medium"
+              fullWidth
               value={expenseQuery}
               onChange={event => setExpenseQuery(event.target.value)}
-              onClear={() => setExpenseQuery("")}
-              fullWidth
+              onKeyDown={event => {
+                if (event.key === "Escape") {
+                  setExpenseQuery("");
+                }
+              }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {expenseQuery ? (
+                      <IconButton
+                        size="small"
+                        onClick={() => setExpenseQuery("")}
+                        aria-label="Limpar busca"
+                        sx={{ width: 48, height: 48 }}
+                      >
+                        <CloseRoundedIcon fontSize="small" />
+                      </IconButton>
+                    ) : (
+                      <Box sx={{ width: 48, height: 48 }} />
+                    )}
+                  </InputAdornment>
+                ),
+              }}
             />
           </div>
           <div className={financasStyles.filterWrap}>
