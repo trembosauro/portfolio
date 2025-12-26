@@ -1378,22 +1378,37 @@ export default function Notes() {
         >
           Nova nota
         </Button>
-        <IconButton
-          onClick={() => {
-            setShowSearch(!showSearch);
-            if (showSearch) {
-              setNoteQuery("");
-            }
-          }}
-          aria-label="Buscar notas"
-          sx={{
-            width: 40,
-            height: 40,
-            color: showSearch ? "primary.main" : "text.secondary",
-          }}
-        >
-          <SearchRoundedIcon />
-        </IconButton>
+        <Tooltip title="Buscar notas" placement="bottom">
+          <span>
+            <IconButton
+              onClick={event => {
+                (event.currentTarget as HTMLElement).blur();
+                setShowSearch(!showSearch);
+                if (showSearch) {
+                  setNoteQuery("");
+                }
+              }}
+              size="small"
+              sx={theme => ({
+                borderRadius: APP_RADIUS,
+                border: 1,
+                borderColor: showSearch
+                  ? theme.palette.primary.main
+                  : theme.palette.primary.main,
+                backgroundColor: "transparent",
+                color: showSearch
+                  ? theme.palette.primary.main
+                  : theme.palette.primary.main,
+                "&:hover": {
+                  backgroundColor: theme.palette.action.hover,
+                  borderColor: theme.palette.primary.main,
+                },
+              })}
+            >
+              <SearchRoundedIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
         <SettingsIconButton onClick={() => setSettingsOpen(true)} />
       </Stack>
     ),
