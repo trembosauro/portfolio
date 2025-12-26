@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import {
+  AppBar,
   Avatar,
   Box,
   Button,
@@ -10,11 +11,13 @@ import {
   Menu,
   MenuItem,
   Stack,
+  Toolbar,
   Typography,
   Badge,
   Snackbar,
   Alert,
 } from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneRounded";
 import AutoGraphRoundedIcon from "@mui/icons-material/AutoGraphRounded";
 import { Link as RouterLink, Route, Switch, useLocation } from "wouter";
@@ -22,8 +25,6 @@ import { useTranslation } from "react-i18next";
 import theme from "./theme";
 import { APP_RADIUS } from "./designTokens";
 import api from "./api";
-import { AppBar } from "./ui/AppBar";
-import { NavItem } from "./ui/NavItem";
 import { Footer } from "./ui/Footer";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
@@ -575,42 +576,99 @@ function App() {
             }}
           >
           <AppBar
-            brandSlot={
-              <Button
-                onClick={() => setLocation(isLoggedIn ? "/home" : "/")}
-                startIcon={<AutoGraphRoundedIcon fontSize="small" />}
+            position="sticky"
+            elevation={0}
+            sx={{
+              borderBottom: "solid 1px",
+              borderBottomColor: "color-mix(in srgb, var(--md-sys-color-outline) calc(var(--md-sys-alpha-hover) * 100%), transparent)",
+              backdropFilter: "blur(16px)",
+              backgroundColor: "color-mix(in srgb, var(--md-sys-color-surface) 75%, transparent)",
+            }}
+          >
+            <Toolbar
+              sx={{
+                justifyContent: "space-between",
+                gap: 2,
+                minHeight: "var(--sc-header-height, 64px)",
+                px: { xs: "var(--sc-header-px-mobile, 16px)", md: "var(--sc-header-px-desktop, 24px)" },
+              }}
+            >
+              {/* Brand */}
+              <Box sx={{ flex: "0 0 auto" }}>
+                <Button
+                  onClick={() => setLocation(isLoggedIn ? "/home" : "/")}
+                  startIcon={<AutoGraphRoundedIcon fontSize="small" />}
+                  sx={{
+                    textTransform: "none",
+                    fontWeight: 700,
+                    fontSize: "0.875rem",
+                    letterSpacing: "0.02857em",
+                    color: "primary.main",
+                    borderRadius: "999px",
+                    px: 1.75,
+                    py: 1.25,
+                    minWidth: "auto",
+                    "&:hover": {
+                      backgroundColor: "action.hover",
+                    },
+                  }}
+                >
+                  Superclient
+                </Button>
+              </Box>
+
+              {/* Nav (desktop only) */}
+              <Box
+                component="nav"
                 sx={{
-                  textTransform: "none",
-                  fontWeight: 700,
-                  fontSize: "0.875rem",
-                  letterSpacing: "0.02857em",
-                  color: "primary.main",
-                  borderRadius: "999px",
-                  px: 1.75,
-                  py: 1.25,
-                  minWidth: "auto",
-                  "&:hover": {
-                    backgroundColor: "action.hover",
-                  },
+                  flex: "1 1 auto",
+                  display: { xs: "none", md: "flex" },
+                  justifyContent: "center",
+                  gap: "var(--sc-header-nav-gap, 6px)",
+                  minWidth: 0,
+                  flexWrap: "nowrap",
+                  overflowX: "auto",
+                  whiteSpace: "nowrap",
+                  scrollbarWidth: "thin",
                 }}
               >
-                Superclient
-              </Button>
-            }
-            navSlot={
-              <Stack direction="row" spacing={0} sx={{ flexWrap: "wrap" }}>
                 {visibleNavItems.map(item => (
-                  <NavItem
+                  <Button
                     key={item.href}
-                    label={t(item.labelKey)}
+                    component={RouterLink}
                     href={item.href}
-                    active={isActive(item.href)}
-                  />
+                    aria-current={isActive(item.href) ? "page" : undefined}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: "var(--sc-header-nav-font-weight, 500)",
+                      lineHeight: 1,
+                      px: "var(--sc-header-nav-px, 14px)",
+                      py: "var(--sc-header-nav-py, 10px)",
+                      borderRadius: "var(--sc-header-nav-radius, 999px)",
+                      color: isActive(item.href)
+                        ? "var(--sc-header-nav-fg-active)"
+                        : "var(--sc-header-nav-fg)",
+                      backgroundColor: isActive(item.href)
+                        ? "var(--sc-header-nav-bg-active)"
+                        : "transparent",
+                      minWidth: "auto",
+                      "&:hover": {
+                        backgroundColor: isActive(item.href)
+                          ? "var(--sc-header-nav-bg-active)"
+                          : "var(--sc-header-nav-bg-hover)",
+                      },
+                      "&:active": {
+                        backgroundColor: "var(--sc-header-nav-bg-pressed)",
+                      },
+                    }}
+                  >
+                    {t(item.labelKey)}
+                  </Button>
                 ))}
-              </Stack>
-            }
-            actionsSlot={
-              <>
+              </Box>
+
+              {/* Actions */}
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: "0 0 auto" }}>
                 {isLoggedIn && (
                   <IconButton
                     component={RouterLink}
@@ -675,10 +733,7 @@ function App() {
                     </Avatar>
                   </Button>
                 )}
-              </>
-            }
-            mobileActionsSlot={
-              <>
+                {/* Mobile avatar */}
                 {isLoggedIn && (
                   <Button
                     component={RouterLink}
@@ -712,10 +767,26 @@ function App() {
                     </Avatar>
                   </Button>
                 )}
-              </>
-            }
-            onMenuClick={handleMobileMenuOpen}
-          />
+                {/* Mobile menu button */}
+                <IconButton
+                  aria-label="Abrir menu"
+                  onClick={handleMobileMenuOpen}
+                  sx={{
+                    display: { xs: "inline-flex", md: "none" },
+                    color: "var(--md-sys-color-on-surface)",
+                    "&:hover": {
+                      backgroundColor: "color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent)",
+                    },
+                    "&:active": {
+                      backgroundColor: "color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent)",
+                    },
+                  }}
+                >
+                  <MenuIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            </Toolbar>
+          </AppBar>
           <Menu
             anchorEl={mobileAnchorEl}
             open={mobileMenuOpen}
