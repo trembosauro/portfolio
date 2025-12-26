@@ -596,6 +596,7 @@ function App() {
               {/* Brand */}
               <Box sx={{ flex: "0 0 auto" }}>
                 <Button
+                  variant="text"
                   onClick={() => setLocation(isLoggedIn ? "/home" : "/")}
                   startIcon={<AutoGraphRoundedIcon fontSize="small" />}
                   sx={{
@@ -604,7 +605,7 @@ function App() {
                     fontSize: "0.875rem",
                     letterSpacing: "0.02857em",
                     color: "primary.main",
-                    borderRadius: "999px",
+                    backgroundColor: "transparent",
                     px: 1.75,
                     py: 1.25,
                     minWidth: "auto",
