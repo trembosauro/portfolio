@@ -13,7 +13,7 @@ import {
 import { Link as RouterLink } from "wouter";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import CardSection from "../components/layout/CardSection";
-import PageContainer from "../components/layout/PageContainer";
+import { PageContainer } from "../ui/PageContainer/PageContainer";
 import { CategoryChip } from "../components/CategoryChip";
 import CategoryFilter from "../components/CategoryFilter";
 
@@ -265,29 +265,19 @@ export default function CalendarCompleted() {
   }, [doneTasksByDate]);
 
   return (
-    <PageContainer>
-      <Stack spacing={3}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={2}
-          alignItems={{ xs: "flex-start", sm: "center" }}
-          justifyContent="space-between"
+    <PageContainer
+      actionsSlot={
+        <Button
+          variant="outlined"
+          component={RouterLink}
+          href="/calendario"
+          sx={{ textTransform: "none", fontWeight: 600 }}
         >
-          <Box>
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Tudo que foi concluido no calendario.
-            </Typography>
-          </Box>
-          <Button
-            variant="outlined"
-            component={RouterLink}
-            href="/calendario"
-            sx={{ textTransform: "none", fontWeight: 600 }}
-          >
-            Voltar para o calendario
-          </Button>
-        </Stack>
-
+          Voltar para o calendario
+        </Button>
+      }
+    >
+      <Stack spacing={3}>
         <CardSection size="xs">
           <Stack spacing={2} direction={{ xs: "column", md: "row" }}>
             <CategoryFilter

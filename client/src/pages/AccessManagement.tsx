@@ -20,7 +20,7 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import AppAccordion from "../components/layout/AppAccordion";
 import CardSection from "../components/layout/CardSection";
 import SettingsIconButton from "../components/SettingsIconButton";
-import { SearchField } from "../ui/SearchField/SearchField";
+import { PageContainer } from "../ui/PageContainer/PageContainer";
 
 type RolePermissionKey =
   | "pipeline_view"
@@ -409,11 +409,8 @@ export default function AccessManagement() {
   };
 
   return (
-    <Box sx={{ maxWidth: 1100, mx: "auto", width: "100%" }}>
+    <PageContainer>
       <Stack spacing={3}>
-        <Stack spacing={1}>
-        </Stack>
-
         <CardSection size="lg">
           <Stack spacing={2.5}>
             <Stack
@@ -662,13 +659,36 @@ export default function AccessManagement() {
           title="Usuários e cargos"
         >
           <Stack spacing={2.5}>
-            <SearchField
-              placeholder="Buscar usuário"
+            <TextField
+              label="Buscar usuário"
+              variant="outlined"
+              size="medium"
               fullWidth
               value={userFilter}
               onChange={e => setUserFilter(e.target.value)}
-              onClear={() => setUserFilter("")}
-              ariaLabel="Buscar usuário"
+              onKeyDown={e => {
+                if (e.key === "Escape") {
+                  setUserFilter("");
+                }
+              }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {userFilter ? (
+                      <IconButton
+                        size="small"
+                        onClick={() => setUserFilter("")}
+                        aria-label="Limpar busca"
+                        sx={{ width: 48, height: 48 }}
+                      >
+                        <CloseRoundedIcon fontSize="small" />
+                      </IconButton>
+                    ) : (
+                      <Box sx={{ width: 48, height: 48 }} />
+                    )}
+                  </InputAdornment>
+                ),
+              }}
             />
             {filteredUsers.length === 0 ? (
               <Typography variant="body2" sx={{ color: "text.secondary" }}>
@@ -1049,6 +1069,6 @@ export default function AccessManagement() {
           </Stack>
         </AppAccordion>
       </Stack>
-    </Box>
+    </PageContainer>
   );
 }
