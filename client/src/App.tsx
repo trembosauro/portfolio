@@ -22,7 +22,6 @@ import { useTranslation } from "react-i18next";
 import theme from "./theme";
 import { APP_RADIUS } from "./designTokens";
 import api from "./api";
-import { brandRoot } from "./ui/Brand/brand.css";
 import { AppBar } from "./ui/AppBar";
 import { NavItem } from "./ui/NavItem";
 import { Footer } from "./ui/Footer";
@@ -577,13 +576,26 @@ function App() {
           >
           <AppBar
             brandSlot={
-              <button
+              <Button
                 onClick={() => setLocation(isLoggedIn ? "/home" : "/")}
-                className={brandRoot}
+                startIcon={<AutoGraphRoundedIcon fontSize="small" />}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  fontSize: "0.875rem",
+                  letterSpacing: "0.02857em",
+                  color: "primary.main",
+                  borderRadius: "999px",
+                  px: 1.75,
+                  py: 1.25,
+                  minWidth: "auto",
+                  "&:hover": {
+                    backgroundColor: "action.hover",
+                  },
+                }}
               >
-                <AutoGraphRoundedIcon fontSize="small" />
-                <span>Superclient</span>
-              </button>
+                Superclient
+              </Button>
             }
             navSlot={
               <Stack direction="row" spacing={0} sx={{ flexWrap: "wrap" }}>
