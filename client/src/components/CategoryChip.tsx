@@ -1,8 +1,18 @@
 import * as React from "react";
 import Chip, { type ChipProps } from "@mui/material/Chip";
-import type { SxProps, Theme } from "@mui/material/styles";
+import { alpha, type SxProps, type Theme } from "@mui/material/styles";
 
 import { darkenColor } from "@/lib/color";
+
+type MuiPaletteToken = "primary" | "secondary" | "success" | "info" | "warning" | "error";
+
+const isMuiPaletteToken = (value: string): value is MuiPaletteToken =>
+  value === "primary" ||
+  value === "secondary" ||
+  value === "success" ||
+  value === "info" ||
+  value === "warning" ||
+  value === "error";
 
 export type CategoryChipProps = Omit<ChipProps, "sx"> & {
   categoryColor: string;
@@ -17,8 +27,18 @@ export const CategoryChip = ({
   ...props
 }: CategoryChipProps) => {
   const baseSx: SxProps<Theme> = (theme: Theme) => ({
-    color: theme.palette.text.primary,
-    backgroundColor: darkenColor(categoryColor, 0.5),
+    ...(isMuiPaletteToken(categoryColor)
+      ? {
+          color: theme.palette[categoryColor].main,
+          backgroundColor: alpha(
+            theme.palette[categoryColor].main,
+            theme.palette.mode === "dark" ? 0.22 : 0.14
+          ),
+        }
+      : {
+          color: theme.palette.text.primary,
+          backgroundColor: darkenColor(categoryColor, 0.5),
+        }),
     ...(maxWidth ? { maxWidth } : null),
     "& .MuiChip-label": {
       overflow: "hidden",
