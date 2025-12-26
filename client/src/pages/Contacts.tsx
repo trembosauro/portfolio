@@ -32,8 +32,6 @@ import SettingsIconButton from "../components/SettingsIconButton";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
-import { TextField as TextFieldVE } from "../ui/TextField";
-import { SearchField } from "../ui/SearchField";
 import CardSection from "../components/layout/CardSection";
 import CategoryFilter from "../components/CategoryFilter";
 import SettingsDialog from "../components/SettingsDialog";
@@ -969,13 +967,38 @@ export default function Contacts() {
           <Stack spacing={2}>
             <div className={contactStyles.filtersRow}>
               <div className={contactStyles.searchWrap}>
-                <SearchField
+                <TextField
                   className={contactStyles.searchFill}
                   placeholder="Buscar contatos"
+                  label="Buscar contatos"
+                  variant="outlined"
+                  size="medium"
+                  fullWidth
                   value={contactQuery}
                   onChange={event => setContactQuery(event.target.value)}
-                  onClear={() => setContactQuery("")}
-                  fullWidth
+                  onKeyDown={event => {
+                    if (event.key === "Escape") {
+                      setContactQuery("");
+                    }
+                  }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        {contactQuery ? (
+                          <IconButton
+                            size="small"
+                            onClick={() => setContactQuery("")}
+                            aria-label="Limpar busca"
+                            sx={{ width: 48, height: 48 }}
+                          >
+                            <CloseRoundedIcon fontSize="small" />
+                          </IconButton>
+                        ) : (
+                          <Box sx={{ width: 48, height: 48 }} />
+                        )}
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </div>
               <div className={contactStyles.categoryWrap}>
