@@ -2326,18 +2326,22 @@ export default function Notes() {
         open={Boolean(noteConfirm)}
         intent={noteConfirm?.type === "delete" ? "danger" : "default"}
         title={
-          noteConfirm?.type === "delete"
-            ? "Remover nota"
-            : noteConfirm?.type === "archive"
-              ? "Arquivar nota"
-              : "Restaurar nota"
+          noteConfirm
+            ? noteConfirm.type === "delete"
+              ? "Remover nota"
+              : noteConfirm.type === "archive"
+                ? "Arquivar nota"
+                : "Restaurar nota"
+            : ""
         }
         description={
-          noteConfirm?.type === "delete"
-            ? "Você confirma a remoção desta nota? Esta ação não poderá ser desfeita."
-            : noteConfirm?.type === "archive"
-              ? "Você confirma o envio desta nota para o arquivo?"
-              : "Você confirma a restauração desta nota para a lista principal?"
+          noteConfirm
+            ? noteConfirm.type === "delete"
+              ? "Você confirma a remoção desta nota? Esta ação não poderá ser desfeita."
+              : noteConfirm.type === "archive"
+                ? "Você confirma o envio desta nota para o arquivo?"
+                : "Você confirma a restauração desta nota para a lista principal?"
+            : ""
         }
         onCancel={() => setNoteConfirm(null)}
         onConfirm={() => {
