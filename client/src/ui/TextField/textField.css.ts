@@ -122,17 +122,22 @@ export const input = style({
   boxShadow: 'none',
   color: 'var(--sc-input-text-color)',
   fontSize: '16px',
+  fontFamily: 'inherit',
   lineHeight: '1.4375em',
   padding: '16.5px 0',
   height: 'auto',
   margin: 0,
   boxSizing: 'border-box',
-  fontFamily: 'inherit',
   appearance: 'none',
   WebkitAppearance: 'none',
   MozAppearance: 'none',
   
   selectors: {
+    '&[type="text"]': {
+      appearance: 'none',
+      WebkitAppearance: 'none',
+      MozAppearance: 'none',
+    },
     '&[type="search"]': {
       appearance: 'none',
       WebkitAppearance: 'none',
@@ -143,6 +148,12 @@ export const input = style({
     },
     '&::-webkit-search-cancel-button': {
       display: 'none',
+    },
+  },
+  
+  '@media': {
+    '(prefers-reduced-motion: no-preference)': {
+      transition: 'none',
     },
   },
   
