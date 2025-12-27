@@ -2545,23 +2545,24 @@ export default function Calendar() {
                     },
                   }}
                 />
-                <Box
-                  sx={theme => ({
-                    width: 8,
-                    height: 8,
-                    backgroundColor:
-                      resolveThemeColor(
-                        theme,
-                        calendarSources.find(
-                          source => source.id === viewingTask?.calendarId
-                        )?.color || "primary"
-                      ),
-                    ml: 1,
-                    alignSelf: "center",
-                  })}
-                />
               </Stack>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ pl: 1 }}>
+                <Box
+                  sx={theme => ({
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    backgroundColor: resolveThemeColor(
+                      theme,
+                      calendarSources.find(
+                        source => source.id === viewingTask?.calendarId
+                      )?.color || "primary"
+                    ),
+                    border: 1,
+                    borderColor: "divider",
+                    flex: "0 0 auto",
+                  })}
+                />
                 <Typography
                   variant="caption"
                   sx={{
