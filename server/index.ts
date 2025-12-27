@@ -209,6 +209,11 @@ const ensureUserPreferencesColumns = () => {
       "ALTER TABLE user_preferences ADD COLUMN module_calendar INTEGER NOT NULL DEFAULT 1"
     ).run();
   }
+  if (!names.has("start_page")) {
+    db.prepare(
+      "ALTER TABLE user_preferences ADD COLUMN start_page TEXT NOT NULL DEFAULT '/tarefas'"
+    ).run();
+  }
   if (!names.has("language")) {
     db.prepare(
       "ALTER TABLE user_preferences ADD COLUMN language TEXT NOT NULL DEFAULT 'pt-BR'"
@@ -1350,7 +1355,7 @@ app.get("/api/profile", requireAuth, (req, res) => {
 
   const preferences = db
     .prepare(
-      "SELECT email_notifications, single_session, module_pipeline, module_finance, module_contacts, module_calendar, language, notify_mentions, notify_pipeline_updates, notify_finance_alerts, notify_weekly_summary, notify_product_updates FROM user_preferences WHERE user_id = ?"
+      "SELECT email_notifications, single_session, module_pipeline, module_finance, module_contacts, module_calendar, start_page, language, notify_mentions, notify_pipeline_updates, notify_finance_alerts, notify_weekly_summary, notify_product_updates FROM user_preferences WHERE user_id = ?"
     )
     .get(userId) as
     | {
@@ -1360,6 +1365,7 @@ app.get("/api/profile", requireAuth, (req, res) => {
         module_finance: number;
         module_contacts: number;
         module_calendar: number;
+        start_page: string | null;
         language: string | null;
         notify_mentions: number;
         notify_pipeline_updates: number;
@@ -1368,6 +1374,23 @@ app.get("/api/profile", requireAuth, (req, res) => {
         notify_product_updates: number;
       }
     | undefined;
+
+  const normalizeStartPage = (value: unknown) => {
+    if (typeof value !== "string") {
+      return "/tarefas";
+    }
+    const next = value.trim();
+    if (
+      next === "/tarefas" ||
+      next === "/notas" ||
+      next === "/financas" ||
+      next === "/contatos" ||
+      next === "/pipeline"
+    ) {
+      return next;
+    }
+    return "/tarefas";
+  };
 
   const parseStringList = (value: string | null | undefined) => {
     if (!value) {
@@ -1415,6 +1438,7 @@ app.get("/api/profile", requireAuth, (req, res) => {
       moduleFinance: preferences ? Boolean(preferences.module_finance) : true,
       moduleContacts: preferences ? Boolean(preferences.module_contacts) : true,
       moduleCalendar: preferences ? Boolean(preferences.module_calendar) : true,
+      startPage: normalizeStartPage(preferences?.start_page),
       language: preferences?.language || "pt-BR",
       notifyMentions: preferences ? Boolean(preferences.notify_mentions) : true,
       notifyPipelineUpdates: preferences
@@ -1488,6 +1512,23 @@ app.put("/api/profile", requireAuth, (req, res) => {
   const moduleFinance = Boolean(req.body.preferences?.moduleFinance);
   const moduleContacts = Boolean(req.body.preferences?.moduleContacts);
   const moduleCalendar = Boolean(req.body.preferences?.moduleCalendar);
+  const normalizeStartPage = (value: unknown) => {
+    if (typeof value !== "string") {
+      return "/tarefas";
+    }
+    const next = value.trim();
+    if (
+      next === "/tarefas" ||
+      next === "/notas" ||
+      next === "/financas" ||
+      next === "/contatos" ||
+      next === "/pipeline"
+    ) {
+      return next;
+    }
+    return "/tarefas";
+  };
+  const startPage = normalizeStartPage(req.body.preferences?.startPage);
   const language =
     typeof req.body.preferences?.language === "string"
       ? req.body.preferences.language.trim()
@@ -1543,6 +1584,7 @@ app.put("/api/profile", requireAuth, (req, res) => {
       module_finance,
       module_contacts,
       module_calendar,
+      start_page,
       language,
       notify_mentions,
       notify_pipeline_updates,
@@ -1552,7 +1594,7 @@ app.put("/api/profile", requireAuth, (req, res) => {
       created_at,
       updated_at
     )
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(user_id) DO UPDATE SET
        email_notifications = excluded.email_notifications,
        single_session = excluded.single_session,
@@ -1560,6 +1602,7 @@ app.put("/api/profile", requireAuth, (req, res) => {
        module_finance = excluded.module_finance,
        module_contacts = excluded.module_contacts,
        module_calendar = excluded.module_calendar,
+       start_page = excluded.start_page,
        language = excluded.language,
        notify_mentions = excluded.notify_mentions,
        notify_pipeline_updates = excluded.notify_pipeline_updates,
@@ -1575,6 +1618,7 @@ app.put("/api/profile", requireAuth, (req, res) => {
     moduleFinance ? 1 : 0,
     moduleContacts ? 1 : 0,
     moduleCalendar ? 1 : 0,
+    startPage,
     language || "pt-BR",
     notifyMentions ? 1 : 0,
     notifyPipelineUpdates ? 1 : 0,
@@ -1608,6 +1652,7 @@ app.put("/api/profile", requireAuth, (req, res) => {
       moduleFinance,
       moduleContacts,
       moduleCalendar,
+      startPage,
       language: language || "pt-BR",
       notifyMentions,
       notifyPipelineUpdates,

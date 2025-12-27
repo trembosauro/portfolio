@@ -198,6 +198,14 @@ const languageOptions = [
   { value: "fr-FR", label: "Francês" },
 ];
 
+const startPageOptions = [
+  { value: "/tarefas", label: "Tarefas" },
+  { value: "/notas", label: "Notas" },
+  { value: "/financas", label: "Finanças" },
+  { value: "/contatos", label: "Contatos" },
+  { value: "/pipeline", label: "Pipeline" },
+];
+
 export default function Profile() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
@@ -228,6 +236,7 @@ export default function Profile() {
     moduleContacts: true,
     moduleCalendar: true,
     moduleNotes: true,
+    startPage: "/tarefas",
     language: "pt-BR",
   });
   const [primaryColorToken, setPrimaryColorToken] = useState<string | null>(() =>
@@ -440,6 +449,7 @@ export default function Profile() {
         moduleContacts?: boolean;
         moduleCalendar?: boolean;
         moduleNotes?: boolean;
+        startPage?: string;
         language?: string;
       };
     };
@@ -489,6 +499,7 @@ export default function Profile() {
       moduleContacts: Boolean(prefs?.moduleContacts ?? true),
       moduleCalendar: Boolean(prefs?.moduleCalendar ?? true),
       moduleNotes: Boolean(prefs?.moduleNotes ?? true),
+      startPage: normalizeStartPage(prefs?.startPage),
       language: prefs?.language || "pt-BR",
     });
     setLanguageDraft(prefs?.language || "pt-BR");
@@ -500,6 +511,7 @@ export default function Profile() {
         moduleContacts: Boolean(prefs?.moduleContacts ?? true),
         moduleCalendar: Boolean(prefs?.moduleCalendar ?? true),
         moduleNotes: Boolean(prefs?.moduleNotes ?? true),
+        startPage: normalizeStartPage(prefs?.startPage),
         language: prefs?.language || "pt-BR",
       })
     );
@@ -617,7 +629,7 @@ export default function Profile() {
       setSwitchDialogOpen(false);
       setSwitchPassword("");
       setSwitchEmail("");
-      setLocation("/home");
+      setLocation("/");
     } catch (error) {
       const response = (
         error as { response?: { status?: number; data?: { error?: string } } }
@@ -641,6 +653,23 @@ export default function Profile() {
     items.map(item => item.trim()).filter(Boolean);
 
   const ensureList = (items: string[]) => (items.length ? items : [""]);
+
+  const normalizeStartPage = (value: unknown) => {
+    if (typeof value !== "string") {
+      return "/tarefas";
+    }
+    const next = value.trim();
+    if (
+      next === "/tarefas" ||
+      next === "/notas" ||
+      next === "/financas" ||
+      next === "/contatos" ||
+      next === "/pipeline"
+    ) {
+      return next;
+    }
+    return "/tarefas";
+  };
 
   const saveProfile = () => {
     const primaryPhone = sanitizeList(phones)[0] || "";
@@ -666,6 +695,7 @@ export default function Profile() {
           moduleContacts: preferences.moduleContacts,
           moduleCalendar: preferences.moduleCalendar,
           moduleNotes: preferences.moduleNotes,
+          startPage: preferences.startPage,
           language: preferences.language,
           notifyMentions: preferences.notifyMentions,
           notifyPipelineUpdates: preferences.notifyPipelineUpdates,
@@ -707,6 +737,7 @@ export default function Profile() {
           moduleContacts: preferences.moduleContacts,
           moduleCalendar: preferences.moduleCalendar,
           moduleNotes: preferences.moduleNotes,
+          startPage: preferences.startPage,
           language: preferences.language,
         })
       );
@@ -863,6 +894,7 @@ export default function Profile() {
           moduleContacts: next.moduleContacts,
           moduleCalendar: next.moduleCalendar,
           moduleNotes: next.moduleNotes,
+          startPage: next.startPage,
           language: next.language,
         })
       );
@@ -897,6 +929,7 @@ export default function Profile() {
           moduleContacts: next.moduleContacts,
           moduleCalendar: next.moduleCalendar,
           moduleNotes: next.moduleNotes,
+          startPage: next.startPage,
           language: next.language,
         })
       );
@@ -1750,6 +1783,43 @@ export default function Profile() {
               alignItems={{ xs: "stretch", md: "center" }}
             >
               <Stack spacing={2} sx={{ flex: 1, maxWidth: { xs: "100%", md: 420 } }}>
+                <AppCard
+                  variant="outlined"
+                  sx={theme => ({
+                    p: 2.5,
+                    ...interactiveCardSx(theme),
+                  })}
+                >
+                  <Stack spacing={1.5}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Página inicial
+                    </Typography>
+                    <TextField
+                      select
+                      size="small"
+                      fullWidth
+                      value={preferences.startPage}
+                      onChange={event =>
+                        setPreferences(prev => ({
+                          ...prev,
+                          startPage: normalizeStartPage(event.target.value),
+                        }))
+                      }
+                    >
+                      {startPageOptions.map(option => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      Escolha qual módulo abrir primeiro ao entrar.
+                    </Typography>
+                  </Stack>
+                </AppCard>
                 <AppCard
                   variant="outlined"
                   onClick={() =>

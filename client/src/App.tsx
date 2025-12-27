@@ -78,9 +78,73 @@ function App() {
     notes: true,
   });
   const [language, setLanguage] = useState("pt-BR");
+  const [startPage, setStartPage] = useState<string>(() => {
+    try {
+      const storedPrefs = window.localStorage.getItem("sc_prefs");
+      if (!storedPrefs) {
+        return "/tarefas";
+      }
+      const parsed = JSON.parse(storedPrefs) as { startPage?: unknown };
+      const candidate = typeof parsed?.startPage === "string" ? parsed.startPage.trim() : "";
+      if (
+        candidate === "/tarefas" ||
+        candidate === "/notas" ||
+        candidate === "/financas" ||
+        candidate === "/contatos" ||
+        candidate === "/pipeline"
+      ) {
+        return candidate;
+      }
+      return "/tarefas";
+    } catch {
+      return "/tarefas";
+    }
+  });
   const [hasNotifications, setHasNotifications] = useState(false);
   const [switchNotice, setSwitchNotice] = useState("");
   const [switchSnackbarOpen, setSwitchSnackbarOpen] = useState(false);
+
+  const normalizeStartPage = (value: unknown) => {
+    if (typeof value !== "string") {
+      return "/tarefas";
+    }
+    const next = value.trim();
+    if (
+      next === "/tarefas" ||
+      next === "/notas" ||
+      next === "/financas" ||
+      next === "/contatos" ||
+      next === "/pipeline"
+    ) {
+      return next;
+    }
+    return "/tarefas";
+  };
+
+  const resolveStartRoute = (requested: string) => {
+    const candidate = normalizeStartPage(requested);
+
+    if (candidate === "/pipeline" && !moduleAccess.pipeline) {
+      return "/tarefas";
+    }
+    if (candidate === "/financas" && !moduleAccess.finance) {
+      return "/tarefas";
+    }
+    if (candidate === "/contatos" && !moduleAccess.contacts) {
+      return "/tarefas";
+    }
+    if (candidate === "/tarefas" && !moduleAccess.tasks) {
+      if (moduleAccess.notes) return "/notas";
+      if (moduleAccess.finance) return "/financas";
+      if (moduleAccess.contacts) return "/contatos";
+      if (moduleAccess.pipeline) return "/pipeline";
+      return "/home";
+    }
+    if (candidate === "/notas" && !moduleAccess.notes) {
+      return "/tarefas";
+    }
+    return candidate;
+  };
 
   const homeBreadcrumbLabel = language.toLowerCase().startsWith("pt")
     ? "Início"
@@ -118,6 +182,7 @@ function App() {
               moduleContacts: Boolean(prefs.moduleContacts ?? true),
               moduleCalendar: Boolean(prefs.moduleCalendar ?? true),
               moduleNotes: Boolean(prefs.moduleNotes ?? true),
+              startPage: normalizeStartPage(prefs.startPage),
               language:
                 typeof prefs.language === "string" ? prefs.language : "pt-BR",
             };
@@ -129,6 +194,7 @@ function App() {
               tasks: nextPrefs.moduleCalendar,
               notes: nextPrefs.moduleNotes,
             });
+            setStartPage(normalizeStartPage(nextPrefs.startPage));
             setLanguage(nextPrefs.language);
             document.documentElement.lang = nextPrefs.language;
           }
@@ -173,6 +239,7 @@ function App() {
           moduleContacts?: boolean;
           moduleCalendar?: boolean;
           moduleNotes?: boolean;
+          startPage?: unknown;
           language?: string;
         };
         setModuleAccess({
@@ -182,6 +249,7 @@ function App() {
           tasks: Boolean(parsed.moduleCalendar ?? true),
           notes: Boolean(parsed.moduleNotes ?? true),
         });
+        setStartPage(normalizeStartPage(parsed.startPage));
         const nextLanguage =
           typeof parsed.language === "string" ? parsed.language : "pt-BR";
         setLanguage(nextLanguage);
@@ -232,9 +300,9 @@ function App() {
 
   useEffect(() => {
     if (isLoggedIn && ["/", "/login", "/signup"].includes(location)) {
-      setLocation("/home");
+      setLocation(resolveStartRoute(startPage));
     }
-  }, [isLoggedIn, location, setLocation]);
+  }, [isLoggedIn, location, setLocation, startPage, moduleAccess]);
 
   useEffect(() => {
     if (isLoggedIn) {
