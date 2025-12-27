@@ -1,6 +1,5 @@
 import { createTheme } from "@mui/material/styles";
 import {
-  amber,
   blue,
   green,
   indigo,
@@ -16,18 +15,17 @@ export const PRIMARY_COLOR_STORAGE_KEY = "sc_primary_color";
 export const PRIMARY_COLOR_CHANGED_EVENT = "sc-primary-color-changed";
 
 export const APP_PRIMARY_COLOR_OPTIONS = [
-  "mui.green.600",
-  "mui.blue.600",
-  "mui.indigo.500",
-  "mui.purple.500",
-  "mui.pink.500",
-  "mui.red.600",
-  "mui.orange.700",
-  "mui.amber.700",
+  "default",
+  "mui.green.A200",
+  "mui.blue.A200",
+  "mui.indigo.A200",
+  "mui.purple.A200",
+  "mui.pink.A200",
+  "mui.red.A200",
+  "mui.orange.A200",
 ] as const;
 
 const MUI_COLOR_MAP: Record<string, Record<string, string>> = {
-  amber,
   blue,
   green,
   indigo,
@@ -38,7 +36,7 @@ const MUI_COLOR_MAP: Record<string, Record<string, string>> = {
 };
 
 const DEFAULT_PRIMARY_MAIN = "#22c9a6";
-const DEFAULT_PRIMARY_CONTRAST = "#00382f";
+export const APP_DEFAULT_PRIMARY_MAIN = DEFAULT_PRIMARY_MAIN;
 
 const resolveMuiTokenToHex = (value?: string | null): string => {
   if (!value) {
@@ -68,11 +66,9 @@ export const createAppTheme = (primaryColorToken?: string | null) =>
     mode: "dark",
     primary: {
       main: resolveMuiTokenToHex(primaryColorToken),
-      contrastText: DEFAULT_PRIMARY_CONTRAST,
     },
     brand: {
       main: resolveMuiTokenToHex(primaryColorToken),
-      contrastText: DEFAULT_PRIMARY_CONTRAST,
     },
     secondary: {
       main: "#CCC2DC",

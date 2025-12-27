@@ -33,6 +33,7 @@ import { interactiveCardSx } from "../styles/interactiveCard";
 import { changeLanguage } from "../i18n";
 import {
   APP_PRIMARY_COLOR_OPTIONS,
+  APP_DEFAULT_PRIMARY_MAIN,
   PRIMARY_COLOR_CHANGED_EVENT,
   PRIMARY_COLOR_STORAGE_KEY,
 } from "../theme";
@@ -234,8 +235,14 @@ export default function Profile() {
   );
 
   const handlePrimaryColorSelect = useCallback((token: string) => {
-    localStorage.setItem(PRIMARY_COLOR_STORAGE_KEY, token);
-    setPrimaryColorToken(token);
+    if (token === "default") {
+      localStorage.removeItem(PRIMARY_COLOR_STORAGE_KEY);
+      setPrimaryColorToken(null);
+    } else {
+      localStorage.setItem(PRIMARY_COLOR_STORAGE_KEY, token);
+      setPrimaryColorToken(token);
+    }
+
     window.dispatchEvent(new Event(PRIMARY_COLOR_CHANGED_EVENT));
   }, []);
   const [languageDraft, setLanguageDraft] = useState("pt-BR");
@@ -1802,8 +1809,12 @@ export default function Profile() {
                     </Typography>
                     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.25 }}>
                       {APP_PRIMARY_COLOR_OPTIONS.map(token => {
-                        const color = resolveThemeColor(muiTheme, token);
-                        const selected = token === primaryColorToken;
+                        const effectiveToken = primaryColorToken ?? "default";
+                        const color =
+                          token === "default"
+                            ? APP_DEFAULT_PRIMARY_MAIN
+                            : resolveThemeColor(muiTheme, token);
+                        const selected = token === effectiveToken;
 
                         return (
                           <Box
