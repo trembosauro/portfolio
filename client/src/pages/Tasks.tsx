@@ -2158,8 +2158,6 @@ export default function Tasks() {
                           height: 12,
                           borderRadius: "50%",
                           backgroundColor: resolveThemeColor(theme, "mui.grey.900"),
-                          border: 1,
-                          borderColor: "divider",
                         })}
                       />
                       <Typography variant="body2">Todas</Typography>
@@ -2191,8 +2189,6 @@ export default function Tasks() {
                             height: 12,
                             borderRadius: "50%",
                             backgroundColor: resolveThemeColor(theme, cat.color),
-                            border: 1,
-                            borderColor: "divider",
                           })}
                         />
                         <Typography variant="body2">{cat.name}</Typography>
@@ -3187,8 +3183,6 @@ export default function Tasks() {
                           height: 12,
                           borderRadius: "50%",
                           backgroundColor: resolveThemeColor(theme, "mui.grey.900"),
-                          border: 1,
-                          borderColor: "divider",
                         })}
                       />
                       <Typography variant="body2">Todas</Typography>
@@ -3223,8 +3217,6 @@ export default function Tasks() {
                             height: 12,
                             borderRadius: "50%",
                             backgroundColor: resolveThemeColor(theme, cat.color),
-                            border: 1,
-                            borderColor: "divider",
                           })}
                         />
                         <Typography variant="body2">{cat.name}</Typography>
