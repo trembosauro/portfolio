@@ -215,11 +215,21 @@ const extractInlineTaskDate = (rawTitle: string) => {
     return { title: original, date: null as Date | null };
   }
 
-  const dateMatch = trimmed.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
-  if (dateMatch) {
-    const day = Number(dateMatch[1]);
-    const month = Number(dateMatch[2]);
-    const year = Number(dateMatch[3]);
+  const normalize = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+  const DATE_TOKEN_REGEX =
+    /(^|[\s,;:()\[\]{}-])(\d{1,2}\/\d{1,2}\/\d{4})(?=$|[\s,;:()\[\]{}.!?-])/;
+
+  const dateTokenMatch = trimmed.match(DATE_TOKEN_REGEX);
+  if (dateTokenMatch) {
+    const [dayStr, monthStr, yearStr] = dateTokenMatch[2].split("/");
+    const day = Number(dayStr);
+    const month = Number(monthStr);
+    const year = Number(yearStr);
     const candidate = new Date(year, month - 1, day);
     if (
       candidate.getFullYear() === year &&
@@ -227,7 +237,11 @@ const extractInlineTaskDate = (rawTitle: string) => {
       candidate.getDate() === day
     ) {
       const nextTitle = trimmed
-        .replace(dateMatch[0], " ")
+        .replace(DATE_TOKEN_REGEX, (_full, lead: string) => {
+          if (!lead) return "";
+          if (/^\s+$/.test(lead)) return " ";
+          return lead;
+        })
         .replace(/\s{2,}/g, " ")
         .trim();
       candidate.setHours(0, 0, 0, 0);
@@ -235,18 +249,12 @@ const extractInlineTaskDate = (rawTitle: string) => {
     }
   }
 
-  const normalize = (value: string) =>
-    value
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+  const WEEKDAY_TOKEN_REGEX =
+    /(^|[\s,;:()\[\]{}-])((?:dom(?:ingo)?|seg(?:unda)?|ter(?:ca|ça)?|qua(?:rta)?|qui(?:nta)?|sex(?:ta)?|sab(?:ado)?|s[aá]b(?:ado)?))(?:-feira)?(?=$|[\s,;:()\[\]{}.!?-])/iu;
 
-  const weekdayRegex =
-    /\b(dom(ingo)?|seg(unda)?|ter(ca|ça)?|qua(rta)?|qui(nta)?|sex(ta)?|sab(ado)?|s[aá]b(ado)?|s[aá]b|s[aá]bado)\b/i;
-
-  const weekdayMatch = trimmed.match(weekdayRegex);
+  const weekdayMatch = trimmed.match(WEEKDAY_TOKEN_REGEX);
   if (weekdayMatch) {
-    const token = normalize(weekdayMatch[0]);
+    const token = normalize(weekdayMatch[2]);
     const targetDow = (() => {
       if (token.startsWith("dom")) return 0;
       if (token.startsWith("seg")) return 1;
@@ -266,7 +274,11 @@ const extractInlineTaskDate = (rawTitle: string) => {
         candidate.setDate(candidate.getDate() + 1);
       }
       const nextTitle = trimmed
-        .replace(weekdayRegex, " ")
+        .replace(WEEKDAY_TOKEN_REGEX, (_full, lead: string) => {
+          if (!lead) return "";
+          if (/^\s+$/.test(lead)) return " ";
+          return lead;
+        })
         .replace(/\s{2,}/g, " ")
         .trim();
       return { title: nextTitle, date: candidate };
