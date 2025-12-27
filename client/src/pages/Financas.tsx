@@ -80,18 +80,18 @@ const TABLE_LAYOUT_KEY = "finance_table_layout_v1";
 const DEFAULT_COLORS = CATEGORY_COLOR_OPTIONS;
 
 const defaultCategories: Category[] = [
-  { id: "cat-moradia", name: "Pessoal", color: DEFAULT_COLORS[0] },
-  { id: "cat-alimentacao", name: "Operacional", color: DEFAULT_COLORS[1] },
-  { id: "cat-transporte", name: "Marketing", color: DEFAULT_COLORS[2] },
-  { id: "cat-saude", name: "Vendas", color: DEFAULT_COLORS[3] },
-  { id: "cat-lazer", name: "Tecnologia", color: DEFAULT_COLORS[4] },
-  { id: "cat-educacao", name: "Infraestrutura", color: DEFAULT_COLORS[5] },
-  { id: "cat-assinaturas", name: "Servicos", color: DEFAULT_COLORS[6] },
-  { id: "cat-impostos", name: "Impostos", color: DEFAULT_COLORS[7] },
-  { id: "cat-investimentos", name: "Viagens", color: DEFAULT_COLORS[8] },
-  { id: "cat-viagem", name: "Treinamento", color: DEFAULT_COLORS[9] },
-  { id: "cat-compras", name: "Fornecedores", color: DEFAULT_COLORS[0] },
-  { id: "cat-outros", name: "Outros", color: DEFAULT_COLORS[1] },
+  { id: "fin-cat-pessoal", name: "Pessoal", color: DEFAULT_COLORS[0] },
+  { id: "fin-cat-operacional", name: "Operacional", color: DEFAULT_COLORS[1] },
+  { id: "fin-cat-fornecedores", name: "Fornecedores", color: DEFAULT_COLORS[2] },
+  { id: "fin-cat-servicos", name: "Serviços", color: DEFAULT_COLORS[3] },
+  { id: "fin-cat-marketing", name: "Marketing", color: DEFAULT_COLORS[4] },
+  { id: "fin-cat-folha", name: "Folha", color: DEFAULT_COLORS[5] },
+  { id: "fin-cat-impostos", name: "Impostos", color: DEFAULT_COLORS[6] },
+  { id: "fin-cat-tecnologia", name: "Tecnologia", color: DEFAULT_COLORS[7] },
+  { id: "fin-cat-infra", name: "Infraestrutura", color: DEFAULT_COLORS[8] },
+  { id: "fin-cat-viagens", name: "Viagens", color: DEFAULT_COLORS[9] },
+  { id: "fin-cat-treinamento", name: "Treinamento", color: DEFAULT_COLORS[0] },
+  { id: "fin-cat-outros", name: "Outros", color: DEFAULT_COLORS[1] },
 ];
 
 const LEGACY_FINANCE_NAMES = new Set([
@@ -109,17 +109,34 @@ const LEGACY_FINANCE_NAMES = new Set([
   "Outros",
 ]);
 
+const LEGACY_FINANCE_ID_MAP: Record<string, string> = {
+  "cat-moradia": "fin-cat-infra",
+  "cat-alimentacao": "fin-cat-operacional",
+  "cat-transporte": "fin-cat-viagens",
+  "cat-saude": "fin-cat-servicos",
+  "cat-lazer": "fin-cat-pessoal",
+  "cat-educacao": "fin-cat-treinamento",
+  "cat-assinaturas": "fin-cat-tecnologia",
+  "cat-impostos": "fin-cat-impostos",
+  "cat-investimentos": "fin-cat-outros",
+  "cat-viagem": "fin-cat-viagens",
+  "cat-compras": "fin-cat-fornecedores",
+  "cat-outros": "fin-cat-outros",
+};
+
 const NEW_FINANCE_NAMES = new Set([
   "Pessoal",
   "Operacional",
+  "Fornecedores",
+  "Serviços",
   "Marketing",
-  "Vendas",
+  "Folha",
+  "Impostos",
   "Tecnologia",
   "Infraestrutura",
-  "Servicos",
   "Viagens",
   "Treinamento",
-  "Fornecedores",
+  "Outros",
 ]);
 
 const normalizeCategory = (
@@ -162,52 +179,76 @@ const defaultFinanceTableFields = {
   comment: true,
 };
 
+const LEGACY_FINANCE_IDS = new Set([
+  "cat-moradia",
+  "cat-alimentacao",
+  "cat-transporte",
+  "cat-saude",
+  "cat-lazer",
+  "cat-educacao",
+  "cat-assinaturas",
+  "cat-impostos",
+  "cat-investimentos",
+  "cat-viagem",
+  "cat-compras",
+  "cat-outros",
+]);
+
 const shouldResetFinanceCategories = (cats: Category[]) => {
   if (!cats.length) {
+    return true;
+  }
+  if (cats.some(cat => LEGACY_FINANCE_IDS.has(cat.id))) {
     return true;
   }
   const hasNew = cats.some(cat => NEW_FINANCE_NAMES.has(cat.name));
   return !hasNew;
 };
 
+const remapLegacyFinanceExpenseCategories = (expenses: Expense[]) =>
+  expenses.map(expense => {
+    const mapped = LEGACY_FINANCE_ID_MAP[expense.categoryId];
+    return mapped ? { ...expense, categoryId: mapped } : expense;
+  });
+
 const defaultExpenses: Expense[] = [
   {
     id: "exp-1",
-    title: "Assinatura Cloud",
+    title: "Google Workspace",
     amount: 2800,
-    categoryId: "cat-assinaturas",
-    comment: "Infra mensal",
+    categoryId: "fin-cat-tecnologia",
+    comment: "Assinatura",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
   },
   {
     id: "exp-2",
-    title: "Equipe de suporte",
+    title: "Fornecedor - suporte",
     amount: 9200,
-    categoryId: "cat-outros",
-    comment: "Fixo",
+    categoryId: "fin-cat-fornecedores",
+    comment: "Mensal",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
   },
   {
     id: "exp-3",
-    title: "Aluguel escritorio",
+    title: "Aluguel do escritório",
     amount: 5400,
-    categoryId: "cat-moradia",
+    categoryId: "fin-cat-infra",
     comment: "Mensal",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 12).toISOString(),
   },
   {
     id: "exp-4",
-    title: "Plano de saude",
+    title: "Plano de saúde",
     amount: 1600,
-    categoryId: "cat-saude",
-    comment: "Equipe",
+    categoryId: "fin-cat-servicos",
+    comment: "Benefício",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 18).toISOString(),
   },
   {
     id: "exp-5",
     title: "Passagens e deslocamento",
     amount: 1200,
-    categoryId: "cat-transporte",
+    categoryId: "fin-cat-viagens",
     comment: "Visitas",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 24).toISOString(),
   },
@@ -215,7 +256,7 @@ const defaultExpenses: Expense[] = [
     id: "exp-6",
     title: "Workshop interno",
     amount: 900,
-    categoryId: "cat-educacao",
+    categoryId: "fin-cat-treinamento",
     comment: "Treinamento",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 31).toISOString(),
   },
@@ -223,7 +264,7 @@ const defaultExpenses: Expense[] = [
     id: "exp-7",
     title: "Campanha digital",
     amount: 2400,
-    categoryId: "cat-compras",
+    categoryId: "fin-cat-marketing",
     comment: "Midia paga",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 38).toISOString(),
   },
@@ -231,7 +272,7 @@ const defaultExpenses: Expense[] = [
     id: "exp-8",
     title: "Happy hour time",
     amount: 680,
-    categoryId: "cat-lazer",
+    categoryId: "fin-cat-pessoal",
     comment: "Equipe",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45).toISOString(),
   },
@@ -239,16 +280,16 @@ const defaultExpenses: Expense[] = [
     id: "exp-9",
     title: "Impostos trimestrais",
     amount: 3100,
-    categoryId: "cat-impostos",
+    categoryId: "fin-cat-impostos",
     comment: "DARF",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 52).toISOString(),
   },
   {
     id: "exp-10",
-    title: "Reserva investimento",
+    title: "Folha de pagamento",
     amount: 3500,
-    categoryId: "cat-investimentos",
-    comment: "Caixa",
+    categoryId: "fin-cat-folha",
+    comment: "Equipe",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60).toISOString(),
   },
 ];
@@ -464,13 +505,18 @@ export default function Financas() {
           ? defaultCategories
           : incomingCategories;
         setCategories(nextCategories);
+        const incomingExpenses = Array.isArray(data?.expenses) ? data.expenses : [];
+        const nextExpenses =
+          nextCategories !== incomingCategories
+            ? remapLegacyFinanceExpenseCategories(incomingExpenses)
+            : incomingExpenses;
         if (Array.isArray(data?.expenses)) {
-          setExpenses(data.expenses);
+          setExpenses(nextExpenses);
         }
         if (nextCategories !== incomingCategories) {
           void api.put("/api/finance/data", {
             categories: nextCategories,
-            expenses: Array.isArray(data?.expenses) ? data.expenses : expenses,
+            expenses: Array.isArray(data?.expenses) ? nextExpenses : expenses,
           });
         }
       } catch {
@@ -488,17 +534,22 @@ export default function Financas() {
               ? defaultCategories
               : incomingCategories;
             setCategories(nextCategories);
+            const incomingExpenses = Array.isArray(parsed.expenses)
+              ? parsed.expenses
+              : [];
+            const nextExpenses =
+              nextCategories !== incomingCategories
+                ? remapLegacyFinanceExpenseCategories(incomingExpenses)
+                : incomingExpenses;
             if (Array.isArray(parsed.expenses)) {
-              setExpenses(parsed.expenses);
+              setExpenses(nextExpenses);
             }
             if (nextCategories !== incomingCategories) {
               window.localStorage.setItem(
                 STORAGE_KEY,
                 JSON.stringify({
                   categories: nextCategories,
-                  expenses: Array.isArray(parsed.expenses)
-                    ? parsed.expenses
-                    : expenses,
+                  expenses: Array.isArray(parsed.expenses) ? nextExpenses : expenses,
                 })
               );
             }
@@ -668,6 +719,7 @@ export default function Financas() {
     }
     if (shouldResetFinanceCategories(categories)) {
       setCategories(defaultCategories);
+      setExpenses(prev => remapLegacyFinanceExpenseCategories(prev));
     }
   }, [categories]);
 
@@ -691,20 +743,27 @@ export default function Financas() {
   }, [categories, categoryId]);
 
   const totalsByCategory = useMemo(() => {
+    const expensesForCharts =
+      categoryFilters.length > 0
+        ? expenses.filter(expense => categoryFilters.includes(expense.categoryId))
+        : expenses;
     const totals = new Map<string, number>();
-    expenses.forEach(expense => {
+    expensesForCharts.forEach(expense => {
       totals.set(
         expense.categoryId,
         (totals.get(expense.categoryId) || 0) + expense.amount
       );
     });
-    return categories.map(cat => ({
-      id: cat.id,
-      name: cat.name,
-      value: totals.get(cat.id) || 0,
-      color: resolveThemeColor(theme, cat.color),
-    }));
-  }, [categories, expenses, theme]);
+    return categories
+      .map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        value: totals.get(cat.id) || 0,
+        color: resolveThemeColor(theme, cat.color),
+      }))
+      .filter(entry => entry.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [categories, expenses, categoryFilters, theme]);
 
   const totalsByMonth = useMemo(() => {
     const buckets = new Map<string, number>();

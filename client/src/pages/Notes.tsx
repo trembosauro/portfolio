@@ -7,13 +7,20 @@ import {
   useState,
 } from "react";
 import {
-  Autocomplete,
+  DndContext,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
+import {
   Alert,
   Box,
   Button,
   Divider,
-  Checkbox,
-  Chip,
   ClickAwayListener,
   Dialog,
   DialogContent,
@@ -21,7 +28,6 @@ import {
   Menu,
   MenuItem,
   InputAdornment,
-  List,
   ListItemButton,
   ListItemText,
   Popper,
@@ -31,28 +37,17 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useTranslation } from "react-i18next";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArchiveRoundedIcon from "@mui/icons-material/ArchiveRounded";
-import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import MoreVertRoundedIcon from "@mui/icons-material/MoreVertRounded";
+import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
-import FormatBoldRoundedIcon from "@mui/icons-material/FormatBoldRounded";
-import FormatItalicRoundedIcon from "@mui/icons-material/FormatItalicRounded";
-import FormatListBulletedRoundedIcon from "@mui/icons-material/FormatListBulletedRounded";
-import FormatListNumberedRoundedIcon from "@mui/icons-material/FormatListNumberedRounded";
-import FormatQuoteRoundedIcon from "@mui/icons-material/FormatQuoteRounded";
-import LooksOneRoundedIcon from "@mui/icons-material/LooksOneRounded";
-import LooksTwoRoundedIcon from "@mui/icons-material/LooksTwoRounded";
-import Looks3RoundedIcon from "@mui/icons-material/Looks3Rounded";
 import UnarchiveRoundedIcon from "@mui/icons-material/UnarchiveRounded";
-import BackspaceRoundedIcon from "@mui/icons-material/BackspaceRounded";
-import FormatUnderlinedRoundedIcon from "@mui/icons-material/FormatUnderlinedRounded";
 import ShuffleRoundedIcon from "@mui/icons-material/ShuffleRounded";
 import StarBorderRoundedIcon from "@mui/icons-material/StarBorderRounded";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
@@ -108,21 +103,16 @@ type LegacyNote = Note & {
   subcategoryId?: string;
 };
 
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 const STORAGE_NOTES = "notes_v2";
 const STORAGE_NOTE_FIELDS = "note_fields_v2";
-
-const DEFAULT_COLORS = [
-  "#0f766e",
-  "#1d4ed8",
-  "#6d28d9",
-  "#7c2d12",
-  "#7c4a03",
-  "#0f172a",
-  "#334155",
-  "#166534",
-  "#9d174d",
-  "#312e81",
-];
 
 type NoteEmoji = { emoji: string; label: string };
 
@@ -462,27 +452,6 @@ const defaultNotes: unknown[] = [
   },
 ];
 
-const darkenColor = (value: string, factor: number) => {
-  const color = value.replace("#", "");
-  if (color.length !== 6) {
-    return value;
-  }
-  const r = Math.max(
-    0,
-    Math.min(255, Math.floor(parseInt(color.slice(0, 2), 16) * factor))
-  );
-  const g = Math.max(
-    0,
-    Math.min(255, Math.floor(parseInt(color.slice(2, 4), 16) * factor))
-  );
-  const b = Math.max(
-    0,
-    Math.min(255, Math.floor(parseInt(color.slice(4, 6), 16) * factor))
-  );
-  return `#${r.toString(16).padStart(2, "0")}${g
-    .toString(16)
-    .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
-};
 
 const emptyNote = (): Note => ({
   id: `note-${Date.now()}`,
@@ -541,8 +510,188 @@ const downloadTextFile = (opts: { filename: string; content: string; mime: strin
   URL.revokeObjectURL(url);
 };
 
+function SidebarTreeDraggableItem(props: {
+  note: Note;
+  depth: number;
+  isActive: boolean;
+  hasChildren: boolean;
+  isExpanded: boolean;
+  onSelect: (note: Note) => void;
+  onToggleExpanded: (noteId: string) => void;
+  onOpenMenu: (note: Note, anchor: HTMLElement) => void;
+}) {
+  const {
+    note,
+    depth,
+    isActive,
+    hasChildren,
+    isExpanded,
+    onSelect,
+    onToggleExpanded,
+    onOpenMenu,
+  } = props;
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: note.id });
+  const { setNodeRef: setDraggableRef, attributes, listeners, transform, isDragging } =
+    useDraggable({ id: note.id });
+
+  const setRefs = (node: HTMLElement | null) => {
+    setDroppableRef(node);
+    setDraggableRef(node);
+  };
+
+  return (
+    <ListItemButton
+      ref={setRefs}
+      {...attributes}
+      {...listeners}
+      onClick={() => onSelect(note)}
+      style={{
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? 0.6 : 1,
+      }}
+      sx={theme => ({
+        ...interactiveItemSx(theme),
+        py: 1,
+        pr: 1,
+        pl: 1 + depth * 3,
+        border: 1,
+        borderColor: "transparent",
+        backgroundColor: isOver ? "action.selected" : isActive ? "action.hover" : undefined,
+        minWidth: 0,
+        touchAction: "none",
+        "@media (hover: hover)": {
+          "& .notes-item-menu": {
+            opacity: 0,
+            pointerEvents: "none",
+          },
+          "&:hover .notes-item-menu": {
+            opacity: 1,
+            pointerEvents: "auto",
+          },
+          "& .notes-tree-caret": {
+            opacity: 0,
+            pointerEvents: "none",
+          },
+          "& .notes-emoji": {
+            opacity: 1,
+          },
+          "&:hover .notes-tree-caret": {
+            opacity: 1,
+            pointerEvents: "auto",
+          },
+          "&:hover .notes-emoji": {
+            opacity: 0,
+          },
+        },
+        "@media (hover: none)": {
+          "& .notes-tree-caret": {
+            opacity: 1,
+            pointerEvents: "auto",
+          },
+          "& .notes-emoji": {
+            opacity: hasChildren ? 0 : 1,
+          },
+        },
+      })}
+    >
+      <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
+        <Box
+          sx={{
+            width: 22,
+            height: 22,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flex: "0 0 auto",
+            position: "relative",
+          }}
+        >
+          <Box
+            className="notes-emoji"
+            sx={{
+              position: "absolute",
+              inset: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1,
+              transition: "opacity 120ms ease",
+            }}
+          >
+            <Typography component="span" variant="body2" sx={{ lineHeight: 1 }}>
+              {note.emoji}
+            </Typography>
+          </Box>
+
+          {hasChildren ? (
+            <IconButton
+              className="notes-tree-caret"
+              size="small"
+              onPointerDown={event => {
+                event.preventDefault();
+                event.stopPropagation();
+              }}
+              onClick={event => {
+                event.preventDefault();
+                event.stopPropagation();
+                onToggleExpanded(note.id);
+              }}
+              sx={{
+                position: "absolute",
+                inset: 0,
+                color: "text.secondary",
+                p: 0.25,
+                transition: "opacity 120ms ease",
+              }}
+              aria-label={isExpanded ? "Recolher" : "Expandir"}
+            >
+              {isExpanded ? (
+                <ExpandMoreRoundedIcon fontSize="small" />
+              ) : (
+                <ChevronRightRoundedIcon fontSize="small" />
+              )}
+            </IconButton>
+          ) : null}
+        </Box>
+
+        <Typography
+          variant="body2"
+          sx={{
+            fontWeight: depth > 0 ? 400 : 500,
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            color: "text.secondary",
+            flex: 1,
+          }}
+        >
+          {note.title || "Sem título"}
+        </Typography>
+
+        <IconButton
+          className="notes-item-menu"
+          size="small"
+          onPointerDown={event => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onClick={event => {
+            event.preventDefault();
+            event.stopPropagation();
+            onOpenMenu(note, event.currentTarget);
+          }}
+          sx={{ color: "text.secondary" }}
+          aria-label="Mais opções"
+        >
+          <MoreHorizRoundedIcon fontSize="small" />
+        </IconButton>
+      </Stack>
+    </ListItemButton>
+  );
+}
+
 export default function Notes() {
-  const { t } = useTranslation();
   const [location, setLocation] = useLocation();
   const isArchiveView = location.startsWith("/notas/arquivo");
   const [notes, setNotes] = useState<Note[]>([]);
@@ -562,6 +711,20 @@ export default function Notes() {
     null
   );
   const noteMenuOpen = Boolean(noteMenuAnchorEl);
+
+  const [sidebarItemMenuAnchorEl, setSidebarItemMenuAnchorEl] = useState<
+    HTMLElement | null
+  >(null);
+  const [sidebarItemMenuNoteId, setSidebarItemMenuNoteId] = useState<string | null>(
+    null
+  );
+  const sidebarItemMenuOpen = Boolean(sidebarItemMenuAnchorEl);
+
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [renameDialogValue, setRenameDialogValue] = useState("");
+  const [renameTargetNoteId, setRenameTargetNoteId] = useState<string | null>(
+    null
+  );
 
   const [fieldSettings, setFieldSettings] = useState({
     ...defaultNoteFieldSettings,
@@ -829,6 +992,22 @@ export default function Notes() {
     });
   }, [notes, noteQuery, isArchiveView]);
 
+  // Se entrar no Arquivo e não existir nenhuma nota arquivada, volta pra Notas e abre busca
+  useEffect(() => {
+    if (!isLoadedRef.current) {
+      return;
+    }
+    if (!isArchiveView) {
+      return;
+    }
+    const hasArchived = notes.some(note => Boolean(note.archived));
+    if (hasArchived) {
+      return;
+    }
+    setShowSearch(true);
+    setLocation("/notas");
+  }, [isArchiveView, notes, setLocation]);
+
   const sortedFilteredNotes = useMemo(() => {
     const collator = new Intl.Collator("pt-BR", { sensitivity: "base" });
     const titleKey = (note: Note) =>
@@ -951,7 +1130,6 @@ export default function Notes() {
         if (oldNote && (oldNote.emoji !== next.emoji || oldNote.title !== next.title)) {
           return updated.map(note => {
             if (note.id === next.parentId) {
-              const oldLabel = `${oldNote.emoji || ""} ${oldNote.title || "Página"}`.trim();
               const newLabel = `${next.emoji || ""} ${next.title || "Página"}`.trim();
               const href = `/notas/${next.id}`;
               
@@ -1119,8 +1297,41 @@ export default function Notes() {
     );
   };
 
+  const getNoteHref = useCallback(
+    (note: Note) => (note.archived ? `/notas/arquivo/${note.id}` : `/notas/${note.id}`),
+    []
+  );
+
+  const openSidebarItemMenu = useCallback((note: Note, anchor: HTMLElement) => {
+    setSidebarItemMenuNoteId(note.id);
+    setSidebarItemMenuAnchorEl(anchor);
+  }, []);
+
+  const closeSidebarItemMenu = useCallback(() => {
+    setSidebarItemMenuAnchorEl(null);
+    setSidebarItemMenuNoteId(null);
+  }, []);
+
+  const sidebarItemMenuNote = useMemo(() => {
+    if (!sidebarItemMenuNoteId) {
+      return null;
+    }
+    return notes.find(note => note.id === sidebarItemMenuNoteId) || null;
+  }, [notes, sidebarItemMenuNoteId]);
+
+  const formatCreatedAt = useCallback((value: string) => {
+    try {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return value;
+      }
+      return date.toLocaleString("pt-BR");
+    } catch {
+      return value;
+    }
+  }, []);
+
   const showSidebar = true;
-  const showBackButton = Boolean(noteIdFromRoute);
   const archiveLink = isArchiveView
     ? { label: "Notas", href: "/notas" }
     : { label: "Arquivo", href: "/notas/arquivo" };
@@ -1139,6 +1350,110 @@ export default function Notes() {
       return next;
     });
   };
+
+  const sidebarDndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const isAncestorOf = useCallback(
+    (possibleAncestorId: string, noteId: string) => {
+      if (!possibleAncestorId || !noteId) {
+        return false;
+      }
+      const byId = new Map(notes.map(note => [note.id, note] as const));
+      let current = byId.get(noteId);
+      let guard = 0;
+      while (current?.parentId && guard < 50) {
+        if (current.parentId === possibleAncestorId) {
+          return true;
+        }
+        current = byId.get(current.parentId);
+        guard += 1;
+      }
+      return false;
+    },
+    [notes]
+  );
+
+  const ensureSubpageLinkInParent = useCallback(
+    (parent: Note, child: Note) => {
+      const href = `/notas/${child.id}`;
+      const existing = parent.contentHtml || "";
+      const hasLink =
+        existing.includes(`href=\"${href}\"`) || existing.includes(`href='${href}'`);
+      if (hasLink) {
+        return parent;
+      }
+
+      const label = `${child.emoji || ""} ${child.title || "Página"}`.trim();
+      const safeLabel = escapeHtml(label);
+      const linkHtml = `<a href=\"${href}\">${safeLabel}</a>`;
+
+      const nextHtml = existing.trim()
+        ? `${existing.trim()}<p>${linkHtml}</p>`
+        : `<p>${linkHtml}</p>`;
+
+      return {
+        ...parent,
+        contentHtml: nextHtml,
+        updatedAt: new Date().toISOString(),
+      };
+    },
+    []
+  );
+
+  const handleSidebarDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const activeId = String(event.active.id || "");
+      const overId = event.over ? String(event.over.id || "") : "";
+      if (!activeId || !overId) {
+        return;
+      }
+      if (activeId === overId) {
+        return;
+      }
+
+      setNotes(prev => {
+        const byId = new Map(prev.map(note => [note.id, note] as const));
+        const active = byId.get(activeId);
+        const over = byId.get(overId);
+        if (!active || !over) {
+          return prev;
+        }
+        if (active.archived !== over.archived) {
+          return prev;
+        }
+        // Evita ciclos: não dá pra colocar uma nota dentro de um descendente dela
+        if (isAncestorOf(activeId, overId)) {
+          return prev;
+        }
+        if (active.parentId === overId) {
+          return prev;
+        }
+
+        const now = new Date().toISOString();
+        const nextActive: Note = { ...active, parentId: overId, updatedAt: now, isDraft: false };
+        const nextOver = ensureSubpageLinkInParent(over, nextActive);
+
+        return prev.map(note => {
+          if (note.id === nextActive.id) {
+            return nextActive;
+          }
+          if (note.id === nextOver.id) {
+            return nextOver;
+          }
+          return note;
+        });
+      });
+
+      setExpandedSidebarIds(prev => {
+        const next = new Set(prev);
+        next.add(overId);
+        return next;
+      });
+    },
+    [ensureSubpageLinkInParent, isAncestorOf]
+  );
 
   const sidebarTree = useMemo(() => {
     const candidates = notes.filter(note => note.archived === isArchiveView);
@@ -1208,6 +1523,8 @@ export default function Notes() {
 
       for (const note of sidebarTree.favorites) {
         const isActive = note.id === selectedNoteId;
+        const hasChildren = (sidebarTree.childrenByParentId.get(note.id) ?? []).length > 0;
+        const isExpanded = expandedSidebarIds.has(note.id);
         rows.push(
           <ListItemButton
             key={`fav-${note.id}`}
@@ -1224,24 +1541,108 @@ export default function Notes() {
               borderColor: "transparent",
               backgroundColor: isActive ? "action.hover" : undefined,
               minWidth: 0,
+              "@media (hover: hover)": {
+                "& .notes-item-menu": {
+                  opacity: 0,
+                  pointerEvents: "none",
+                },
+                "&:hover .notes-item-menu": {
+                  opacity: 1,
+                  pointerEvents: "auto",
+                },
+                "& .notes-tree-caret": {
+                  opacity: 0,
+                  pointerEvents: "none",
+                },
+                "& .notes-emoji": {
+                  opacity: 1,
+                },
+                "&:hover .notes-tree-caret": {
+                  opacity: 1,
+                  pointerEvents: "auto",
+                },
+                "&:hover .notes-emoji": {
+                  opacity: 0,
+                },
+              },
+              "@media (hover: none)": {
+                "& .notes-tree-caret": {
+                  opacity: 1,
+                  pointerEvents: "auto",
+                },
+                "& .notes-emoji": {
+                  opacity: hasChildren ? 0 : 1,
+                },
+              },
             })}
           >
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              sx={{ minWidth: 0, flex: 1 }}
-            >
+            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
               <Box
                 sx={{
-                  width: 24,
-                  height: 24,
+                  width: 22,
+                  height: 22,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
                   flex: "0 0 auto",
+                  position: "relative",
                 }}
-              />
+              >
+                <Box
+                  className="notes-emoji"
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    lineHeight: 1,
+                    transition: "opacity 120ms ease",
+                  }}
+                >
+                  <Typography component="span" variant="body2" sx={{ lineHeight: 1 }}>
+                    {note.emoji}
+                  </Typography>
+                </Box>
+
+                {hasChildren ? (
+                  <IconButton
+                    className="notes-tree-caret"
+                    size="small"
+                    onPointerDown={event => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                    }}
+                    onClick={event => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setExpandedSidebarIds(prev => {
+                        const next = new Set(prev);
+                        if (next.has(note.id)) {
+                          next.delete(note.id);
+                        } else {
+                          next.add(note.id);
+                        }
+                        return next;
+                      });
+                    }}
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      color: "text.secondary",
+                      p: 0.25,
+                      transition: "opacity 120ms ease",
+                    }}
+                    aria-label={isExpanded ? "Recolher" : "Expandir"}
+                  >
+                    {isExpanded ? (
+                      <ExpandMoreRoundedIcon fontSize="small" />
+                    ) : (
+                      <ChevronRightRoundedIcon fontSize="small" />
+                    )}
+                  </IconButton>
+                ) : null}
+              </Box>
               <Stack
                 direction="row"
                 spacing={0.75}
@@ -1260,20 +1661,27 @@ export default function Notes() {
                     flex: 1,
                   }}
                 >
-                  {note.emoji} {note.title || "Sem título"}
+                  {note.title || "Sem título"}
                 </Typography>
-                <Box
-                  sx={{
-                    flex: "0 0 auto",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    color: "text.primary",
-                  }}
-                  aria-label="Nota favorita"
-                >
-                  <StarRoundedIcon fontSize="small" />
-                </Box>
               </Stack>
+
+              <IconButton
+                className="notes-item-menu"
+                size="small"
+                onPointerDown={event => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                onClick={event => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  openSidebarItemMenu(note, event.currentTarget);
+                }}
+                sx={{ color: "text.secondary" }}
+                aria-label="Mais opções"
+              >
+                <MoreHorizRoundedIcon fontSize="small" />
+              </IconButton>
             </Stack>
           </ListItemButton>
         );
@@ -1304,97 +1712,20 @@ export default function Notes() {
       const isActive = note.id === selectedNoteId;
 
       rows.push(
-        <ListItemButton
+        <SidebarTreeDraggableItem
           key={note.id}
-          onClick={() => {
-            opts.onSelect(note);
+          note={note}
+          depth={depth}
+          isActive={isActive}
+          hasChildren={hasChildren}
+          isExpanded={isExpanded}
+          onToggleExpanded={toggleSidebarExpanded}
+          onOpenMenu={openSidebarItemMenu}
+          onSelect={nextNote => {
+            opts.onSelect(nextNote);
             opts.onAfterSelect?.();
           }}
-          sx={theme => ({
-            ...interactiveItemSx(theme),
-            py: 1,
-            pr: 1,
-            pl: 1 + depth * 3,
-            border: 1,
-            borderColor: "transparent",
-            backgroundColor: isActive ? "action.hover" : undefined,
-            minWidth: 0,
-          })}
-        >
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            sx={{ minWidth: 0, flex: 1 }}
-          >
-            <Box
-              sx={{
-                width: 24,
-                height: 24,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flex: "0 0 auto",
-              }}
-            >
-              {hasChildren ? (
-                <IconButton
-                  size="small"
-                  onClick={event => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    toggleSidebarExpanded(note.id);
-                  }}
-                  sx={{
-                    color: "text.secondary",
-                    p: 0.25,
-                  }}
-                  aria-label={isExpanded ? "Recolher" : "Expandir"}
-                >
-                  {isExpanded ? (
-                    <ExpandMoreRoundedIcon fontSize="small" />
-                  ) : (
-                    <ChevronRightRoundedIcon fontSize="small" />
-                  )}
-                </IconButton>
-              ) : null}
-            </Box>
-            <Stack
-              direction="row"
-              spacing={0.75}
-              alignItems="center"
-              sx={{ minWidth: 0, flex: 1 }}
-            >
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: depth > 0 ? 400 : 500,
-                  minWidth: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  color: "text.secondary",
-                  flex: 1,
-                }}
-              >
-                {note.emoji} {note.title || "Sem título"}
-              </Typography>
-              {note.favorite ? (
-                <Box
-                  sx={{
-                    flex: "0 0 auto",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    color: "text.secondary",
-                  }}
-                  aria-label="Nota favorita"
-                >
-                  <StarRoundedIcon fontSize="small" />
-                </Box>
-              ) : null}
-            </Stack>
-          </Stack>
-        </ListItemButton>
+        />
       );
 
       if (hasChildren && isExpanded && depth < 6) {
@@ -1404,7 +1735,11 @@ export default function Notes() {
       }
     }
 
-    return rows;
+    return (
+      <DndContext sensors={sidebarDndSensors} onDragEnd={handleSidebarDragEnd}>
+        <Stack spacing={0}>{rows}</Stack>
+      </DndContext>
+    );
   };
 
   const pageActions = useMemo(
@@ -1485,17 +1820,15 @@ export default function Notes() {
               onChange={(_, expanded) => setMobileNotesExpanded(expanded)}
               title="Notas"
             >
-              <Stack spacing={0}>
-                {renderSidebarItems({
-                  onSelect: note => selectNote(note),
-                  onAfterSelect: () => setMobileNotesExpanded(false),
-                })}
-                {!sidebarTree.roots.length ? (
+              {renderSidebarItems({
+                onSelect: note => selectNote(note),
+                onAfterSelect: () => setMobileNotesExpanded(false),
+              })}
+              {!sidebarTree.roots.length ? (
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
                     {isArchiveView ? "Sem notas arquivadas." : "Sem notas."}
                   </Typography>
                 ) : null}
-              </Stack>
             </AppAccordion>
           </Box>
         ) : null}
@@ -1518,9 +1851,8 @@ export default function Notes() {
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
                     Notas
                   </Typography>
-                  <Stack spacing={0}>
-                    {renderSidebarItems({ onSelect: note => selectNote(note) })}
-                    {!sidebarTree.roots.length ? (
+                  {renderSidebarItems({ onSelect: note => selectNote(note) })}
+                  {!sidebarTree.roots.length ? (
                       <Typography
                         variant="body2"
                         sx={{ color: "text.secondary" }}
@@ -1528,7 +1860,6 @@ export default function Notes() {
                         {isArchiveView ? "Sem notas arquivadas." : "Sem notas."}
                       </Typography>
                     ) : null}
-                  </Stack>
                 </Stack>
               </CardSection>
             </Stack>
@@ -1716,7 +2047,7 @@ export default function Notes() {
                           setEmojiSearch("");
                         }}>
                           <Box
-                            sx={theme => ({
+                            sx={{
                               bgcolor: "background.paper",
                               border: 1,
                               borderColor: "divider",
@@ -1726,7 +2057,7 @@ export default function Notes() {
                               maxHeight: 320,
                               display: "flex",
                               flexDirection: "column",
-                            })}
+                            }}
                           >
                             <Stack
                               direction="row"
@@ -1754,10 +2085,10 @@ export default function Notes() {
                                         updatedAt: new Date().toISOString(),
                                       });
                                     }}
-                                    sx={theme => ({
+                                      sx={{
                                       border: "1px solid",
                                       borderColor: "divider",
-                                    })}
+                                      }}
                                   >
                                     <ShuffleRoundedIcon fontSize="small" />
                                   </IconButton>
@@ -2352,6 +2683,142 @@ export default function Notes() {
           setNoteConfirm(null);
         }}
       />
+
+      <Menu
+        anchorEl={sidebarItemMenuAnchorEl}
+        open={sidebarItemMenuOpen}
+        onClose={closeSidebarItemMenu}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        {sidebarItemMenuNote?.favorite ? (
+          <MenuItem
+            onClick={() => {
+              toggleFavorite(sidebarItemMenuNote.id);
+              closeSidebarItemMenu();
+            }}
+          >
+            Remover dos favoritos
+          </MenuItem>
+        ) : null}
+
+        <MenuItem
+          onClick={async () => {
+            if (!sidebarItemMenuNote) {
+              closeSidebarItemMenu();
+              return;
+            }
+            const href = getNoteHref(sidebarItemMenuNote);
+            const url = `${window.location.origin}${href}`;
+            try {
+              await navigator.clipboard.writeText(url);
+            } catch {
+              const input = document.createElement("input");
+              input.value = url;
+              document.body.appendChild(input);
+              input.select();
+              document.execCommand("copy");
+              input.remove();
+            }
+            closeSidebarItemMenu();
+          }}
+        >
+          Copiar link da nota
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            if (!sidebarItemMenuNote) {
+              closeSidebarItemMenu();
+              return;
+            }
+            const href = getNoteHref(sidebarItemMenuNote);
+            const url = `${window.location.origin}${href}`;
+            window.open(url, "_blank", "noopener,noreferrer");
+            closeSidebarItemMenu();
+          }}
+        >
+          Abrir em nova aba
+        </MenuItem>
+
+        <MenuItem disabled>
+          Criada em: {sidebarItemMenuNote ? formatCreatedAt(sidebarItemMenuNote.createdAt) : ""}
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => {
+            if (!sidebarItemMenuNote) {
+              closeSidebarItemMenu();
+              return;
+            }
+            setRenameDialogValue(sidebarItemMenuNote.title || "");
+            setRenameTargetNoteId(sidebarItemMenuNote.id);
+            setRenameDialogOpen(true);
+            closeSidebarItemMenu();
+          }}
+        >
+          Renomear
+        </MenuItem>
+      </Menu>
+
+      <Dialog
+        open={renameDialogOpen}
+        onClose={() => {
+          setRenameDialogOpen(false);
+          setRenameTargetNoteId(null);
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogContent>
+          <Stack spacing={2}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+              Renomear nota
+            </Typography>
+            <MuiTextField
+              label="Nome"
+              value={renameDialogValue}
+              autoFocus
+              fullWidth
+              onChange={event => setRenameDialogValue(event.target.value)}
+            />
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setRenameDialogOpen(false);
+                  setRenameTargetNoteId(null);
+                }}
+                sx={{ textTransform: "none", fontWeight: 600 }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  if (!renameTargetNoteId) {
+                    setRenameDialogOpen(false);
+                    return;
+                  }
+                  const nextTitle = renameDialogValue.trim();
+                  setNotes(prev =>
+                    prev.map(note =>
+                      note.id === renameTargetNoteId
+                        ? { ...note, title: nextTitle, updatedAt: new Date().toISOString() }
+                        : note
+                    )
+                  );
+                  setRenameDialogOpen(false);
+                  setRenameTargetNoteId(null);
+                }}
+                sx={{ textTransform: "none", fontWeight: 600 }}
+              >
+                Salvar
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
 
       <Snackbar
         open={restoreDefaultsSnackbarOpen}

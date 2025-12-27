@@ -167,18 +167,18 @@ const DEFAULT_PERMISSIONS: Permissions = {
 const DEFAULT_COLORS = CATEGORY_COLOR_OPTIONS;
 
 const defaultCategories: Category[] = [
-  { id: "cat-moradia", name: "Bug", color: DEFAULT_COLORS[0] },
-  { id: "cat-alimentacao", name: "Feature", color: DEFAULT_COLORS[1] },
-  { id: "cat-transporte", name: "Melhoria", color: DEFAULT_COLORS[2] },
-  { id: "cat-saude", name: "Suporte", color: DEFAULT_COLORS[3] },
-  { id: "cat-lazer", name: "Pesquisa", color: DEFAULT_COLORS[4] },
-  { id: "cat-educacao", name: "Onboarding", color: DEFAULT_COLORS[5] },
-  { id: "cat-assinaturas", name: "Design", color: DEFAULT_COLORS[6] },
-  { id: "cat-impostos", name: "QA", color: DEFAULT_COLORS[7] },
-  { id: "cat-investimentos", name: "DevOps", color: DEFAULT_COLORS[8] },
-  { id: "cat-viagem", name: "Cliente", color: DEFAULT_COLORS[9] },
-  { id: "cat-compras", name: "Interno", color: DEFAULT_COLORS[0] },
-  { id: "cat-outros", name: "Backlog", color: DEFAULT_COLORS[1] },
+  { id: "pipe-cat-prospect", name: "Prospect", color: DEFAULT_COLORS[0] },
+  { id: "pipe-cat-cliente", name: "Cliente", color: DEFAULT_COLORS[1] },
+  { id: "pipe-cat-renovacao", name: "Renovação", color: DEFAULT_COLORS[2] },
+  { id: "pipe-cat-upsell", name: "Upsell", color: DEFAULT_COLORS[3] },
+  { id: "pipe-cat-parceria", name: "Parceria", color: DEFAULT_COLORS[4] },
+  { id: "pipe-cat-marketing", name: "Marketing", color: DEFAULT_COLORS[5] },
+  { id: "pipe-cat-operacional", name: "Operacional", color: DEFAULT_COLORS[6] },
+  { id: "pipe-cat-financeiro", name: "Financeiro", color: DEFAULT_COLORS[7] },
+  { id: "pipe-cat-suporte", name: "Suporte", color: DEFAULT_COLORS[8] },
+  { id: "pipe-cat-interno", name: "Interno", color: DEFAULT_COLORS[9] },
+  { id: "pipe-cat-prioritario", name: "Prioritário", color: DEFAULT_COLORS[0] },
+  { id: "pipe-cat-backlog", name: "Backlog", color: DEFAULT_COLORS[1] },
 ];
 
 const LEGACY_PIPELINE_NAMES = new Set([
@@ -197,21 +197,35 @@ const LEGACY_PIPELINE_NAMES = new Set([
 ]);
 
 const NEW_PIPELINE_NAMES = new Set([
+  "Prospect",
+  "Cliente",
+  "Renovação",
+  "Upsell",
+  "Parceria",
+  "Marketing",
+  "Operacional",
+  "Financeiro",
+  "Suporte",
+  "Interno",
+  "Prioritário",
+  "Backlog",
+]);
+
+const PREV_PIPELINE_DEV_NAMES = new Set([
   "Bug",
   "Feature",
   "Melhoria",
-  "Suporte",
   "Pesquisa",
   "Onboarding",
   "Design",
   "QA",
   "DevOps",
-  "Cliente",
-  "Interno",
-  "Backlog",
 ]);
 
 const isLegacyPipelineCategories = (cats: Category[]) => {
+  if (cats.some(cat => PREV_PIPELINE_DEV_NAMES.has(cat.name))) {
+    return true;
+  }
   const hasLegacy = cats.some(cat => LEGACY_PIPELINE_NAMES.has(cat.name));
   const hasNew = cats.some(cat => NEW_PIPELINE_NAMES.has(cat.name));
   return hasLegacy && !hasNew;

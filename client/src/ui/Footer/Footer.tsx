@@ -37,7 +37,17 @@ export function Footer({ copyright, links = [] }: FooterProps) {
         </Typography>
         
         {links.length > 0 && (
-          <Stack component="nav" direction="row" spacing={2}>
+          <Stack
+            component="nav"
+            direction="row"
+            spacing={2}
+            sx={{
+              flexWrap: "wrap",
+              justifyContent: { xs: "center", sm: "flex-end" },
+              rowGap: 1,
+              maxWidth: "100%",
+            }}
+          >
             {links.map((link) => (
               <Link
                 key={link.href}
@@ -46,6 +56,7 @@ export function Footer({ copyright, links = [] }: FooterProps) {
                 variant="body2"
                 color="text.secondary"
                 underline="hover"
+                sx={{ maxWidth: "100%" }}
               >
                 {link.label}
               </Link>

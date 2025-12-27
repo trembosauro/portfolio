@@ -390,6 +390,19 @@ const setUserStorage = (userId: number, key: string, data: unknown) => {
   ).run(userId, key, JSON.stringify(data ?? null), now);
 };
 
+const CATEGORY_COLOR_OPTIONS = [
+  "mui.green.600",
+  "mui.amber.700",
+  "mui.blue.600",
+  "mui.cyan.700",
+  "mui.orange.700",
+  "mui.red.600",
+  "mui.purple.500",
+  "mui.pink.A200",
+  "mui.lime.700",
+  "mui.grey.900",
+] as const;
+
 const ensureUserStorageSeed = (userId: number) => {
   const exists = (key: string) =>
     Boolean(
@@ -521,34 +534,238 @@ const ensureUserStorageSeed = (userId: number) => {
   ]);
 
   setIfMissing("contact_categories_v1", [
-    { id: "cat-familia", name: "Familia", color: "#0f766e" },
-    { id: "cat-amigos", name: "Amigos", color: "#1d4ed8" },
-    { id: "cat-cliente", name: "Cliente", color: "#6d28d9" },
-    { id: "cat-fornecedor", name: "Fornecedor", color: "#7c2d12" },
-    { id: "cat-prospect", name: "Prospect", color: "#7c4a03" },
-    { id: "cat-equipe", name: "Equipe", color: "#0f172a" },
-    { id: "cat-vip", name: "VIP", color: "#9d174d" },
+    { id: "cat-familia", name: "Familia", color: CATEGORY_COLOR_OPTIONS[0] },
+    { id: "cat-amigos", name: "Amigos", color: CATEGORY_COLOR_OPTIONS[1] },
+    { id: "cat-trabalho", name: "Trabalho", color: CATEGORY_COLOR_OPTIONS[2] },
+    { id: "cat-cliente", name: "Cliente", color: CATEGORY_COLOR_OPTIONS[3] },
+    { id: "cat-parceiro", name: "Parceiro", color: CATEGORY_COLOR_OPTIONS[4] },
+    { id: "cat-fornecedor", name: "Fornecedor", color: CATEGORY_COLOR_OPTIONS[5] },
+    { id: "cat-prospect", name: "Prospect", color: CATEGORY_COLOR_OPTIONS[6] },
+    { id: "cat-vip", name: "VIP", color: CATEGORY_COLOR_OPTIONS[7] },
+    { id: "cat-suporte", name: "Suporte", color: CATEGORY_COLOR_OPTIONS[8] },
+    { id: "cat-financeiro", name: "Financeiro", color: CATEGORY_COLOR_OPTIONS[9] },
+    { id: "cat-equipe", name: "Equipe", color: CATEGORY_COLOR_OPTIONS[0] },
+    { id: "cat-outros", name: "Outros", color: CATEGORY_COLOR_OPTIONS[1] },
   ]);
 
   setIfMissing("calendar_categories_v1", [
-    { id: "cat-reunioes", name: "Reuniões", color: "#0f766e" },
-    { id: "cat-trabalho", name: "Trabalho", color: "#1d4ed8" },
-    { id: "cat-pessoal", name: "Pessoal", color: "#6d28d9" },
-    { id: "cat-aniversario", name: "Aniversários", color: "#7c2d12" },
-    { id: "cat-viagem", name: "Viagem", color: "#7c4a03" },
-    { id: "cat-saude", name: "Saude", color: "#0f172a" },
-    { id: "cat-estudos", name: "Estudos", color: "#334155" },
-    { id: "cat-financas", name: "Pagamentos", color: "#166534" },
-    { id: "cat-feriados", name: "Feriados", color: "#9d174d" },
-    { id: "cat-lembretes", name: "Lembretes", color: "#312e81" },
+    { id: "cat-reunioes", name: "Reuniões", color: CATEGORY_COLOR_OPTIONS[0] },
+    { id: "cat-trabalho", name: "Trabalho", color: CATEGORY_COLOR_OPTIONS[1] },
+    { id: "cat-pessoal", name: "Pessoal", color: CATEGORY_COLOR_OPTIONS[2] },
+    { id: "cat-aniversario", name: "Aniversários", color: CATEGORY_COLOR_OPTIONS[3] },
+    { id: "cat-viagem", name: "Viagem", color: CATEGORY_COLOR_OPTIONS[4] },
+    { id: "cat-saude", name: "Saude", color: CATEGORY_COLOR_OPTIONS[5] },
+    { id: "cat-estudos", name: "Estudos", color: CATEGORY_COLOR_OPTIONS[6] },
+    { id: "cat-financas", name: "Pagamentos", color: CATEGORY_COLOR_OPTIONS[7] },
+    { id: "cat-feriados", name: "Feriados", color: CATEGORY_COLOR_OPTIONS[8] },
+    { id: "cat-lembretes", name: "Lembretes", color: CATEGORY_COLOR_OPTIONS[9] },
   ]);
 
   setIfMissing("calendar_sources_v1", [
-    { id: "cal-trabalho", name: "Trabalho", color: "#1d4ed8", enabled: true },
-    { id: "cal-pessoal", name: "Pessoal", color: "#16a34a", enabled: true },
-    { id: "cal-equipe", name: "Equipe", color: "#0f766e", enabled: true },
-    { id: "cal-financas", name: "Financas", color: "#7c2d12", enabled: true },
+    {
+      id: "cal-trabalho",
+      name: "Trabalho",
+      color: CATEGORY_COLOR_OPTIONS[0],
+      enabled: true,
+    },
+    {
+      id: "cal-pessoal",
+      name: "Pessoal",
+      color: CATEGORY_COLOR_OPTIONS[1] ?? CATEGORY_COLOR_OPTIONS[0],
+      enabled: true,
+    },
+    {
+      id: "cal-equipe",
+      name: "Equipe",
+      color: CATEGORY_COLOR_OPTIONS[2] ?? CATEGORY_COLOR_OPTIONS[0],
+      enabled: true,
+    },
+    {
+      id: "cal-financas",
+      name: "Financeiro",
+      color: CATEGORY_COLOR_OPTIONS[3] ?? CATEGORY_COLOR_OPTIONS[0],
+      enabled: true,
+    },
   ]);
+
+  const coerceAllowedColor = (value: unknown, index: number) => {
+    const candidate = typeof value === "string" ? value.trim() : "";
+    return (CATEGORY_COLOR_OPTIONS as readonly string[]).includes(candidate)
+      ? candidate
+      : CATEGORY_COLOR_OPTIONS[index % CATEGORY_COLOR_OPTIONS.length];
+  };
+
+  const upsertCategoryList = (
+    key: string,
+    defaults: { id: string; name: string; color: string }[]
+  ) => {
+    const stored = getUserStorage(userId, key);
+    if (!Array.isArray(stored)) {
+      setUserStorage(userId, key, defaults);
+      return;
+    }
+
+    const normalized: { id: string; name: string; color: string }[] = [];
+    const seen = new Set<string>();
+    let changed = false;
+
+    for (let index = 0; index < stored.length; index += 1) {
+      const item = stored[index];
+      const raw = (item ?? {}) as Record<string, unknown>;
+      const id = typeof raw.id === "string" ? raw.id.trim() : "";
+      const name = typeof raw.name === "string" ? raw.name.trim() : "";
+      if (!id || !name) {
+        changed = true;
+        continue;
+      }
+      if (seen.has(id)) {
+        changed = true;
+        continue;
+      }
+      const defaultMatch = defaults.find(entry => entry.id === id);
+      const color = (CATEGORY_COLOR_OPTIONS as readonly string[]).includes(
+        typeof raw.color === "string" ? raw.color.trim() : ""
+      )
+        ? (raw.color as string).trim()
+        : defaultMatch?.color ?? coerceAllowedColor(raw.color, index);
+      if (typeof raw.color !== "string" || raw.color.trim() !== color) {
+        changed = true;
+      }
+      normalized.push({ id, name, color });
+      seen.add(id);
+    }
+
+    for (const entry of defaults) {
+      if (!seen.has(entry.id)) {
+        normalized.push(entry);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      setUserStorage(userId, key, normalized);
+    }
+  };
+
+  const upsertCalendarSources = () => {
+    const key = "calendar_sources_v1";
+    const defaults = [
+      {
+        id: "cal-trabalho",
+        name: "Trabalho",
+        color: CATEGORY_COLOR_OPTIONS[0],
+        enabled: true,
+      },
+      {
+        id: "cal-pessoal",
+        name: "Pessoal",
+        color: CATEGORY_COLOR_OPTIONS[1] ?? CATEGORY_COLOR_OPTIONS[0],
+        enabled: true,
+      },
+      {
+        id: "cal-equipe",
+        name: "Equipe",
+        color: CATEGORY_COLOR_OPTIONS[2] ?? CATEGORY_COLOR_OPTIONS[0],
+        enabled: true,
+      },
+      {
+        id: "cal-financas",
+        name: "Financeiro",
+        color: CATEGORY_COLOR_OPTIONS[3] ?? CATEGORY_COLOR_OPTIONS[0],
+        enabled: true,
+      },
+    ];
+
+    const stored = getUserStorage(userId, key);
+    if (!Array.isArray(stored)) {
+      setUserStorage(userId, key, defaults);
+      return;
+    }
+
+    const normalized: {
+      id: string;
+      name: string;
+      color: string;
+      enabled: boolean;
+    }[] = [];
+    const seen = new Set<string>();
+    let changed = false;
+
+    for (let index = 0; index < stored.length; index += 1) {
+      const item = stored[index];
+      const raw = (item ?? {}) as Record<string, unknown>;
+      const id = typeof raw.id === "string" ? raw.id.trim() : "";
+      const name = typeof raw.name === "string" ? raw.name.trim() : "";
+      if (!id || !name) {
+        changed = true;
+        continue;
+      }
+      if (seen.has(id)) {
+        changed = true;
+        continue;
+      }
+      const defaultMatch = defaults.find(entry => entry.id === id);
+      const color = defaultMatch?.color ?? coerceAllowedColor(raw.color, index);
+      const enabled = typeof raw.enabled === "boolean" ? raw.enabled : true;
+      if (typeof raw.color !== "string" || raw.color.trim() !== color) {
+        changed = true;
+      }
+      if (typeof raw.enabled !== "boolean") {
+        changed = true;
+      }
+      normalized.push({ id, name, color, enabled });
+      seen.add(id);
+    }
+
+    for (const entry of defaults) {
+      if (!seen.has(entry.id)) {
+        normalized.push(entry);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      setUserStorage(userId, key, normalized);
+    }
+  };
+
+  upsertCategoryList("contact_categories_v1", [
+    { id: "cat-familia", name: "Familia", color: CATEGORY_COLOR_OPTIONS[0] },
+    { id: "cat-amigos", name: "Amigos", color: CATEGORY_COLOR_OPTIONS[1] },
+    { id: "cat-trabalho", name: "Trabalho", color: CATEGORY_COLOR_OPTIONS[2] },
+    { id: "cat-cliente", name: "Cliente", color: CATEGORY_COLOR_OPTIONS[3] },
+    { id: "cat-parceiro", name: "Parceiro", color: CATEGORY_COLOR_OPTIONS[4] },
+    { id: "cat-fornecedor", name: "Fornecedor", color: CATEGORY_COLOR_OPTIONS[5] },
+    { id: "cat-prospect", name: "Prospect", color: CATEGORY_COLOR_OPTIONS[6] },
+    { id: "cat-vip", name: "VIP", color: CATEGORY_COLOR_OPTIONS[7] },
+    { id: "cat-suporte", name: "Suporte", color: CATEGORY_COLOR_OPTIONS[8] },
+    { id: "cat-financeiro", name: "Financeiro", color: CATEGORY_COLOR_OPTIONS[9] },
+    { id: "cat-equipe", name: "Equipe", color: CATEGORY_COLOR_OPTIONS[0] },
+    { id: "cat-outros", name: "Outros", color: CATEGORY_COLOR_OPTIONS[1] },
+  ]);
+
+  upsertCategoryList("calendar_categories_v1", [
+    { id: "cat-reunioes", name: "Reuniões", color: CATEGORY_COLOR_OPTIONS[0] },
+    { id: "cat-trabalho", name: "Trabalho", color: CATEGORY_COLOR_OPTIONS[1] },
+    { id: "cat-pessoal", name: "Pessoal", color: CATEGORY_COLOR_OPTIONS[2] },
+    {
+      id: "cat-aniversario",
+      name: "Aniversários",
+      color: CATEGORY_COLOR_OPTIONS[3] ?? CATEGORY_COLOR_OPTIONS[0],
+    },
+    { id: "cat-viagem", name: "Viagem", color: CATEGORY_COLOR_OPTIONS[4] },
+    { id: "cat-saude", name: "Saude", color: CATEGORY_COLOR_OPTIONS[5] },
+    { id: "cat-estudos", name: "Estudos", color: CATEGORY_COLOR_OPTIONS[6] },
+    {
+      id: "cat-financas",
+      name: "Pagamentos",
+      color: CATEGORY_COLOR_OPTIONS[7] ?? CATEGORY_COLOR_OPTIONS[0],
+    },
+    { id: "cat-feriados", name: "Feriados", color: CATEGORY_COLOR_OPTIONS[8] },
+    { id: "cat-lembretes", name: "Lembretes", color: CATEGORY_COLOR_OPTIONS[9] },
+  ]);
+
+  upsertCalendarSources();
 
   const today = new Date();
   const yyyy = today.getFullYear();
@@ -780,6 +997,190 @@ const ensureUserStorageSeed = (userId: number) => {
   });
 };
 
+const ensureFinanceDataSeed = (userId: number) => {
+  const row = db
+    .prepare("SELECT 1 as ok FROM finance_data WHERE user_id = ?")
+    .get(userId) as { ok?: number } | undefined;
+  if (row?.ok) {
+    return;
+  }
+
+  const categories = [
+    { id: "fin-cat-pessoal", name: "Pessoal", color: CATEGORY_COLOR_OPTIONS[0] },
+    {
+      id: "fin-cat-operacional",
+      name: "Operacional",
+      color: CATEGORY_COLOR_OPTIONS[1],
+    },
+    {
+      id: "fin-cat-fornecedores",
+      name: "Fornecedores",
+      color: CATEGORY_COLOR_OPTIONS[2],
+    },
+    { id: "fin-cat-servicos", name: "Serviços", color: CATEGORY_COLOR_OPTIONS[3] },
+    { id: "fin-cat-marketing", name: "Marketing", color: CATEGORY_COLOR_OPTIONS[4] },
+    { id: "fin-cat-folha", name: "Folha", color: CATEGORY_COLOR_OPTIONS[5] },
+    { id: "fin-cat-impostos", name: "Impostos", color: CATEGORY_COLOR_OPTIONS[6] },
+    {
+      id: "fin-cat-tecnologia",
+      name: "Tecnologia",
+      color: CATEGORY_COLOR_OPTIONS[7],
+    },
+    {
+      id: "fin-cat-infra",
+      name: "Infraestrutura",
+      color: CATEGORY_COLOR_OPTIONS[8],
+    },
+    { id: "fin-cat-viagens", name: "Viagens", color: CATEGORY_COLOR_OPTIONS[9] },
+    {
+      id: "fin-cat-treinamento",
+      name: "Treinamento",
+      color: CATEGORY_COLOR_OPTIONS[0],
+    },
+    { id: "fin-cat-outros", name: "Outros", color: CATEGORY_COLOR_OPTIONS[1] },
+  ];
+
+  const expenses = [
+    {
+      id: "exp-seed-1",
+      title: "Google Workspace",
+      amount: 120,
+      categoryId: "fin-cat-tecnologia",
+      comment: "Assinatura mensal",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+    },
+    {
+      id: "exp-seed-2",
+      title: "Campanha de anúncios",
+      amount: 850,
+      categoryId: "fin-cat-marketing",
+      comment: "Meta Ads",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
+    },
+    {
+      id: "exp-seed-3",
+      title: "DARF / Impostos",
+      amount: 2100,
+      categoryId: "fin-cat-impostos",
+      comment: "Trimestral",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 25).toISOString(),
+    },
+    {
+      id: "exp-seed-4",
+      title: "Fornecedor - serviços",
+      amount: 1600,
+      categoryId: "fin-cat-fornecedores",
+      comment: "Prestador",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 32).toISOString(),
+    },
+  ];
+
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO finance_data (user_id, data_json, updated_at)
+     VALUES (?, ?, ?)
+     ON CONFLICT(user_id) DO UPDATE SET
+       data_json = excluded.data_json,
+       updated_at = excluded.updated_at`
+  ).run(userId, JSON.stringify({ categories, expenses }), now);
+};
+
+const ensurePipelineStateSeed = () => {
+  const row = db
+    .prepare("SELECT data_json FROM pipeline_state WHERE id = 1")
+    .get() as { data_json: string } | undefined;
+  if (row?.data_json) {
+    return;
+  }
+
+  const categories = [
+    { id: "pipe-cat-prospect", name: "Prospect", color: CATEGORY_COLOR_OPTIONS[0] },
+    { id: "pipe-cat-cliente", name: "Cliente", color: CATEGORY_COLOR_OPTIONS[1] },
+    { id: "pipe-cat-renovacao", name: "Renovação", color: CATEGORY_COLOR_OPTIONS[2] },
+    { id: "pipe-cat-upsell", name: "Upsell", color: CATEGORY_COLOR_OPTIONS[3] },
+    { id: "pipe-cat-parceria", name: "Parceria", color: CATEGORY_COLOR_OPTIONS[4] },
+    { id: "pipe-cat-marketing", name: "Marketing", color: CATEGORY_COLOR_OPTIONS[5] },
+    {
+      id: "pipe-cat-operacional",
+      name: "Operacional",
+      color: CATEGORY_COLOR_OPTIONS[6],
+    },
+    {
+      id: "pipe-cat-financeiro",
+      name: "Financeiro",
+      color: CATEGORY_COLOR_OPTIONS[7],
+    },
+    { id: "pipe-cat-suporte", name: "Suporte", color: CATEGORY_COLOR_OPTIONS[8] },
+    { id: "pipe-cat-interno", name: "Interno", color: CATEGORY_COLOR_OPTIONS[9] },
+    {
+      id: "pipe-cat-prioritario",
+      name: "Prioritário",
+      color: CATEGORY_COLOR_OPTIONS[0],
+    },
+    { id: "pipe-cat-backlog", name: "Backlog", color: CATEGORY_COLOR_OPTIONS[1] },
+  ];
+
+  const columns = [
+    {
+      id: "novo",
+      title: "Novo",
+      deals: [
+        {
+          id: "deal-seed-1",
+          name: "Orbit Media",
+          value: "R$ 18k",
+          owner: "Ana C.",
+          categoryId: "pipe-cat-prospect",
+          categoryIds: ["pipe-cat-prospect"],
+          comments: "Primeiro contato realizado.",
+        },
+        {
+          id: "deal-seed-2",
+          name: "Silo Retail",
+          value: "R$ 22k",
+          owner: "Lucas M.",
+          categoryId: "pipe-cat-prospect",
+          categoryIds: ["pipe-cat-prospect"],
+          comments: "Aguardando retorno.",
+        },
+      ],
+    },
+    {
+      id: "qualificacao",
+      title: "Qualificação",
+      deals: [
+        {
+          id: "deal-seed-3",
+          name: "Pulse Energy",
+          value: "R$ 14k",
+          owner: "Marina R.",
+          categoryId: "pipe-cat-prioritario",
+          categoryIds: ["pipe-cat-prioritario"],
+          comments: "Reunião de descoberta marcada.",
+        },
+      ],
+    },
+    { id: "proposta", title: "Proposta", deals: [] },
+    { id: "negociacao", title: "Negociação", deals: [] },
+    { id: "ganho", title: "Ganho", deals: [] },
+  ];
+
+  const now = new Date().toISOString();
+  db.prepare(
+    `INSERT INTO pipeline_state (id, data_json, updated_at)
+     VALUES (1, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       data_json = excluded.data_json,
+       updated_at = excluded.updated_at`
+  ).run(JSON.stringify({ columns, categories }), now);
+};
+
+try {
+  ensurePipelineStateSeed();
+} catch {
+  // Best-effort seeding.
+}
+
 app.post("/api/auth/signup", (req, res) => {
   const name = typeof req.body.name === "string" ? req.body.name.trim() : null;
   const email =
@@ -825,6 +1226,7 @@ app.post("/api/auth/signup", (req, res) => {
 
   try {
     ensureUserStorageSeed(userId);
+    ensureFinanceDataSeed(userId);
   } catch {
     // Best-effort seeding.
   }
@@ -870,6 +1272,7 @@ app.post("/api/auth/login", (req, res) => {
 
   try {
     ensureUserStorageSeed(user.id);
+    ensureFinanceDataSeed(user.id);
   } catch {
     // Best-effort seeding.
   }
