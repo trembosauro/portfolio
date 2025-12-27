@@ -21,6 +21,7 @@ import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import PhotoCameraRoundedIcon from "@mui/icons-material/PhotoCameraRounded";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
+import { useTheme as useMuiTheme } from "@mui/material/styles";
 import ActionButton from "../components/ActionButton";
 import { PageContainer } from "../ui/PageContainer/PageContainer";
 import AppAccordion from "../components/layout/AppAccordion";
@@ -30,6 +31,12 @@ import api from "../api";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import { interactiveCardSx } from "../styles/interactiveCard";
 import { changeLanguage } from "../i18n";
+import {
+  APP_PRIMARY_COLOR_OPTIONS,
+  PRIMARY_COLOR_CHANGED_EVENT,
+  PRIMARY_COLOR_STORAGE_KEY,
+} from "../theme";
+import { resolveThemeColor } from "../lib/resolveThemeColor";
 
 type StoredAccount = {
   name: string;
@@ -193,6 +200,7 @@ const languageOptions = [
 export default function Profile() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
+  const muiTheme = useMuiTheme();
   const [expanded, setExpanded] = useState<
     "main" | "security" | "notifications" | "modules" | "account" | false
   >(false);
@@ -221,6 +229,15 @@ export default function Profile() {
     moduleNotes: true,
     language: "pt-BR",
   });
+  const [primaryColorToken, setPrimaryColorToken] = useState<string | null>(() =>
+    localStorage.getItem(PRIMARY_COLOR_STORAGE_KEY)
+  );
+
+  const handlePrimaryColorSelect = useCallback((token: string) => {
+    localStorage.setItem(PRIMARY_COLOR_STORAGE_KEY, token);
+    setPrimaryColorToken(token);
+    window.dispatchEvent(new Event(PRIMARY_COLOR_CHANGED_EVENT));
+  }, []);
   const [languageDraft, setLanguageDraft] = useState("pt-BR");
   const [languageDialogOpen, setLanguageDialogOpen] = useState(false);
   const [pendingLanguage, setPendingLanguage] = useState<string | null>(null);
@@ -1725,50 +1742,99 @@ export default function Profile() {
               spacing={2.5}
               alignItems={{ xs: "stretch", md: "center" }}
             >
-              <AppCard
-                variant="outlined"
-                onClick={() =>
-                  setPreferences(prev => ({
-                    ...prev,
-                    singleSession: !prev.singleSession,
-                  }))
-                }
-                sx={theme => ({
-                  p: 2.5,
-                  cursor: "pointer",
-                  flex: 1,
-                  maxWidth: { xs: "100%", md: 420 },
-                  ...interactiveCardSx(theme),
-                })}
-              >
-                <Stack spacing={1.5}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 2,
-                    }}
-                  >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      Sessao unica
+              <Stack spacing={2} sx={{ flex: 1, maxWidth: { xs: "100%", md: 420 } }}>
+                <AppCard
+                  variant="outlined"
+                  onClick={() =>
+                    setPreferences(prev => ({
+                      ...prev,
+                      singleSession: !prev.singleSession,
+                    }))
+                  }
+                  sx={theme => ({
+                    p: 2.5,
+                    cursor: "pointer",
+                    ...interactiveCardSx(theme),
+                  })}
+                >
+                  <Stack spacing={1.5}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 2,
+                      }}
+                    >
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        Sessao unica
+                      </Typography>
+                      <ToggleCheckbox
+                        checked={preferences.singleSession}
+                        onChange={event =>
+                          setPreferences(prev => ({
+                            ...prev,
+                            singleSession: event.target.checked,
+                          }))
+                        }
+                        onClick={event => event.stopPropagation()}
+                      />
+                    </Box>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "text.secondary" }}
+                    >
+                      Desconecte outras sessoes ao entrar novamente.
                     </Typography>
-                    <ToggleCheckbox
-                      checked={preferences.singleSession}
-                      onChange={event =>
-                        setPreferences(prev => ({
-                          ...prev,
-                          singleSession: event.target.checked,
-                        }))
-                      }
-                      onClick={event => event.stopPropagation()}
-                    />
-                  </Box>
-                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                    Desconecte outras sessoes ao entrar novamente.
-                  </Typography>
-                </Stack>
-              </AppCard>
+                  </Stack>
+                </AppCard>
+
+                <AppCard
+                  variant="outlined"
+                  sx={theme => ({
+                    p: 2.5,
+                    ...interactiveCardSx(theme),
+                  })}
+                >
+                  <Stack spacing={1.5}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                      Cor
+                    </Typography>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.25 }}>
+                      {APP_PRIMARY_COLOR_OPTIONS.map(token => {
+                        const color = resolveThemeColor(muiTheme, token);
+                        const selected = token === primaryColorToken;
+
+                        return (
+                          <Box
+                            key={token}
+                            component="button"
+                            type="button"
+                            aria-label={`Cor ${token}`}
+                            onClick={() => handlePrimaryColorSelect(token)}
+                            sx={theme => ({
+                              width: 18,
+                              height: 18,
+                              padding: 0,
+                              borderRadius: "50%",
+                              border: `1px solid ${theme.palette.divider}`,
+                              backgroundColor: color,
+                              cursor: "pointer",
+                              outline: selected
+                                ? `2px solid ${theme.palette.text.primary}`
+                                : "none",
+                              outlineOffset: 2,
+                              "&:hover": {
+                                borderColor: theme.palette.text.secondary,
+                              },
+                            })}
+                          />
+                        );
+                      })}
+                    </Box>
+                  </Stack>
+                </AppCard>
+              </Stack>
 
               <Stack
                 direction="column"

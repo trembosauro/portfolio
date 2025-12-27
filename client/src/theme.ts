@@ -1,20 +1,78 @@
 import { createTheme } from "@mui/material/styles";
+import {
+  amber,
+  blue,
+  green,
+  indigo,
+  orange,
+  pink,
+  purple,
+  red,
+} from "@mui/material/colors";
 
 import { APP_RADIUS, APP_RADIUS_PX } from "./designTokens";
 
-const theme = createTheme({
+export const PRIMARY_COLOR_STORAGE_KEY = "sc_primary_color";
+export const PRIMARY_COLOR_CHANGED_EVENT = "sc-primary-color-changed";
+
+export const APP_PRIMARY_COLOR_OPTIONS = [
+  "mui.green.600",
+  "mui.blue.600",
+  "mui.indigo.500",
+  "mui.purple.500",
+  "mui.pink.500",
+  "mui.red.600",
+  "mui.orange.700",
+  "mui.amber.700",
+] as const;
+
+const MUI_COLOR_MAP: Record<string, Record<string, string>> = {
+  amber,
+  blue,
+  green,
+  indigo,
+  orange,
+  pink,
+  purple,
+  red,
+};
+
+const DEFAULT_PRIMARY_MAIN = "#22c9a6";
+const DEFAULT_PRIMARY_CONTRAST = "#00382f";
+
+const resolveMuiTokenToHex = (value?: string | null): string => {
+  if (!value) {
+    return DEFAULT_PRIMARY_MAIN;
+  }
+
+  if (!value.startsWith("mui.")) {
+    return DEFAULT_PRIMARY_MAIN;
+  }
+
+  const [, colorName, shade] = value.split(".");
+  if (!colorName || !shade) {
+    return DEFAULT_PRIMARY_MAIN;
+  }
+
+  const bucket = MUI_COLOR_MAP[colorName];
+  const resolved = bucket?.[shade];
+  return resolved ?? DEFAULT_PRIMARY_MAIN;
+};
+
+export const createAppTheme = (primaryColorToken?: string | null) =>
+  createTheme({
   shape: {
     borderRadius: APP_RADIUS_PX,
   },
   palette: {
     mode: "dark",
     primary: {
-      main: "#22c9a6",
-      contrastText: "#00382f",
+      main: resolveMuiTokenToHex(primaryColorToken),
+      contrastText: DEFAULT_PRIMARY_CONTRAST,
     },
     brand: {
-      main: "#22c9a6",
-      contrastText: "#00382f",
+      main: resolveMuiTokenToHex(primaryColorToken),
+      contrastText: DEFAULT_PRIMARY_CONTRAST,
     },
     secondary: {
       main: "#CCC2DC",
@@ -183,5 +241,7 @@ const theme = createTheme({
     },
   },
 });
+
+const theme = createAppTheme(null);
 
 export default theme;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ThemeProvider } from "@mui/material/styles";
 import {
   AppBar,
@@ -22,7 +22,11 @@ import NotificationsNoneRoundedIcon from "@mui/icons-material/NotificationsNoneR
 import AutoGraphRoundedIcon from "@mui/icons-material/AutoGraphRounded";
 import { Link as RouterLink, Route, Switch, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
-import theme from "./theme";
+import {
+  createAppTheme,
+  PRIMARY_COLOR_CHANGED_EVENT,
+  PRIMARY_COLOR_STORAGE_KEY,
+} from "./theme";
 import api from "./api";
 import { Footer } from "./ui/Footer";
 import Login from "./pages/Login";
@@ -58,6 +62,9 @@ function App() {
   const { t } = useTranslation();
   const [location, setLocation] = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [primaryColorToken, setPrimaryColorToken] = useState<string | null>(() =>
+    localStorage.getItem(PRIMARY_COLOR_STORAGE_KEY)
+  );
   const [userName, setUserName] = useState<string>("");
   const [profilePhoto, setProfilePhoto] = useState<string>("");
   const [mobileAnchorEl, setMobileAnchorEl] = useState<null | HTMLElement>(
@@ -265,6 +272,28 @@ function App() {
       setLocation("/profile");
     }
   }, [isLoggedIn, location, moduleAccess, setLocation]);
+
+  useEffect(() => {
+    const handlePrimaryColorChanged = () => {
+      setPrimaryColorToken(localStorage.getItem(PRIMARY_COLOR_STORAGE_KEY));
+    };
+
+    window.addEventListener(
+      PRIMARY_COLOR_CHANGED_EVENT,
+      handlePrimaryColorChanged as EventListener
+    );
+    return () => {
+      window.removeEventListener(
+        PRIMARY_COLOR_CHANGED_EVENT,
+        handlePrimaryColorChanged as EventListener
+      );
+    };
+  }, []);
+
+  const theme = useMemo(
+    () => createAppTheme(primaryColorToken),
+    [primaryColorToken]
+  );
 
   const isActive = (href: string) => {
     if (href === "/") {
