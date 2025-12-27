@@ -2168,7 +2168,6 @@ export default function Notes() {
                         </ClickAwayListener>
                       </Popper>
                       <MuiTextField
-                        label="Titulo"
                         variant="standard"
                         value={selectedNote.title}
                         onChange={event =>
@@ -2180,6 +2179,7 @@ export default function Notes() {
                         }
                         fullWidth
                         InputProps={{ disableUnderline: true }}
+                        inputProps={{ "aria-label": "Título" }}
                         sx={{
                           "& .MuiInputBase-root": {
                             height: 56,
