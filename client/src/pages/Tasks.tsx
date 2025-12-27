@@ -30,7 +30,7 @@ import {
   Typography,
   useMediaQuery,
 } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { alpha, useTheme } from "@mui/material/styles";
 import { Link as RouterLink } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
@@ -515,6 +515,11 @@ const InlineAddTaskRow = memo(function InlineAddTaskRow({
 }) {
   const [draftTitle, setDraftTitle] = useState("");
 
+  const hasRecognizedDate = useMemo(() => {
+    if (!draftTitle.trim()) return false;
+    return Boolean(extractInlineTaskDate(draftTitle).date);
+  }, [draftTitle]);
+
   const handleSubmit = () => {
     const parsed = extractInlineTaskDate(draftTitle);
     const nextTitle = parsed.title;
@@ -538,13 +543,19 @@ const InlineAddTaskRow = memo(function InlineAddTaskRow({
         p: 1.5,
         border: 0,
         borderColor: "transparent",
-        backgroundColor: "transparent",
+        backgroundColor: hasRecognizedDate
+          ? alpha(theme.palette.grey[900], theme.palette.mode === "dark" ? 0.18 : 0.08)
+          : "transparent",
         borderRadius: "var(--radius-card)",
         "&:hover": {
-          backgroundColor: "transparent",
+          backgroundColor: hasRecognizedDate
+            ? alpha(theme.palette.grey[900], theme.palette.mode === "dark" ? 0.18 : 0.08)
+            : "transparent",
         },
         "&:active": {
-          backgroundColor: "transparent",
+          backgroundColor: hasRecognizedDate
+            ? alpha(theme.palette.grey[900], theme.palette.mode === "dark" ? 0.18 : 0.08)
+            : "transparent",
         },
       })}
     >
