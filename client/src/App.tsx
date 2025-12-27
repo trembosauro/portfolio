@@ -355,6 +355,7 @@ function App() {
     "/tarefas/concluidas": t("tasks.completedTasks"),
     "/notas": t("nav.notes"),
     "/notas/arquivo": t("notes.archive"),
+    "/notas/lixeira": "Lixeira",
     "/notifications": t("nav.notifications"),
   };
 
@@ -371,7 +372,8 @@ function App() {
       return null;
     }
     const isArchive = location.startsWith("/notas/arquivo");
-    const noteId = isArchive ? location.split("/")[3] : location.split("/")[2];
+    const isTrash = location.startsWith("/notas/lixeira");
+    const noteId = isArchive || isTrash ? location.split("/")[3] : location.split("/")[2];
     if (!noteId) {
       return null;
     }
@@ -418,12 +420,25 @@ function App() {
           </Link>
         );
       }
+      if (isTrash) {
+        crumbs.push(
+          <Link
+            key="notas-lixeira"
+            component={RouterLink}
+            href="/notas/lixeira"
+            underline="hover"
+            color="inherit"
+          >
+            Lixeira
+          </Link>
+        );
+      }
       if (parent) {
         crumbs.push(
           <Link
             key="nota-parent"
             component={RouterLink}
-            href={`/notas/${parent.id}`}
+            href={isTrash ? `/notas/lixeira/${parent.id}` : `/notas/${parent.id}`}
             underline="hover"
             color="inherit"
           >
@@ -509,6 +524,21 @@ function App() {
                   Arquivo
                 </Typography>,
               ]
+            : location === "/notas/lixeira"
+              ? [
+                  <Link
+                    key="notas"
+                    component={RouterLink}
+                    href="/notas"
+                    underline="hover"
+                    color="inherit"
+                  >
+                    Notas
+                  </Link>,
+                  <Typography key="lixeira" color="text.primary">
+                    Lixeira
+                  </Typography>,
+                ]
             : notesBreadcrumb
               ? notesBreadcrumb
               : [

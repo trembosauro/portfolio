@@ -1027,21 +1027,7 @@ export default function Notes() {
     });
   }, [notes, noteQuery, isArchiveView, isTrashView]);
 
-  // Se entrar no Arquivo e não existir nenhuma nota arquivada, volta pra Notas e abre busca
-  useEffect(() => {
-    if (!isLoadedRef.current) {
-      return;
-    }
-    if (!isArchiveView) {
-      return;
-    }
-    const hasArchived = notes.some(note => Boolean(note.archived));
-    if (hasArchived) {
-      return;
-    }
-    setShowSearch(true);
-    setLocation("/notas");
-  }, [isArchiveView, notes, setLocation]);
+  // Arquivo deve ser acessível mesmo quando vazio.
 
   const emptyTrash = useCallback(() => {
     setNotes(prev => prev.filter(note => !note.trashed));
