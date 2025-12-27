@@ -45,6 +45,11 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
+import PictureAsPdfRoundedIcon from "@mui/icons-material/PictureAsPdfRounded";
+import TextSnippetRoundedIcon from "@mui/icons-material/TextSnippetRounded";
+import CodeRoundedIcon from "@mui/icons-material/CodeRounded";
+import TableChartRoundedIcon from "@mui/icons-material/TableChartRounded";
 import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
@@ -752,6 +757,10 @@ export default function Notes() {
     id: string;
   } | null>(null);
   const [emptyTrashConfirmOpen, setEmptyTrashConfirmOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importDragOver, setImportDragOver] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const importFileInputRef = useRef<HTMLInputElement | null>(null);
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   type EmojiPickerAnchor = HTMLElement | { getBoundingClientRect: () => DOMRect };
   const [emojiPickerAnchor, setEmojiPickerAnchor] = useState<EmojiPickerAnchor | null>(
@@ -1292,6 +1301,67 @@ export default function Notes() {
       updatedAt: uploadedAt,
     });
   };
+
+  const importFilesIntoNote = useCallback(
+    async (note: Note, files: FileList | null) => {
+      if (!files || !files.length) {
+        return;
+      }
+
+      const file = files[0]!;
+      const name = (file.name || "").toLowerCase();
+      const ext = name.includes(".") ? name.split(".").pop() || "" : "";
+      const allowed = new Set(["pdf", "html", "htm", "doc", "txt", "md", "markdown", "csv"]);
+      if (!allowed.has(ext)) {
+        setImportError("Formato não suportado. Use PDF, HTML, DOC, TXT, Markdown ou CSV.");
+        return;
+      }
+
+      setImportError(null);
+
+      if (ext === "pdf" || ext === "doc") {
+        await addAttachments(note, files);
+        setImportDialogOpen(false);
+        setImportDragOver(false);
+        return;
+      }
+
+      const readAsText = (f: File) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = () => reject(new Error("Falha ao ler arquivo"));
+          reader.onload = () => resolve(String(reader.result || ""));
+          reader.readAsText(f);
+        });
+
+      const raw = await readAsText(file);
+      const now = new Date().toISOString();
+
+      let importedHtml = "";
+      if (ext === "html" || ext === "htm") {
+        try {
+          const doc = new DOMParser().parseFromString(raw, "text/html");
+          importedHtml = doc.body?.innerHTML || raw;
+        } catch {
+          importedHtml = raw;
+        }
+      } else {
+        importedHtml = `<pre>${escapeHtml(raw)}</pre>`;
+      }
+
+      const existing = (note.contentHtml || "").trim();
+      const nextHtml = existing ? `${existing}<p></p>${importedHtml}` : importedHtml;
+      updateNote({
+        ...note,
+        contentHtml: nextHtml,
+        updatedAt: now,
+      });
+
+      setImportDialogOpen(false);
+      setImportDragOver(false);
+    },
+    [addAttachments]
+  );
 
   const createChildNote = (parent: Note): Note => {
     const next = emptyNote();
@@ -2483,6 +2553,18 @@ export default function Notes() {
                         </ListItemIcon>
                         <ListItemText primary="Duplicar" />
                       </MenuItem>
+                      <MenuItem
+                        onClick={() => {
+                          setNoteMenuAnchorEl(null);
+                          setImportError(null);
+                          setImportDialogOpen(true);
+                        }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <DescriptionRoundedIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText primary="Importar" />
+                      </MenuItem>
                       {selectedNote.parentId ? (
                         <MenuItem
                           onClick={() => {
@@ -3166,6 +3248,139 @@ export default function Notes() {
                 sx={{ textTransform: "none", fontWeight: 600 }}
               >
                 Salvar
+              </Button>
+            </Stack>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={importDialogOpen}
+        onClose={() => {
+          setImportDialogOpen(false);
+          setImportDragOver(false);
+          setImportError(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogContent>
+          <Stack spacing={2}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+              Importar arquivo
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Formatos: PDF, HTML, Word (.doc), TXT, Markdown, CSV.
+            </Typography>
+
+            <Box
+              role="button"
+              tabIndex={0}
+              onClick={() => importFileInputRef.current?.click()}
+              onKeyDown={event => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  importFileInputRef.current?.click();
+                }
+              }}
+              onDragOver={event => {
+                event.preventDefault();
+                event.stopPropagation();
+                setImportDragOver(true);
+              }}
+              onDragLeave={event => {
+                event.preventDefault();
+                event.stopPropagation();
+                setImportDragOver(false);
+              }}
+              onDrop={event => {
+                event.preventDefault();
+                event.stopPropagation();
+                setImportDragOver(false);
+                if (!selectedNote) {
+                  return;
+                }
+                void importFilesIntoNote(selectedNote, event.dataTransfer.files);
+              }}
+              sx={{
+                border: 1,
+                borderStyle: "dashed",
+                borderColor: "divider",
+                borderRadius: 2,
+                p: 3,
+                backgroundColor: importDragOver ? "action.hover" : "transparent",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <Stack spacing={1.5} alignItems="center">
+                <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
+                  Arraste o arquivo aqui
+                </Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  ou clique para selecionar
+                </Typography>
+
+                <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="center">
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <PictureAsPdfRoundedIcon fontSize="small" />
+                    <Typography variant="caption">PDF</Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <CodeRoundedIcon fontSize="small" />
+                    <Typography variant="caption">HTML</Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <DescriptionRoundedIcon fontSize="small" />
+                    <Typography variant="caption">DOC</Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <TextSnippetRoundedIcon fontSize="small" />
+                    <Typography variant="caption">TXT</Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <CodeRoundedIcon fontSize="small" />
+                    <Typography variant="caption">Markdown</Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <TableChartRoundedIcon fontSize="small" />
+                    <Typography variant="caption">CSV</Typography>
+                  </Stack>
+                </Stack>
+              </Stack>
+
+              <input
+                ref={importFileInputRef}
+                type="file"
+                accept=".pdf,.html,.htm,.doc,.txt,.md,.markdown,.csv"
+                style={{ display: "none" }}
+                onChange={event => {
+                  if (!selectedNote) {
+                    return;
+                  }
+                  void importFilesIntoNote(selectedNote, event.target.files);
+                  event.currentTarget.value = "";
+                }}
+              />
+            </Box>
+
+            {importError ? (
+              <Typography variant="body2" sx={{ color: "error.main", fontWeight: 600 }}>
+                {importError}
+              </Typography>
+            ) : null}
+
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setImportDialogOpen(false);
+                  setImportDragOver(false);
+                  setImportError(null);
+                }}
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                Cancelar
               </Button>
             </Stack>
           </Stack>
