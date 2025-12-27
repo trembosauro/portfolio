@@ -772,6 +772,8 @@ function App() {
                     component={TasksCompleted}
                   />
                   <Route path="/tarefas" component={Tasks} />
+                  <Route path="/notas/lixeira/:noteId" component={Notes} />
+                  <Route path="/notas/lixeira" component={Notes} />
                   <Route path="/notas/arquivo/:noteId" component={Notes} />
                   <Route path="/notas/arquivo" component={Notes} />
                   <Route path="/notas/:noteId" component={Notes} />

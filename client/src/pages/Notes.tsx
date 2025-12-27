@@ -25,6 +25,7 @@ import {
   Dialog,
   DialogContent,
   IconButton,
+  ListItemIcon,
   Menu,
   MenuItem,
   InputAdornment,
@@ -39,14 +40,19 @@ import {
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArchiveRoundedIcon from "@mui/icons-material/ArchiveRounded";
+import AccessTimeRoundedIcon from "@mui/icons-material/AccessTimeRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import EditRoundedIcon from "@mui/icons-material/EditRounded";
+import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import LinkRoundedIcon from "@mui/icons-material/LinkRounded";
 import MoreVertRoundedIcon from "@mui/icons-material/MoreVertRounded";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
+import SubdirectoryArrowLeftRoundedIcon from "@mui/icons-material/SubdirectoryArrowLeftRounded";
 import UnarchiveRoundedIcon from "@mui/icons-material/UnarchiveRounded";
 import ShuffleRoundedIcon from "@mui/icons-material/ShuffleRounded";
 import StarBorderRoundedIcon from "@mui/icons-material/StarBorderRounded";
@@ -91,6 +97,7 @@ type Note = {
   createdAt: string;
   updatedAt: string;
   archived: boolean;
+  trashed?: boolean;
   isDraft?: boolean;
   parentId?: string;
   relatedNoteIds?: string[];
@@ -694,6 +701,7 @@ function SidebarTreeDraggableItem(props: {
 export default function Notes() {
   const [location, setLocation] = useLocation();
   const isArchiveView = location.startsWith("/notas/arquivo");
+  const isTrashView = location.startsWith("/notas/lixeira");
   const [notes, setNotes] = useState<Note[]>([]);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [editorAutoFocusNoteId, setEditorAutoFocusNoteId] = useState<
@@ -730,9 +738,10 @@ export default function Notes() {
     ...defaultNoteFieldSettings,
   });
   const [noteConfirm, setNoteConfirm] = useState<{
-    type: "archive" | "restore" | "delete";
+    type: "archive" | "restore" | "trash";
     id: string;
   } | null>(null);
+  const [emptyTrashConfirmOpen, setEmptyTrashConfirmOpen] = useState(false);
   const [expandedNoteId, setExpandedNoteId] = useState<string | null>(null);
   type EmojiPickerAnchor = HTMLElement | { getBoundingClientRect: () => DOMRect };
   const [emojiPickerAnchor, setEmojiPickerAnchor] = useState<EmojiPickerAnchor | null>(
@@ -800,7 +809,11 @@ export default function Notes() {
 
   // Ao entrar na tela de lista (/notas ou /notas/arquivo), nunca manter nota aberta
   useEffect(() => {
-    if (location === "/notas" || location === "/notas/arquivo") {
+    if (
+      location === "/notas" ||
+      location === "/notas/arquivo" ||
+      location === "/notas/lixeira"
+    ) {
       setSelectedNoteId(null);
       setExpandedNoteId(null);
     }
@@ -866,6 +879,7 @@ export default function Notes() {
           ? raw.updatedAt
           : new Date().toISOString(),
       archived: Boolean(raw.archived),
+      trashed: Boolean((raw as Record<string, unknown>).trashed),
       isDraft: Boolean(raw.isDraft),
       parentId: typeof raw.parentId === "string" ? raw.parentId : undefined,
       relatedNoteIds: Array.isArray(raw.relatedNoteIds)
@@ -968,20 +982,31 @@ export default function Notes() {
       }
 
       if (selectedNoteId) {
-        setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
+        setLocation(
+          isTrashView ? "/notas/lixeira" : isArchiveView ? "/notas/arquivo" : "/notas"
+        );
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [emojiPickerAnchor, selectedNoteId, isArchiveView, setLocation]);
+  }, [emojiPickerAnchor, selectedNoteId, isArchiveView, isTrashView, setLocation]);
 
   const stripHtml = (value: string) => value.replace(/<[^>]+>/g, " ");
 
   const filteredNotes = useMemo(() => {
     const term = noteQuery.trim().toLowerCase();
     return notes.filter(note => {
-      if (note.archived !== isArchiveView) {
-        return false;
+      if (isTrashView) {
+        if (!note.trashed) {
+          return false;
+        }
+      } else {
+        if (note.trashed) {
+          return false;
+        }
+        if (note.archived !== isArchiveView) {
+          return false;
+        }
       }
       if (!term) {
         return true;
@@ -990,7 +1015,7 @@ export default function Notes() {
         `${note.title} ${stripHtml(note.contentHtml || "")}`.toLowerCase();
       return haystack.includes(term);
     });
-  }, [notes, noteQuery, isArchiveView]);
+  }, [notes, noteQuery, isArchiveView, isTrashView]);
 
   // Se entrar no Arquivo e não existir nenhuma nota arquivada, volta pra Notas e abre busca
   useEffect(() => {
@@ -1007,6 +1032,13 @@ export default function Notes() {
     setShowSearch(true);
     setLocation("/notas");
   }, [isArchiveView, notes, setLocation]);
+
+  const emptyTrash = useCallback(() => {
+    setNotes(prev => prev.filter(note => !note.trashed));
+    setSelectedNoteId(null);
+    setExpandedNoteId(null);
+    setLocation("/notas/lixeira");
+  }, [setLocation]);
 
   const sortedFilteredNotes = useMemo(() => {
     const collator = new Intl.Collator("pt-BR", { sensitivity: "base" });
@@ -1028,13 +1060,27 @@ export default function Notes() {
     return list;
   }, [filteredNotes]);
 
+  const getNoteHref = useCallback(
+    (note: Note) =>
+      note.trashed
+        ? `/notas/lixeira/${note.id}`
+        : note.archived
+          ? `/notas/arquivo/${note.id}`
+          : `/notas/${note.id}`,
+    []
+  );
+
   const noteIdFromRoute = (() => {
     if (location.startsWith("/notas/arquivo/")) {
       return location.split("/")[3] || null;
     }
+    if (location.startsWith("/notas/lixeira/")) {
+      return location.split("/")[3] || null;
+    }
     if (
       location.startsWith("/notas/") &&
-      location.split("/")[2] !== "arquivo"
+      location.split("/")[2] !== "arquivo" &&
+      location.split("/")[2] !== "lixeira"
     ) {
       return location.split("/")[2] || null;
     }
@@ -1095,27 +1141,34 @@ export default function Notes() {
       setSelectedNoteId(null);
       setExpandedNoteId(null);
       prevSelectedNoteIdRef.current = null;
-      setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
+      setLocation(isTrashView ? "/notas/lixeira" : isArchiveView ? "/notas/arquivo" : "/notas");
       return;
     }
 
-    // Se a nota existe mas está no “lado” errado (arquivo vs notas), ajusta a rota
-    if (match.archived !== isArchiveView) {
-      setLocation(
-        match.archived ? `/notas/arquivo/${match.id}` : `/notas/${match.id}`
-      );
-      return;
+    // Se a nota existe mas está no “lado” errado (notas vs arquivo vs lixeira), ajusta a rota
+    if (isTrashView) {
+      if (!match.trashed) {
+        setLocation(getNoteHref(match));
+        return;
+      }
+    } else {
+      if (match.trashed) {
+        setLocation(getNoteHref(match));
+        return;
+      }
+      if (match.archived !== isArchiveView) {
+        setLocation(getNoteHref(match));
+        return;
+      }
     }
     setSelectedNoteId(match.id);
     prevSelectedNoteIdRef.current = match.id;
-  }, [noteIdFromRoute, notes, isArchiveView, selectedNoteId, setLocation]);
+  }, [getNoteHref, isArchiveView, isTrashView, noteIdFromRoute, notes, selectedNoteId, setLocation]);
 
   const selectNote = (note: Note) => {
     discardIfPristine(selectedNoteId);
     setSelectedNoteId(note.id);
-    setLocation(
-      isArchiveView ? `/notas/arquivo/${note.id}` : `/notas/${note.id}`
-    );
+    setLocation(getNoteHref(note));
   };
 
   const updateNote = (next: Note) => {
@@ -1255,28 +1308,45 @@ export default function Notes() {
 
   const requestNoteAction = (
     note: Note,
-    type: "archive" | "restore" | "delete"
+    type: "archive" | "restore" | "trash"
   ) => {
     setNoteConfirm({ type, id: note.id });
   };
 
   const applyNoteAction = (
     noteId: string,
-    type: "archive" | "restore" | "delete"
+    type: "archive" | "restore" | "trash"
   ) => {
-    if (type === "delete") {
-      setNotes(prev => prev.filter(note => note.id !== noteId));
-    } else {
-      setNotes(prev =>
-        prev.map(note =>
-          note.id === noteId
-            ? { ...note, archived: type === "archive" ? true : false }
-            : note
-        )
-      );
-    }
+    const now = new Date().toISOString();
+
+    setNotes(prev =>
+      prev.map(note => {
+        if (note.id !== noteId) {
+          return note;
+        }
+
+        if (type === "trash") {
+          return {
+            ...note,
+            trashed: true,
+            archived: false,
+            updatedAt: now,
+          };
+        }
+
+        return {
+          ...note,
+          archived: type === "archive" ? true : false,
+          updatedAt: now,
+        };
+      })
+    );
     if (selectedNoteId === noteId) {
       setSelectedNoteId(null);
+    }
+    if (type === "trash") {
+      setLocation("/notas");
+      return;
     }
     if (type === "archive") {
       setLocation("/notas");
@@ -1289,6 +1359,17 @@ export default function Notes() {
     setLocation(isArchiveView ? "/notas/arquivo" : "/notas");
   };
 
+  const detachNoteFromParent = useCallback((noteId: string) => {
+    const now = new Date().toISOString();
+    setNotes(prev =>
+      prev.map(note =>
+        note.id === noteId
+          ? { ...note, parentId: undefined, updatedAt: now, isDraft: false }
+          : note
+      )
+    );
+  }, []);
+
   const toggleFavorite = (noteId: string) => {
     setNotes(prev =>
       prev.map(note =>
@@ -1296,11 +1377,6 @@ export default function Notes() {
       )
     );
   };
-
-  const getNoteHref = useCallback(
-    (note: Note) => (note.archived ? `/notas/arquivo/${note.id}` : `/notas/${note.id}`),
-    []
-  );
 
   const openSidebarItemMenu = useCallback((note: Note, anchor: HTMLElement) => {
     setSidebarItemMenuNoteId(note.id);
@@ -1335,6 +1411,24 @@ export default function Notes() {
   const archiveLink = isArchiveView
     ? { label: "Notas", href: "/notas" }
     : { label: "Arquivo", href: "/notas/arquivo" };
+
+  const sidebarFooterLinks = useMemo(
+    () => [
+      {
+        key: "archive",
+        label: "Arquivo",
+        href: "/notas/arquivo",
+        isActive: isArchiveView,
+      },
+      {
+        key: "trash",
+        label: "Lixeira",
+        href: "/notas/lixeira",
+        isActive: isTrashView,
+      },
+    ],
+    [isArchiveView, isTrashView]
+  );
 
   const [expandedSidebarIds, setExpandedSidebarIds] = useState<Set<string>>(
     () => new Set()
@@ -1404,6 +1498,9 @@ export default function Notes() {
 
   const handleSidebarDragEnd = useCallback(
     (event: DragEndEvent) => {
+      if (isTrashView) {
+        return;
+      }
       const activeId = String(event.active.id || "");
       const overId = event.over ? String(event.over.id || "") : "";
       if (!activeId || !overId) {
@@ -1418,6 +1515,9 @@ export default function Notes() {
         const active = byId.get(activeId);
         const over = byId.get(overId);
         if (!active || !over) {
+          return prev;
+        }
+        if (active.trashed || over.trashed) {
           return prev;
         }
         if (active.archived !== over.archived) {
@@ -1452,11 +1552,13 @@ export default function Notes() {
         return next;
       });
     },
-    [ensureSubpageLinkInParent, isAncestorOf]
+    [ensureSubpageLinkInParent, isAncestorOf, isTrashView]
   );
 
   const sidebarTree = useMemo(() => {
-    const candidates = notes.filter(note => note.archived === isArchiveView);
+    const candidates = isTrashView
+      ? notes.filter(note => Boolean(note.trashed))
+      : notes.filter(note => !note.trashed && note.archived === isArchiveView);
     const byId = new Map(candidates.map(note => [note.id, note] as const));
     const childrenByParentId = new Map<string, Note[]>();
     const roots: Note[] = [];
@@ -1487,7 +1589,7 @@ export default function Notes() {
     Array.from(childrenByParentId.values()).forEach(list => sortNotes(list));
 
     return { roots, childrenByParentId, byId, favorites };
-  }, [notes, isArchiveView]);
+  }, [notes, isArchiveView, isTrashView]);
 
   useEffect(() => {
     if (!selectedNoteId) {
@@ -1818,7 +1920,7 @@ export default function Notes() {
             <AppAccordion
               expanded={mobileNotesExpanded}
               onChange={(_, expanded) => setMobileNotesExpanded(expanded)}
-              title="Notas"
+              title={isTrashView ? "Lixeira" : isArchiveView ? "Arquivo" : "Notas"}
             >
               {renderSidebarItems({
                 onSelect: note => selectNote(note),
@@ -1826,9 +1928,35 @@ export default function Notes() {
               })}
               {!sidebarTree.roots.length ? (
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    {isArchiveView ? "Sem notas arquivadas." : "Sem notas."}
+                    {isTrashView
+                      ? "Sem notas na lixeira."
+                      : isArchiveView
+                        ? "Sem notas arquivadas."
+                        : "Sem notas."}
                   </Typography>
                 ) : null}
+              <Divider sx={{ my: 1.5, opacity: 0.5, borderColor: "divider" }} />
+              <Stack spacing={0.5}>
+                {sidebarFooterLinks.map(link => (
+                  <Button
+                    key={link.key}
+                    component={RouterLink}
+                    href={link.href}
+                    variant="text"
+                    fullWidth
+                    onClick={() => setMobileNotesExpanded(false)}
+                    sx={{
+                      textTransform: "none",
+                      justifyContent: "flex-start",
+                      fontWeight: 700,
+                      px: 1,
+                      backgroundColor: link.isActive ? "action.selected" : "transparent",
+                    }}
+                  >
+                    {link.label}
+                  </Button>
+                ))}
+              </Stack>
             </AppAccordion>
           </Box>
         ) : null}
@@ -1849,7 +1977,7 @@ export default function Notes() {
               <CardSection size="xs">
                 <Stack spacing={2}>
                   <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                    Notas
+                    {isTrashView ? "Lixeira" : isArchiveView ? "Arquivo" : "Notas"}
                   </Typography>
                   {renderSidebarItems({ onSelect: note => selectNote(note) })}
                   {!sidebarTree.roots.length ? (
@@ -1857,9 +1985,34 @@ export default function Notes() {
                         variant="body2"
                         sx={{ color: "text.secondary" }}
                       >
-                        {isArchiveView ? "Sem notas arquivadas." : "Sem notas."}
+                        {isTrashView
+                          ? "Sem notas na lixeira."
+                          : isArchiveView
+                            ? "Sem notas arquivadas."
+                            : "Sem notas."}
                       </Typography>
                     ) : null}
+                  <Divider sx={{ my: 0.5, opacity: 0.5, borderColor: "divider" }} />
+                  <Stack spacing={0.5}>
+                    {sidebarFooterLinks.map(link => (
+                      <Button
+                        key={link.key}
+                        component={RouterLink}
+                        href={link.href}
+                        variant="text"
+                        fullWidth
+                        sx={{
+                          textTransform: "none",
+                          justifyContent: "flex-start",
+                          fontWeight: 700,
+                          px: 1,
+                          backgroundColor: link.isActive ? "action.selected" : "transparent",
+                        }}
+                      >
+                        {link.label}
+                      </Button>
+                    ))}
+                  </Stack>
                 </Stack>
               </CardSection>
             </Stack>
@@ -1869,6 +2022,19 @@ export default function Notes() {
             {!selectedNote ? (
               <CardSection size="xs">
                 <Stack spacing={1.5}>
+                  {isTrashView ? (
+                    <Stack direction="row" justifyContent="flex-end">
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={() => setEmptyTrashConfirmOpen(true)}
+                        disabled={!notes.some(note => Boolean(note.trashed))}
+                        sx={{ textTransform: "none", fontWeight: 700 }}
+                      >
+                        Esvaziar lixeira
+                      </Button>
+                    </Stack>
+                  ) : null}
                   {showSearch && (
                     <MuiTextField
                       placeholder="Buscar nota"
@@ -2007,9 +2173,11 @@ export default function Notes() {
                       variant="body2"
                       sx={{ color: "text.secondary" }}
                     >
-                      {isArchiveView
-                        ? "Sem notas arquivadas."
-                        : "Sem notas."}
+                      {isTrashView
+                        ? "Sem notas na lixeira."
+                        : isArchiveView
+                          ? "Sem notas arquivadas."
+                          : "Sem notas."}
                     </Typography>
                   )}
                 </Stack>
@@ -2215,6 +2383,9 @@ export default function Notes() {
                       transformOrigin={{ vertical: "top", horizontal: "right" }}
                     >
                       <MenuItem disabled>
+                          <ListItemIcon sx={{ minWidth: 36 }}>
+                            <AccessTimeRoundedIcon fontSize="small" />
+                          </ListItemIcon>
                         <ListItemText
                           primary={`Criada: ${formatDateTimePtBr(selectedNote.createdAt)}`}
                           secondary={`Atualizada: ${formatDateTimePtBr(selectedNote.updatedAt)}`}
@@ -2227,6 +2398,13 @@ export default function Notes() {
                           setNoteMenuAnchorEl(null);
                         }}
                       >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          {selectedNote.favorite ? (
+                            <StarRoundedIcon fontSize="small" />
+                          ) : (
+                            <StarBorderRoundedIcon fontSize="small" />
+                          )}
+                        </ListItemIcon>
                         <ListItemText
                           primary={
                             selectedNote.favorite
@@ -2245,6 +2423,13 @@ export default function Notes() {
                           );
                         }}
                       >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          {selectedNote.archived ? (
+                            <UnarchiveRoundedIcon fontSize="small" />
+                          ) : (
+                            <ArchiveRoundedIcon fontSize="small" />
+                          )}
+                        </ListItemIcon>
                         <ListItemText
                           primary={
                             selectedNote.archived
@@ -2253,12 +2438,28 @@ export default function Notes() {
                           }
                         />
                       </MenuItem>
+                      {selectedNote.parentId ? (
+                        <MenuItem
+                          onClick={() => {
+                            setNoteMenuAnchorEl(null);
+                            detachNoteFromParent(selectedNote.id);
+                          }}
+                        >
+                          <ListItemIcon sx={{ minWidth: 36 }}>
+                            <SubdirectoryArrowLeftRoundedIcon fontSize="small" />
+                          </ListItemIcon>
+                          <ListItemText primary="Remover da pasta" />
+                        </MenuItem>
+                      ) : null}
                       <MenuItem
                         onClick={() => {
                           setNoteMenuAnchorEl(null);
-                          requestNoteAction(selectedNote, "delete");
+                          requestNoteAction(selectedNote, "trash");
                         }}
                       >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <DeleteRoundedIcon fontSize="small" />
+                        </ListItemIcon>
                         <ListItemText primary="Remover nota" />
                       </MenuItem>
                       <Divider />
@@ -2524,7 +2725,7 @@ export default function Notes() {
                         variant="outlined"
                         color="error"
                         aria-label="Remover"
-                        onClick={() => requestNoteAction(selectedNote, "delete")}
+                        onClick={() => requestNoteAction(selectedNote, "trash")}
                         sx={{
                           textTransform: "none",
                           fontWeight: 600,
@@ -2655,11 +2856,11 @@ export default function Notes() {
       />
       <ConfirmDialog
         open={Boolean(noteConfirm)}
-        intent={noteConfirm?.type === "delete" ? "danger" : "default"}
+        intent={noteConfirm?.type === "trash" ? "danger" : "default"}
         title={
           noteConfirm
-            ? noteConfirm.type === "delete"
-              ? "Remover nota"
+            ? noteConfirm.type === "trash"
+              ? "Mover para lixeira"
               : noteConfirm.type === "archive"
                 ? "Arquivar nota"
                 : "Restaurar nota"
@@ -2667,8 +2868,8 @@ export default function Notes() {
         }
         description={
           noteConfirm
-            ? noteConfirm.type === "delete"
-              ? "Você confirma a remoção desta nota? Esta ação não poderá ser desfeita."
+            ? noteConfirm.type === "trash"
+              ? "Você confirma o envio desta nota para a lixeira?"
               : noteConfirm.type === "archive"
                 ? "Você confirma o envio desta nota para o arquivo?"
                 : "Você confirma a restauração desta nota para a lista principal?"
@@ -2684,6 +2885,18 @@ export default function Notes() {
         }}
       />
 
+      <ConfirmDialog
+        open={emptyTrashConfirmOpen}
+        intent="danger"
+        title="Esvaziar lixeira"
+        description="Isso removerá permanentemente todas as notas da lixeira. Deseja continuar?"
+        onCancel={() => setEmptyTrashConfirmOpen(false)}
+        onConfirm={() => {
+          emptyTrash();
+          setEmptyTrashConfirmOpen(false);
+        }}
+      />
+
       <Menu
         anchorEl={sidebarItemMenuAnchorEl}
         open={sidebarItemMenuOpen}
@@ -2691,6 +2904,17 @@ export default function Notes() {
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
+        <MenuItem disabled>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <AccessTimeRoundedIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText
+            primary={`Criada: ${sidebarItemMenuNote ? formatDateTimePtBr(sidebarItemMenuNote.createdAt) : ""}`}
+            secondary={`Atualizada: ${sidebarItemMenuNote ? formatDateTimePtBr(sidebarItemMenuNote.updatedAt) : ""}`}
+          />
+        </MenuItem>
+        <Divider />
+
         {sidebarItemMenuNote?.favorite ? (
           <MenuItem
             onClick={() => {
@@ -2698,8 +2922,47 @@ export default function Notes() {
               closeSidebarItemMenu();
             }}
           >
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <StarRoundedIcon fontSize="small" />
+            </ListItemIcon>
             Remover dos favoritos
           </MenuItem>
+        ) : null}
+
+        {sidebarItemMenuNote && !sidebarItemMenuNote.favorite ? (
+          <MenuItem
+            onClick={() => {
+              toggleFavorite(sidebarItemMenuNote.id);
+              closeSidebarItemMenu();
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <StarBorderRoundedIcon fontSize="small" />
+            </ListItemIcon>
+            Marcar como favorito
+          </MenuItem>
+        ) : null}
+
+        {sidebarItemMenuNote?.parentId ? (
+          <MenuItem
+            onClick={() => {
+              if (!sidebarItemMenuNote) {
+                closeSidebarItemMenu();
+                return;
+              }
+              detachNoteFromParent(sidebarItemMenuNote.id);
+              closeSidebarItemMenu();
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 36 }}>
+              <SubdirectoryArrowLeftRoundedIcon fontSize="small" />
+            </ListItemIcon>
+            Remover da pasta
+          </MenuItem>
+        ) : null}
+
+        {(sidebarItemMenuNote?.favorite || sidebarItemMenuNote?.parentId || sidebarItemMenuNote) ? (
+          <Divider />
         ) : null}
 
         <MenuItem
@@ -2723,6 +2986,9 @@ export default function Notes() {
             closeSidebarItemMenu();
           }}
         >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <ContentCopyRoundedIcon fontSize="small" />
+          </ListItemIcon>
           Copiar link da nota
         </MenuItem>
 
@@ -2738,11 +3004,10 @@ export default function Notes() {
             closeSidebarItemMenu();
           }}
         >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <OpenInNewRoundedIcon fontSize="small" />
+          </ListItemIcon>
           Abrir em nova aba
-        </MenuItem>
-
-        <MenuItem disabled>
-          Criada em: {sidebarItemMenuNote ? formatCreatedAt(sidebarItemMenuNote.createdAt) : ""}
         </MenuItem>
 
         <MenuItem
@@ -2757,6 +3022,9 @@ export default function Notes() {
             closeSidebarItemMenu();
           }}
         >
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <EditRoundedIcon fontSize="small" />
+          </ListItemIcon>
           Renomear
         </MenuItem>
       </Menu>
