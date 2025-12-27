@@ -2399,7 +2399,7 @@ export default function Tasks() {
                         sx: theme => ({
                           mt: 1,
                           overflow: "visible",
-                          borderRadius: `${getInteractiveItemRadiusPx(theme)}px`,
+                          borderRadius: "var(--radius)",
                           border: 1,
                           borderColor: "divider",
                           backgroundColor: "background.paper",
@@ -2424,7 +2424,7 @@ export default function Tasks() {
                       sx: theme => ({
                         mt: 1,
                         overflow: "visible",
-                        borderRadius: `${getInteractiveItemRadiusPx(theme)}px`,
+                        borderRadius: "var(--radius)",
                         border: 1,
                         borderColor: "divider",
                         backgroundColor: "background.paper",
