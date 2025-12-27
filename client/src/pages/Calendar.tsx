@@ -48,6 +48,7 @@ import NotificationsActiveRoundedIcon from "@mui/icons-material/NotificationsAct
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import api from "../api";
 import ToggleCheckbox from "../components/ToggleCheckbox";
 import RichTextEditor from "../components/RichTextEditor";
@@ -562,6 +563,8 @@ export default function Calendar() {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
+  const [showTaskSearch, setShowTaskSearch] = useState(false);
+  const [taskQuery, setTaskQuery] = useState("");
   const [miniCalendarYearInput, setMiniCalendarYearInput] = useState(() =>
     String(new Date().getFullYear())
   );
@@ -1036,8 +1039,30 @@ export default function Calendar() {
   }, [selectedDate, isCategoryListMode, miniCalendarMonth]);
 
   const visibleTasks = useMemo(() => {
+    const term = taskQuery.trim().toLowerCase();
+    const stripHtml = (value: string) => value.replace(/<[^>]+>/g, " ");
+    const matchesSearch = (task: CalendarTask) => {
+      if (!term) {
+        return true;
+      }
+      const haystack = [
+        task.name,
+        task.link,
+        task.location,
+        stripHtml(task.descriptionHtml || ""),
+        (task.subtasks || []).map(sub => sub.title).join(" "),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(term);
+    };
+
     const filtered = tasks.filter(task => {
       if (task.done) {
+        return false;
+      }
+      if (!matchesSearch(task)) {
         return false;
       }
       if (!categoryFilter.length) {
@@ -1054,7 +1079,7 @@ export default function Calendar() {
       }
       return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
     });
-  }, [tasks, categoryFilter]);
+  }, [tasks, categoryFilter, taskQuery]);
 
   const visibleTaskIds = useMemo(
     () => visibleTasks.map(task => task.id),
@@ -1270,7 +1295,26 @@ export default function Calendar() {
       return [];
     }
 
-    const pendingTasks = tasks.filter(task => !task.done);
+    const term = taskQuery.trim().toLowerCase();
+    const stripHtml = (value: string) => value.replace(/<[^>]+>/g, " ");
+    const matchesSearch = (task: CalendarTask) => {
+      if (!term) {
+        return true;
+      }
+      const haystack = [
+        task.name,
+        task.link,
+        task.location,
+        stripHtml(task.descriptionHtml || ""),
+        (task.subtasks || []).map(sub => sub.title).join(" "),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(term);
+    };
+
+    const pendingTasks = tasks.filter(task => !task.done && matchesSearch(task));
 
     const base = new Date(selectedDate);
     base.setHours(0, 0, 0, 0);
@@ -1300,7 +1344,7 @@ export default function Calendar() {
         tasks: dayTasks,
       };
     });
-  }, [tasks, isCategoryListMode, selectedDate, agendaDaysCount]);
+  }, [tasks, isCategoryListMode, selectedDate, agendaDaysCount, taskQuery]);
 
   const tasksByDate = useMemo(() => {
     const map = new Map<string, CalendarTask[]>();
@@ -1915,6 +1959,71 @@ export default function Calendar() {
               height: "fit-content",
             }}
           >
+            <CardSection size="xs">
+              <Stack spacing={1.5}>
+                <Stack
+                  direction="row"
+                  alignItems="center"
+                  justifyContent="space-between"
+                >
+                  <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                    Categorias
+                  </Typography>
+                  <Tooltip title="Buscar tarefas" placement="bottom">
+                    <IconButton
+                      size="small"
+                      aria-label="Buscar tarefas"
+                      onClick={() => {
+                        const next = !showTaskSearch;
+                        setShowTaskSearch(next);
+                        if (!next) {
+                          setTaskQuery("");
+                        }
+                      }}
+                    >
+                      <SearchRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+
+                {showTaskSearch ? (
+                  <TextField
+                    placeholder="Buscar tarefa"
+                    label="Buscar tarefa"
+                    variant="outlined"
+                    size="medium"
+                    fullWidth
+                    autoFocus
+                    value={taskQuery}
+                    onChange={event => setTaskQuery(event.target.value)}
+                    onKeyDown={event => {
+                      if (event.key === "Escape") {
+                        setTaskQuery("");
+                        setShowTaskSearch(false);
+                      }
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          {taskQuery ? (
+                            <IconButton
+                              size="small"
+                              onClick={() => setTaskQuery("")}
+                              aria-label="Limpar busca"
+                              sx={{ width: 48, height: 48 }}
+                            >
+                              <CloseRoundedIcon fontSize="small" />
+                            </IconButton>
+                          ) : (
+                            <Box sx={{ width: 48, height: 48 }} />
+                          )}
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                ) : null}
+              </Stack>
+            </CardSection>
             <CardSection size="xs">
               <Stack spacing={1.5}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
@@ -2764,15 +2873,68 @@ export default function Calendar() {
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
                   Categorias
               </Typography>
-              <Tooltip title="Fechar" placement="top">
-                <IconButton
-                  onClick={() => setMobileSidebarOpen(false)}
-                  aria-label="Fechar"
-                >
-                  <CloseRoundedIcon />
-                </IconButton>
-              </Tooltip>
+              <Stack direction="row" spacing={0.5} alignItems="center">
+                <Tooltip title="Buscar tarefas" placement="top">
+                  <IconButton
+                    onClick={() => {
+                      const next = !showTaskSearch;
+                      setShowTaskSearch(next);
+                      if (!next) {
+                        setTaskQuery("");
+                      }
+                    }}
+                    aria-label="Buscar tarefas"
+                  >
+                    <SearchRoundedIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Fechar" placement="top">
+                  <IconButton
+                    onClick={() => setMobileSidebarOpen(false)}
+                    aria-label="Fechar"
+                  >
+                    <CloseRoundedIcon />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
             </Stack>
+
+            {showTaskSearch ? (
+              <TextField
+                placeholder="Buscar tarefa"
+                label="Buscar tarefa"
+                variant="outlined"
+                size="medium"
+                fullWidth
+                autoFocus
+                value={taskQuery}
+                onChange={event => setTaskQuery(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === "Escape") {
+                    setTaskQuery("");
+                    setShowTaskSearch(false);
+                  }
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      {taskQuery ? (
+                        <IconButton
+                          size="small"
+                          onClick={() => setTaskQuery("")}
+                          aria-label="Limpar busca"
+                          sx={{ width: 48, height: 48 }}
+                        >
+                          <CloseRoundedIcon fontSize="small" />
+                        </IconButton>
+                      ) : (
+                        <Box sx={{ width: 48, height: 48 }} />
+                      )}
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            ) : null}
 
             <CardSection size="xs">
               <Stack spacing={1.5}>
