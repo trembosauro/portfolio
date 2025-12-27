@@ -1111,7 +1111,7 @@ export default function Calendar() {
     dateKey: string;
     children: ReactNode;
   }) => {
-    const { setNodeRef, isOver } = useDroppable({
+    const { setNodeRef } = useDroppable({
       id: `day-${dateKey}`,
       data: { dateKey },
     });
@@ -1121,8 +1121,6 @@ export default function Calendar() {
         ref={setNodeRef}
         sx={theme => ({
           borderRadius: getInteractiveItemRadiusPx(theme),
-          outline: isOver ? `1px solid ${theme.palette.primary.main}` : "1px solid transparent",
-          outlineOffset: 2,
         })}
       >
         {children}
