@@ -1,4 +1,12 @@
-import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  memo,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Autocomplete,
   Alert,
@@ -567,6 +575,7 @@ export default function Calendar() {
   });
   const [showTaskSearch, setShowTaskSearch] = useState(false);
   const [taskQuery, setTaskQuery] = useState("");
+  const deferredTaskQuery = useDeferredValue(taskQuery);
   const [miniCalendarYearInput, setMiniCalendarYearInput] = useState(() =>
     String(new Date().getFullYear())
   );
@@ -1040,13 +1049,10 @@ export default function Calendar() {
     }
   }, [selectedDate, isCategoryListMode, miniCalendarMonth]);
 
-  const visibleTasks = useMemo(() => {
-    const term = taskQuery.trim().toLowerCase();
+  const taskSearchIndex = useMemo(() => {
     const stripHtml = (value: string) => value.replace(/<[^>]+>/g, " ");
-    const matchesSearch = (task: CalendarTask) => {
-      if (!term) {
-        return true;
-      }
+    const index = new Map<string, string>();
+    for (const task of tasks) {
       const haystack = [
         task.name,
         task.link,
@@ -1057,7 +1063,18 @@ export default function Calendar() {
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
-      return haystack.includes(term);
+      index.set(task.id, haystack);
+    }
+    return index;
+  }, [tasks]);
+
+  const visibleTasks = useMemo(() => {
+    const term = deferredTaskQuery.trim().toLowerCase();
+    const matchesSearch = (task: CalendarTask) => {
+      if (!term) {
+        return true;
+      }
+      return (taskSearchIndex.get(task.id) || "").includes(term);
     };
 
     const filtered = tasks.filter(task => {
@@ -1081,7 +1098,7 @@ export default function Calendar() {
       }
       return a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" });
     });
-  }, [tasks, categoryFilter, taskQuery]);
+  }, [tasks, categoryFilter, deferredTaskQuery, taskSearchIndex]);
 
   const visibleTaskIds = useMemo(
     () => visibleTasks.map(task => task.id),
@@ -1339,23 +1356,12 @@ export default function Calendar() {
       return [];
     }
 
-    const term = taskQuery.trim().toLowerCase();
-    const stripHtml = (value: string) => value.replace(/<[^>]+>/g, " ");
+    const term = deferredTaskQuery.trim().toLowerCase();
     const matchesSearch = (task: CalendarTask) => {
       if (!term) {
         return true;
       }
-      const haystack = [
-        task.name,
-        task.link,
-        task.location,
-        stripHtml(task.descriptionHtml || ""),
-        (task.subtasks || []).map(sub => sub.title).join(" "),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(term);
+      return (taskSearchIndex.get(task.id) || "").includes(term);
     };
 
     const pendingTasks = tasks.filter(task => !task.done && matchesSearch(task));
@@ -1388,7 +1394,14 @@ export default function Calendar() {
         tasks: dayTasks,
       };
     });
-  }, [tasks, isCategoryListMode, selectedDate, agendaDaysCount, taskQuery]);
+  }, [
+    tasks,
+    isCategoryListMode,
+    selectedDate,
+    agendaDaysCount,
+    deferredTaskQuery,
+    taskSearchIndex,
+  ]);
 
   const tasksByDate = useMemo(() => {
     const map = new Map<string, CalendarTask[]>();
@@ -2126,10 +2139,6 @@ export default function Calendar() {
 
                 {isCategoryListMode ? null : (
                   <Stack spacing={1.5}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      Tarefas
-                    </Typography>
-
                   <Stack
                     direction="row"
                     alignItems="center"
@@ -3038,10 +3047,6 @@ export default function Calendar() {
 
                 {isCategoryListMode ? null : (
                   <Stack spacing={1.5}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                      Tarefas
-                    </Typography>
-
                     <Stack
                       direction="row"
                       alignItems="center"
