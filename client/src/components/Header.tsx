@@ -4,7 +4,7 @@ import { Mail, Phone, Linkedin } from "lucide-react";
 
 export default function Header() {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md">
       <nav className="container flex items-center justify-between h-16 md:h-20">
         <Link href="/" className="flex items-center gap-3 font-medium text-lg text-accent hover:opacity-80 transition-opacity">
           <img src={APP_LOGO} alt="Logo" className="w-10 h-10 rounded-full object-cover" />
