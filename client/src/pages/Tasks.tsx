@@ -3830,61 +3830,66 @@ export default function Tasks() {
             title: "Agenda",
             content: (
               <Stack spacing={1.5}>
-                <TextField
-                  select
-                  size="small"
-                  label="Dias"
-                  value={agendaDaysCount}
-                  onChange={event => {
-                    const next = Number(event.target.value);
-                    if (
-                      agendaDaysOptions.includes(
-                        next as (typeof agendaDaysOptions)[number]
-                      )
-                    ) {
-                      setAgendaDaysCount(next);
-                    }
-                  }}
-                  disabled={isCategoryListMode}
-                >
-                  {agendaDaysOptions.map(value => (
-                    <MenuItem key={`agenda-days-settings-${value}`} value={value}>
-                      {value}
-                    </MenuItem>
-                  ))}
-                </TextField>
-                <Box
-                  sx={theme => ({
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    p: 1.5,
-                    borderColor: "divider",
-                    cursor: "pointer",
-                    borderRadius: "var(--radius-button)",
-                    ...interactiveItemSx(theme),
-                  })}
-                  onClick={() =>
-                    setCalendarSettings(prev => ({
-                      ...prev,
-                      showAgendaTaskCount: !prev.showAgendaTaskCount,
-                    }))
-                  }
-                >
-                  <Typography variant="subtitle2">
-                    Mostrar quantidade de tarefas por dia
-                  </Typography>
-                  <ToggleCheckbox
-                    checked={Boolean(calendarSettings.showAgendaTaskCount)}
-                    onChange={event =>
+                <Stack direction="row" spacing={1.5} alignItems="stretch">
+                  <Box
+                    sx={theme => ({
+                      flex: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      p: 1.5,
+                      borderColor: "divider",
+                      cursor: "pointer",
+                      borderRadius: "var(--radius-button)",
+                      ...interactiveItemSx(theme),
+                    })}
+                    onClick={() =>
                       setCalendarSettings(prev => ({
                         ...prev,
-                        showAgendaTaskCount: event.target.checked,
+                        showAgendaTaskCount: !prev.showAgendaTaskCount,
                       }))
                     }
-                    onClick={event => event.stopPropagation()}
-                  />
-                </Box>
+                  >
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      Mostrar quantidade de tarefas por dia
+                    </Typography>
+                    <ToggleCheckbox
+                      checked={Boolean(calendarSettings.showAgendaTaskCount)}
+                      onChange={event =>
+                        setCalendarSettings(prev => ({
+                          ...prev,
+                          showAgendaTaskCount: event.target.checked,
+                        }))
+                      }
+                      onClick={event => event.stopPropagation()}
+                    />
+                  </Box>
+
+                  <TextField
+                    select
+                    size="small"
+                    label="Dias"
+                    value={agendaDaysCount}
+                    onChange={event => {
+                      const next = Number(event.target.value);
+                      if (
+                        agendaDaysOptions.includes(
+                          next as (typeof agendaDaysOptions)[number]
+                        )
+                      ) {
+                        setAgendaDaysCount(next);
+                      }
+                    }}
+                    disabled={isCategoryListMode}
+                    sx={{ width: 110, flexShrink: 0 }}
+                  >
+                    {agendaDaysOptions.map(value => (
+                      <MenuItem key={`agenda-days-settings-${value}`} value={value}>
+                        {value}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Stack>
               </Stack>
             ),
           },
