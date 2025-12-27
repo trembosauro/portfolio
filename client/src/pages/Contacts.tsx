@@ -791,6 +791,28 @@ export default function Contacts() {
     setContactForm(null);
   };
 
+  const saveContact = () => {
+    if (!contactForm) {
+      return;
+    }
+    const nextContact = {
+      ...contactForm,
+      categoryIds: contactForm.categoryIds || [],
+    };
+    setContacts(prev => {
+      const existingIndex = prev.findIndex(item => item.id === nextContact.id);
+      if (existingIndex === -1) {
+        return [nextContact, ...prev];
+      }
+      const next = [...prev];
+      next[existingIndex] = nextContact;
+      return next;
+    });
+    setEditingContact(null);
+    setContactForm(null);
+    updateUserRole(nextContact);
+  };
+
   useEffect(() => {
     if (!contactForm) {
       return;
@@ -1776,6 +1798,9 @@ export default function Contacts() {
                 onClick={() => setEditingContact(null)}
               >
                 Cancelar
+              </Button>
+              <Button variant="contained" onClick={saveContact}>
+                Salvar
               </Button>
             </Stack>
           </Stack>
