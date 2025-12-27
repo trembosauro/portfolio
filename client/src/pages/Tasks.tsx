@@ -442,7 +442,7 @@ const InlineAddTaskRow = memo(function InlineAddTaskRow({
         border: 0,
         borderColor: "transparent",
         backgroundColor: "transparent",
-        borderRadius: getInteractiveItemRadiusPx(theme),
+        borderRadius: "var(--radius-card)",
         "&:hover": {
           backgroundColor: "transparent",
         },
@@ -1144,9 +1144,7 @@ export default function Tasks() {
     return (
       <Box
         ref={setNodeRef}
-        sx={theme => ({
-          borderRadius: getInteractiveItemRadiusPx(theme),
-        })}
+        sx={{ borderRadius: "var(--radius-card)" }}
       >
         {children}
       </Box>
@@ -1215,7 +1213,7 @@ export default function Tasks() {
           p: 1,
           border: 0,
           borderColor: "transparent",
-          borderRadius: getInteractiveItemRadiusPx(theme),
+          borderRadius: "var(--radius-card)",
           cursor: isDragging ? "grabbing" : "grab",
           opacity: isDragging ? 0.7 : 1,
           width: "100%",
@@ -1271,7 +1269,7 @@ export default function Tasks() {
           p: 1,
           border: 0,
           borderColor: "transparent",
-          borderRadius: getInteractiveItemRadiusPx(theme),
+          borderRadius: "var(--radius-card)",
           cursor: isDragging ? "grabbing" : "grab",
           opacity: isDragging ? 0.7 : 1,
           width: "100%",
@@ -2057,7 +2055,7 @@ export default function Tasks() {
                       px: 1,
                       py: 0.75,
                       cursor: "pointer",
-                      borderRadius: getInteractiveItemRadiusPx(theme),
+                      borderRadius: "var(--radius-button)",
                       ...interactiveItemSx(theme),
                       backgroundColor: showTaskSearch
                         ? theme.palette.action.selected
@@ -2081,7 +2079,7 @@ export default function Tasks() {
                       px: 1,
                       py: 0.75,
                       cursor: "pointer",
-                      borderRadius: getInteractiveItemRadiusPx(theme),
+                      borderRadius: "var(--radius-button)",
                       ...interactiveItemSx(theme),
                       backgroundColor:
                         selectedCategoryId === "" ? theme.palette.action.selected : undefined,
@@ -2103,7 +2101,7 @@ export default function Tasks() {
                         px: 1,
                         py: 0.75,
                         cursor: "pointer",
-                        borderRadius: getInteractiveItemRadiusPx(theme),
+                        borderRadius: "var(--radius-button)",
                         ...interactiveItemSx(theme),
                         backgroundColor:
                           selectedCategoryId === cat.id
@@ -2354,7 +2352,7 @@ export default function Tasks() {
                       py: 0.75,
                       mb: 1,
                       cursor: "pointer",
-                      borderRadius: getInteractiveItemRadiusPx(theme),
+                      borderRadius: "var(--radius-button)",
                       border: 0,
                       backgroundColor: miniCalendarAnchorEl
                         ? theme.palette.action.selected
@@ -2531,7 +2529,7 @@ export default function Tasks() {
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    borderRadius: getInteractiveItemRadiusPx(theme),
+                                    borderRadius: "var(--radius-button)",
                                     border: isSelected ? 1 : "1px solid transparent",
                                     borderColor: isSelected ? "primary.main" : "transparent",
                                     cursor: day ? "pointer" : "default",
@@ -3097,7 +3095,7 @@ export default function Tasks() {
                       px: 1,
                       py: 0.75,
                       cursor: "pointer",
-                      borderRadius: getInteractiveItemRadiusPx(theme),
+                      borderRadius: "var(--radius-button)",
                       ...interactiveItemSx(theme),
                       backgroundColor:
                         selectedCategoryId === "" ? theme.palette.action.selected : undefined,
@@ -3122,7 +3120,7 @@ export default function Tasks() {
                         px: 1,
                         py: 0.75,
                         cursor: "pointer",
-                        borderRadius: getInteractiveItemRadiusPx(theme),
+                        borderRadius: "var(--radius-button)",
                         ...interactiveItemSx(theme),
                         backgroundColor:
                           selectedCategoryId === cat.id
@@ -3621,7 +3619,7 @@ export default function Tasks() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      borderRadius: getInteractiveItemRadiusPx(theme),
+                      borderRadius: "var(--radius-button)",
                       border: isSelected ? 1 : "1px solid transparent",
                       borderColor: isSelected ? "primary.main" : "transparent",
                       cursor: day ? "pointer" : "default",
@@ -3700,7 +3698,7 @@ export default function Tasks() {
                       p: 1.5,
                       borderColor: "divider",
                       cursor: "pointer",
-                      borderRadius: getInteractiveItemRadiusPx(theme),
+                      borderRadius: "var(--radius-button)",
                       ...interactiveItemSx(theme),
                     })}
                     onClick={() =>
@@ -3744,7 +3742,7 @@ export default function Tasks() {
                     p: 1.5,
                     borderColor: "divider",
                     cursor: "pointer",
-                    borderRadius: getInteractiveItemRadiusPx(theme),
+                    borderRadius: "var(--radius-button)",
                     ...interactiveItemSx(theme),
                   })}
                   onClick={() =>
